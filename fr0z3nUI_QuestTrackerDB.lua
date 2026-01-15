@@ -22,10 +22,16 @@ local addonName, ns = ...
 --       questID (number?)      - completion source: quest completed
 --       questIDs (number[]?)   - completion source: any quest completed in list
 --       itemID (number?)       - completion source: have item count
+--       itemIDs (number[]?)    - completion source: have ANY item in list
 --       count (number?)        - required count for itemID (default 1)
 --       aura (table?)          - completion source: aura present
 --           spellID (number)
 --       shape ("square"|"circle"?) - default "square"
+--       overlay (table?)       - optional overlay drawn on top of the indicator (e.g. a "1")
+--           text (string)      - overlay text
+--           color (table?)     - overlay text color {r,g,b[,a]}
+--           questID/questIDs/itemID/itemIDs/aura/count/required - condition for overlay visibility
+--       onlyWhenDone (boolean?) - if true, indicator only renders when condition is met
 --       faction ("Alliance"|"Horde"?) - optional faction gate for that indicator
 --   item (table?)              - item-based tracking gate/progress
 --       itemID (number)
@@ -51,17 +57,38 @@ local addonName, ns = ...
 
 ns.rules = {
   -- Timewalking weekly bar entries.
-  -- Goal: show ONLY when that Timewalking aura is active (and once seen, remember until weekly reset).
+  -- Goal: calendar strings can be generic ("Timewalking Dungeon Event"), so we:
+  --   1) show a single generic reminder when any Timewalking/Turbulent Timeways event is up
+  --   2) show the specific weekly quest row only once you've actually picked it up (requireInLog)
   -- Keep showing after completion, and show "X" when complete.
   -- Append a red/green marker for the token quest completion.
+
+  {
+    key = "tw:reminder",
+    frameID = "bar1",
+    label = "Timewalking",
+    aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true },
+    hideIfAnyQuestInLog = {
+      86731, 85947, -- Classic
+      83363, 85948, -- Outland
+      83365, 85949, -- Wrath
+      83359, 86556, -- Cata
+      83362, 86560, -- Pandaria
+      83364, 86563, -- Draenor
+      83360, 86564, -- Legion
+      88805, 88808, -- BFA
+      92647, -- Shadowlands (max/leveling placeholder)
+    },
+    hideWhenCompleted = false,
+  },
 
   -- Classic
   {
     questID = 86731,
     frameID = "bar1",
-    label = "TW Classic (Max)",
+    label = "Classic",
     levelGate = "max",
-    aura = { spellID = 452307, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -70,9 +97,9 @@ ns.rules = {
   {
     questID = 85947,
     frameID = "bar1",
-    label = "TW Classic (Leveling)",
+    label = "Classic",
     levelGate = "leveling",
-    aura = { spellID = 452307, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -83,9 +110,9 @@ ns.rules = {
   {
     questID = 83363,
     frameID = "bar1",
-    label = "TW Outland (Max)",
+    label = "Outland",
     levelGate = "max",
-    aura = { spellID = 335148, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -94,9 +121,9 @@ ns.rules = {
   {
     questID = 85948,
     frameID = "bar1",
-    label = "TW Outland (Leveling)",
+    label = "Outland",
     levelGate = "leveling",
-    aura = { spellID = 335148, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -107,9 +134,9 @@ ns.rules = {
   {
     questID = 83365,
     frameID = "bar1",
-    label = "TW Wrath (Max)",
+    label = "Wrath",
     levelGate = "max",
-    aura = { spellID = 335149, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -118,9 +145,9 @@ ns.rules = {
   {
     questID = 85949,
     frameID = "bar1",
-    label = "TW Wrath (Leveling)",
+    label = "Wrath",
     levelGate = "leveling",
-    aura = { spellID = 335149, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -131,9 +158,9 @@ ns.rules = {
   {
     questID = 83359,
     frameID = "bar1",
-    label = "TW Cataclysm (Max)",
+    label = "Cataclysm",
     levelGate = "max",
-    aura = { spellID = 335150, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -142,9 +169,9 @@ ns.rules = {
   {
     questID = 86556,
     frameID = "bar1",
-    label = "TW Cataclysm (Leveling)",
+    label = "Cataclysm",
     levelGate = "leveling",
-    aura = { spellID = 335150, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -155,9 +182,9 @@ ns.rules = {
   {
     questID = 83362,
     frameID = "bar1",
-    label = "TW Pandaria (Max)",
+    label = "Pandaria",
     levelGate = "max",
-    aura = { spellID = 335151, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -166,9 +193,9 @@ ns.rules = {
   {
     questID = 86560,
     frameID = "bar1",
-    label = "TW Pandaria (Leveling)",
+    label = "Pandaria",
     levelGate = "leveling",
-    aura = { spellID = 335151, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -179,29 +206,35 @@ ns.rules = {
   {
     questID = 83364,
     frameID = "bar1",
-    label = "TW Draenor (Max)",
+    label = "Draenor",
     levelGate = "max",
-    aura = { spellID = 335152, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
     indicators = {
-      { itemID = 167921, count = 1, faction = "Alliance", shape = "square" },
-      { itemID = 167922, count = 1, faction = "Horde", shape = "square" },
+      {
+        questIDs = { 55498, 55499 },
+        shape = "square",
+        overlay = { itemIDs = { 167921, 167922 }, text = "1", color = { 1.0, 1.0, 0.1 } },
+      },
     },
   },
   {
     questID = 86563,
     frameID = "bar1",
-    label = "TW Draenor (Leveling)",
+    label = "Draenor",
     levelGate = "leveling",
-    aura = { spellID = 335152, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
     indicators = {
-      { itemID = 167921, count = 1, faction = "Alliance", shape = "square" },
-      { itemID = 167922, count = 1, faction = "Horde", shape = "square" },
+      {
+        questIDs = { 55498, 55499 },
+        shape = "square",
+        overlay = { itemIDs = { 167921, 167922 }, text = "1", color = { 1.0, 1.0, 0.1 } },
+      },
     },
   },
 
@@ -209,9 +242,9 @@ ns.rules = {
   {
     questID = 83360,
     frameID = "bar1",
-    label = "TW Legion (Max)",
+    label = "Legion",
     levelGate = "max",
-    aura = { spellID = 359082, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -220,9 +253,9 @@ ns.rules = {
   {
     questID = 86564,
     frameID = "bar1",
-    label = "TW Legion (Leveling)",
+    label = "Legion",
     levelGate = "leveling",
-    aura = { spellID = 359082, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -233,9 +266,9 @@ ns.rules = {
   {
     questID = 88805,
     frameID = "bar1",
-    label = "TW BFA (Max)",
+    label = "BFA",
     levelGate = "max",
-    aura = { spellID = 1223878, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -244,9 +277,9 @@ ns.rules = {
   {
     questID = 88808,
     frameID = "bar1",
-    label = "TW BFA (Leveling)",
+    label = "BFA",
     levelGate = "leveling",
-    aura = { spellID = 1223878, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -257,9 +290,9 @@ ns.rules = {
   {
     questID = 92647,
     frameID = "bar1",
-    label = "TW Shadowlands (Max)",
+    label = "Shadowlands",
     levelGate = "max",
-    aura = { spellID = 1256081, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -268,9 +301,9 @@ ns.rules = {
   {
     questID = 92647, -- TODO: replace with the leveling variant questID if different
     frameID = "bar1",
-    label = "TW Shadowlands (Leveling)",
+    label = "Shadowlands",
     levelGate = "leveling",
-    aura = { spellID = 1256081, mustHave = true, rememberWeekly = true },
+    requireInLog = true,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,
     showXWhenComplete = true,
@@ -296,14 +329,16 @@ ns.frames = {
   {
     id = "bar1",
     type = "bar",
-    point = "TOPLEFT",
-    relPoint = "TOPLEFT",
+    point = "TOP",
+    relPoint = "TOP",
     x = 0,
-    y = 0,
+    y = -10,
+    width = 600,
     height = 20,
     maxItems = 6,
     bgAlpha = 0,
-    stretchWidth = true,
+    hideWhenEmpty = false,
+    stretchWidth = false,
     font = {
       name = "Bazooka",
       size = 15,
@@ -323,5 +358,6 @@ ns.frames = {
     rowHeight = 16,
     maxItems = 20,
     autoSize = true,
+    hideWhenEmpty = false,
   },
 }
