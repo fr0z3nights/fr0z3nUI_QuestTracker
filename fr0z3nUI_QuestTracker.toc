@@ -1,0 +1,10 @@
+## Interface: 110205, 110207, 120000
+## Title: |cff00ccfffr0z3nUI|r QuestTracker
+## Notes: Tracks quest completion with bar and list frames.
+## Author: fr0z3n
+## Version: 0.1
+## SavedVariables: fr0z3nUI_QuestTracker_Acc
+## SavedVariablesPerCharacter: fr0z3nUI_QuestTracker_Char
+
+fr0z3nUI_QuestTrackerDB.lua
+fr0z3nUI_QuestTracker.lua
