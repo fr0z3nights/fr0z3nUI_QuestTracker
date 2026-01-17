@@ -3,8 +3,9 @@
 ## Notes: Tracks quest completion with bar and list frames.
 ## Author: fr0z3n
 ## Version: 0.1
-## SavedVariables: fr0z3nUI_QuestTracker_Acc
+## SavedVariables: fr0z3nUI_QuestTracker_Acc, fr0z3nUI_QuestTracker_WAExportDB
 ## SavedVariablesPerCharacter: fr0z3nUI_QuestTracker_Char
 
-fr0z3nUI_QuestTrackerDB.lua
-fr0z3nUI_QuestTracker.lua
+fr0z3nUI_QuestTracker_DB.lua
+fr0z3nUI_QuestTracker_Core.lua
+fr0z3nUI_QuestTracker_WeakAuras.lua
