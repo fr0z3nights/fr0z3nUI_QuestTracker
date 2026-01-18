@@ -20,6 +20,17 @@ local GetQuestTitle = ns and ns.GetQuestTitle
 
 local weakAuraImportFrame
 
+local function SetCheckButtonLabel(btn, text)
+  if not btn then return end
+  local label = btn.text or btn.Text
+  if label and label.SetText then
+    label:SetText(tostring(text or ""))
+  end
+  if btn.Text and not btn.text then
+    btn.text = btn.Text
+  end
+end
+
 local function GetWeakAuraDataByIdOrUid(idOrUid)
   idOrUid = tostring(idOrUid or "")
   if idOrUid == "" then return nil end
@@ -622,6 +633,20 @@ function EnsureWeakAuraImportFrame()
   end
 
   local f = CreateFrame("Frame", "FR0Z3NUIFQTWeakAuraImport", UIParent, "BackdropTemplate")
+
+  -- Allow closing with Escape.
+  do
+    local special = _G and _G["UISpecialFrames"]
+    if type(special) == "table" then
+      local name = "FR0Z3NUIFQTWeakAuraImport"
+      local exists = false
+      for i = 1, #special do
+        if special[i] == name then exists = true break end
+      end
+      if not exists and table and table.insert then table.insert(special, name) end
+    end
+  end
+
   f:SetSize(520, 520)
   f:SetPoint("CENTER")
   f:SetFrameStrata("DIALOG")
@@ -665,25 +690,25 @@ function EnsureWeakAuraImportFrame()
 
   local includeChildren = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
   includeChildren:SetPoint("LEFT", auraBox, "RIGHT", 16, 0)
-  includeChildren.text:SetText("Include children")
+  SetCheckButtonLabel(includeChildren, "Include children")
   includeChildren:SetChecked(true)
   f._includeChildren = includeChildren
 
   local primaryOnly = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
   primaryOnly:SetPoint("TOPLEFT", includeChildren, "BOTTOMLEFT", 0, 2)
-  primaryOnly.text:SetText("Only import primary questIDs")
+  SetCheckButtonLabel(primaryOnly, "Only import primary questIDs")
   primaryOnly:SetChecked(false)
   f._primaryOnly = primaryOnly
 
   local importSpellRule = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
   importSpellRule:SetPoint("TOPLEFT", primaryOnly, "BOTTOMLEFT", 0, 2)
-  importSpellRule.text:SetText("Import Spell rule")
+  SetCheckButtonLabel(importSpellRule, "Import Spell rule")
   importSpellRule:SetChecked(false)
   f._importSpellRule = importSpellRule
 
   local exportOnly = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
   exportOnly:SetPoint("TOPLEFT", importSpellRule, "BOTTOMLEFT", 0, 2)
-  exportOnly.text:SetText("Export only (don't create rules)")
+  SetCheckButtonLabel(exportOnly, "Export only (don't create rules)")
   exportOnly:SetChecked(false)
   f._exportOnly = exportOnly
 

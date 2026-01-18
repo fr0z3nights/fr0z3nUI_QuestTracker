@@ -79,6 +79,17 @@ ns.rules = {
       88805, 88808, -- BFA
       92647, -- Shadowlands (max/leveling placeholder)
     },
+    hideIfAnyQuestCompleted = {
+      86731, 85947, -- Classic
+      83363, 85948, -- Outland
+      83365, 85949, -- Wrath
+      83359, 86556, -- Cata
+      83362, 86560, -- Pandaria
+      83364, 86563, -- Draenor
+      83360, 86564, -- Legion
+      88805, 88808, -- BFA
+      92647, -- Shadowlands (max/leveling placeholder)
+    },
     hideWhenCompleted = false,
   },
 

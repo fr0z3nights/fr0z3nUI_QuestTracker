@@ -23,6 +23,23 @@ local function CopyArray(src)
   return out
 end
 
+local function SetCheckButtonLabel(btn, text)
+  if not btn then return end
+  local label = btn.text or btn.Text
+  if not label and btn.GetName and _G then
+    local name = btn:GetName()
+    if name then
+      label = _G[name .. "Text"]
+    end
+  end
+  if label and label.SetText then
+    label:SetText(tostring(text or ""))
+  end
+  if btn.Text and not btn.text then
+    btn.text = btn.Text
+  end
+end
+
 ns.CopyArray = CopyArray
 
 local function PrereqListKey(prereq)
@@ -1182,6 +1199,9 @@ local function EnsureIndicatorIcon(row, i)
   local lbl = row.labels[i]
   if not lbl then
     lbl = row.container:CreateFontString(nil, "OVERLAY")
+    if lbl.SetFontObject and GameFontHighlightSmall then
+      lbl:SetFontObject(GameFontHighlightSmall)
+    end
     if lbl.SetJustifyH then lbl:SetJustifyH("CENTER") end
     if lbl.SetJustifyV then lbl:SetJustifyV("MIDDLE") end
     row.labels[i] = lbl
@@ -1190,8 +1210,25 @@ local function EnsureIndicatorIcon(row, i)
 end
 
 local function ApplyOverlayFont(label, baseFS)
-  if not (label and baseFS and baseFS.GetFont and label.SetFont) then return end
+  if not label then return end
+
+  -- Ensure *some* font is set even if baseFS isn't ready.
+  if label.SetFontObject then
+    local obj
+    if baseFS and baseFS.GetFontObject then
+      obj = baseFS:GetFontObject()
+    end
+    if obj then
+      label:SetFontObject(obj)
+    elseif GameFontHighlightSmall then
+      label:SetFontObject(GameFontHighlightSmall)
+    end
+  end
+
+  if not (baseFS and baseFS.GetFont and label.SetFont) then return end
   local font, size, flags = baseFS:GetFont()
+  if not font or font == "" then return end
+
   size = tonumber(size) or 12
   local overlaySize = math.max(10, math.floor(size * 1.0 + 0.5))
   label:SetFont(font, overlaySize, flags)
@@ -1398,6 +1435,16 @@ local function BuildRuleStatus(rule, ctx)
     end
   end
 
+  -- Hide if any quest is completed (useful when quests drop from log on completion)
+  if not editMode and type(rule) == "table" and type(rule.hideIfAnyQuestCompleted) == "table" then
+    for _, q in ipairs(rule.hideIfAnyQuestCompleted) do
+      local qid = tonumber(q)
+      if qid and qid > 0 and IsQuestCompleted(qid) then
+        return nil
+      end
+    end
+  end
+
   -- Class gate (optional)
   if not editMode and type(rule) == "table" and rule.class ~= nil then
     local want = tostring(rule.class):upper()
@@ -1500,8 +1547,13 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Only show while quest is active/in log (useful for weekly/time-limited quests)
+  -- Exception: if the quest is already completed and the rule is configured to
+  -- keep showing when completed, allow it to remain visible even if it drops
+  -- out of the quest log (Timewalking weeklies commonly do this).
   if not editMode and questID and rule.requireInLog == true and not IsQuestInLog(questID) then
-    return nil
+    if not (completed and hideWhenCompleted == false) then
+      return nil
+    end
   end
 
   -- Aura gate
@@ -1775,7 +1827,9 @@ local function SaveFramePosition(f)
   end
 
   local function PickPointAndOffsets(frameDef)
-    if not (UIParent and UIParent.GetLeft and UIParent.GetRight and UIParent.GetTop and UIParent.GetBottom) then
+    local ref = (f.GetParent and f:GetParent()) or UIParent
+    if not ref then return nil end
+    if not (ref.GetLeft and ref.GetRight and ref.GetTop and ref.GetBottom) then
       return nil
     end
 
@@ -1783,14 +1837,20 @@ local function SaveFramePosition(f)
     if f.GetCenter then
       cx, cy = f:GetCenter()
     end
-    local uiW = UIParent.GetWidth and UIParent:GetWidth() or nil
-    local uiH = UIParent.GetHeight and UIParent:GetHeight() or nil
-    if not (cx and cy and uiW and uiH and uiW > 0 and uiH > 0) then
+    local refW = ref.GetWidth and ref:GetWidth() or nil
+    local refH = ref.GetHeight and ref:GetHeight() or nil
+    if not (cx and cy and refW and refH and refW > 0 and refH > 0) then
       return nil
     end
 
-    local xFrac = cx / uiW
-    local yFrac = cy / uiH
+    local refLeft = ref:GetLeft()
+    local refBottom = ref:GetBottom()
+    if not (refLeft and refBottom) then
+      return nil
+    end
+
+    local xFrac = (cx - refLeft) / refW
+    local yFrac = (cy - refBottom) / refH
 
     local horiz = ""
     if xFrac < 0.33 then horiz = "LEFT"
@@ -1821,11 +1881,11 @@ local function SaveFramePosition(f)
       point = vert .. horiz
     end
 
-    local uiLeft = UIParent:GetLeft()
-    local uiRight = UIParent:GetRight()
-    local uiTop = UIParent:GetTop()
-    local uiBottom = UIParent:GetBottom()
-    local uiCenterX, uiCenterY = UIParent:GetCenter()
+    local refLeft = refLeft
+    local refRight = ref:GetRight()
+    local refTop = ref:GetTop()
+    local refBottom = refBottom
+    local refCenterX, refCenterY = ref:GetCenter()
 
     local left = f.GetLeft and f:GetLeft() or nil
     local right = f.GetRight and f:GetRight() or nil
@@ -1834,32 +1894,32 @@ local function SaveFramePosition(f)
 
     local x, y
     if point == "TOPLEFT" then
-      if not (left and top and uiLeft and uiTop) then return nil end
-      x, y = left - uiLeft, top - uiTop
+      if not (left and top and refLeft and refTop) then return nil end
+      x, y = left - refLeft, top - refTop
     elseif point == "TOP" then
-      if not (cx and top and uiCenterX and uiTop) then return nil end
-      x, y = cx - uiCenterX, top - uiTop
+      if not (cx and top and refCenterX and refTop) then return nil end
+      x, y = cx - refCenterX, top - refTop
     elseif point == "TOPRIGHT" then
-      if not (right and top and uiRight and uiTop) then return nil end
-      x, y = right - uiRight, top - uiTop
+      if not (right and top and refRight and refTop) then return nil end
+      x, y = right - refRight, top - refTop
     elseif point == "LEFT" then
-      if not (left and cy and uiLeft and uiCenterY) then return nil end
-      x, y = left - uiLeft, cy - uiCenterY
+      if not (left and cy and refLeft and refCenterY) then return nil end
+      x, y = left - refLeft, cy - refCenterY
     elseif point == "CENTER" then
-      if not (cx and cy and uiCenterX and uiCenterY) then return nil end
-      x, y = cx - uiCenterX, cy - uiCenterY
+      if not (cx and cy and refCenterX and refCenterY) then return nil end
+      x, y = cx - refCenterX, cy - refCenterY
     elseif point == "RIGHT" then
-      if not (right and cy and uiRight and uiCenterY) then return nil end
-      x, y = right - uiRight, cy - uiCenterY
+      if not (right and cy and refRight and refCenterY) then return nil end
+      x, y = right - refRight, cy - refCenterY
     elseif point == "BOTTOMLEFT" then
-      if not (left and bottom and uiLeft and uiBottom) then return nil end
-      x, y = left - uiLeft, bottom - uiBottom
+      if not (left and bottom and refLeft and refBottom) then return nil end
+      x, y = left - refLeft, bottom - refBottom
     elseif point == "BOTTOM" then
-      if not (cx and bottom and uiCenterX and uiBottom) then return nil end
-      x, y = cx - uiCenterX, bottom - uiBottom
+      if not (cx and bottom and refCenterX and refBottom) then return nil end
+      x, y = cx - refCenterX, bottom - refBottom
     elseif point == "BOTTOMRIGHT" then
-      if not (right and bottom and uiRight and uiBottom) then return nil end
-      x, y = right - uiRight, bottom - uiBottom
+      if not (right and bottom and refRight and refBottom) then return nil end
+      x, y = right - refRight, bottom - refBottom
     else
       return nil
     end
@@ -1875,11 +1935,14 @@ local function SaveFramePosition(f)
   end
 
   local store = GetFramePosStore()
+  local ref = (f.GetParent and f:GetParent()) or UIParent
+  local refName = (ref == UIParent) and "UIParent" or ((ref and ref.GetName and ref:GetName()) or "UIParent")
   store[tostring(f._id)] = {
     point = tostring(point),
     relPoint = tostring(relPoint or point),
     x = tonumber(x) or 0,
     y = tonumber(y) or 0,
+    parent = tostring(refName),
   }
 end
 
@@ -1893,19 +1956,48 @@ local function ApplySavedFramePosition(f, def)
   local relPoint = pos.relPoint or (def and def.relPoint) or point
   if not point then return false end
 
+  local ref = UIParent
+  if type(pos.parent) == "string" and pos.parent ~= "" then
+    if pos.parent ~= "UIParent" then
+      local p = _G and _G[pos.parent]
+      if p then ref = p end
+    end
+  else
+    ref = (f.GetParent and f:GetParent()) or UIParent
+  end
+
   f:ClearAllPoints()
-  f:SetPoint(point, UIParent, relPoint, tonumber(pos.x) or 0, tonumber(pos.y) or 0)
+  f:SetPoint(point, ref or UIParent, relPoint, tonumber(pos.x) or 0, tonumber(pos.y) or 0)
   return true
 end
 
-local function ApplyFAOBackdrop(f, bgAlpha)
+local function ApplyFAOBackdrop(f, bgAlpha, bgColor)
   f:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     tile = true,
     tileSize = 16,
     insets = { left = 4, right = 4, top = 4, bottom = 4 },
   })
-  f:SetBackdropColor(0, 0, 0, tonumber(bgAlpha) or 0.7)
+
+  local a = tonumber(bgAlpha)
+  if a == nil then a = 0 end
+  if a < 0 then a = 0 end
+  if a > 1 then a = 1 end
+
+  local r, g, b = 0, 0, 0
+  if type(bgColor) == "table" then
+    r = tonumber(bgColor[1]) or r
+    g = tonumber(bgColor[2]) or g
+    b = tonumber(bgColor[3]) or b
+  end
+  if r < 0 then r = 0 end
+  if r > 1 then r = 1 end
+  if g < 0 then g = 0 end
+  if g > 1 then g = 1 end
+  if b < 0 then b = 0 end
+  if b > 1 then b = 1 end
+
+  f:SetBackdropColor(r, g, b, a)
 end
 
 ns.ApplyFAOBackdrop = ApplyFAOBackdrop
@@ -1966,18 +2058,8 @@ UpdateAnchorLabel = function(frame, frameDef)
   fs:SetText(text)
 
   fs:ClearAllPoints()
-  local cy
-  if frame.GetCenter then
-    local _, y = frame:GetCenter()
-    cy = y
-  end
-  local h = UIParent and UIParent.GetHeight and UIParent:GetHeight() or nil
-
-  if cy and h and cy > (h / 2) then
-    fs:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 8, -2)
-  else
-    fs:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 8, 2)
-  end
+  -- Static anchor label position (doesn't depend on screen location).
+  fs:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -6)
 
   fs:Show()
 
@@ -2105,7 +2187,8 @@ local function CreateContainerFrame(def)
   f:EnableMouse(true)
   -- Frame moving is handled via the anchor label button in edit mode.
   local bgAlpha = (type(def) == "table") and def.bgAlpha or nil
-  ApplyFAOBackdrop(f, bgAlpha)
+  local bgColor = (type(def) == "table") and def.bgColor or nil
+  ApplyFAOBackdrop(f, bgAlpha, bgColor)
 
   f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   f.title:SetPoint("TOPLEFT", 8, -6)
@@ -2113,14 +2196,91 @@ local function CreateContainerFrame(def)
   f.title:SetText("")
   f.title:Hide()
 
+  -- Per-frame scroll controls (edit-mode only). Shift+MouseWheel already works; these are explicit buttons.
+  f._scrollUp = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  f._scrollUp:SetSize(20, 18)
+  f._scrollUp:SetText("Up")
+  f._scrollUp:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4)
+  f._scrollUp:Hide()
+  f._scrollUp:SetScript("OnClick", function()
+    if not editMode then return end
+    local id = tostring(f._id or "")
+    if id == "" then return end
+    local offset = GetFrameScrollOffset(id)
+    offset = offset - 1
+    if offset < 0 then offset = 0 end
+    SetFrameScrollOffset(id, offset)
+    RefreshAll()
+  end)
+
+  f._scrollDown = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  f._scrollDown:SetSize(20, 18)
+  f._scrollDown:SetText("Dn")
+  f._scrollDown:SetPoint("TOPRIGHT", f._scrollUp, "BOTTOMRIGHT", 0, -2)
+  f._scrollDown:Hide()
+  f._scrollDown:SetScript("OnClick", function()
+    if not editMode then return end
+    local id = tostring(f._id or "")
+    if id == "" then return end
+    local offset = GetFrameScrollOffset(id)
+    offset = offset + 1
+    if offset < 0 then offset = 0 end
+    SetFrameScrollOffset(id, offset)
+    RefreshAll()
+  end)
+
   return f
+end
+
+local function HideExtraFrameRows(frame, fromIndex)
+  if not frame then return end
+  fromIndex = tonumber(fromIndex) or 1
+  if fromIndex < 1 then fromIndex = 1 end
+
+  if type(frame.items) == "table" then
+    for i = fromIndex, #frame.items do
+      local fs = frame.items[i]
+      if fs then
+        if fs.SetText then fs:SetText("") end
+        if fs.Hide then fs:Hide() end
+      end
+    end
+  end
+
+  if type(frame.buttons) == "table" then
+    for i = fromIndex, #frame.buttons do
+      local b = frame.buttons[i]
+      if b then
+        b._entry = nil
+        b._entryAbsIndex = nil
+        if b.Hide then b:Hide() end
+      end
+    end
+  end
+
+  if type(frame._removeButtons) == "table" then
+    for i = fromIndex, #frame._removeButtons do
+      local b = frame._removeButtons[i]
+      if b and b.Hide then b:Hide() end
+    end
+  end
+
+  if type(frame._indicatorRows) == "table" then
+    for i = fromIndex, #frame._indicatorRows do
+      local row = frame._indicatorRows[i]
+      if row and row.container and row.container.Hide then
+        row.container:Hide()
+      end
+    end
+  end
 end
 
 local function CreateBarFrame(def)
   local f = CreateContainerFrame(def)
   f._id = def and def.id or nil
   f:SetSize(def.width or 300, def.height or 20)
-  f:SetPoint(def.point or "TOP", UIParent, def.relPoint or def.point or "TOP", def.x or 0, def.y or 0)
+  local ref = (f.GetParent and f:GetParent()) or UIParent
+  f:SetPoint(def.point or "TOP", ref or UIParent, def.relPoint or def.point or "TOP", def.x or 0, def.y or 0)
   ApplySavedFramePosition(f, def)
 
   f._itemFont = "GameFontHighlightSmall"
@@ -2157,7 +2317,8 @@ local function CreateListFrame(def)
     h = math.min(h, tonumber(def.maxHeight))
   end
   f:SetSize(def.width or 300, h)
-  f:SetPoint(def.point or "TOPRIGHT", UIParent, def.relPoint or def.point or "TOPRIGHT", def.x or -10, def.y or -120)
+  local ref = (f.GetParent and f:GetParent()) or UIParent
+  f:SetPoint(def.point or "TOPRIGHT", ref or UIParent, def.relPoint or def.point or "TOPRIGHT", def.x or -10, def.y or -120)
   ApplySavedFramePosition(f, def)
 
   f._itemFont = "GameFontHighlight"
@@ -2359,6 +2520,17 @@ local function RenderBar(frameDef, frame, entries)
     SetFrameScrollOffset(frame and frame._id, offset)
   end
 
+  -- Edit-mode scroll buttons live on the frame (requested).
+  if frame and frame._scrollUp and frame._scrollDown then
+    local show = editMode and maxOffset > 0
+    frame._scrollUp:SetShown(show)
+    frame._scrollDown:SetShown(show)
+    if show then
+      frame._scrollUp:SetEnabled(offset > 0)
+      frame._scrollDown:SetEnabled(offset < maxOffset)
+    end
+  end
+
   if frame.prefix then
     frame.prefix:SetText("")
     frame.prefix:Hide()
@@ -2486,6 +2658,9 @@ local function RenderBar(frameDef, frame, entries)
         rm:Hide()
       end
     end
+
+    -- If this bar was previously rendered as a list, hide leftover rows.
+    HideExtraFrameRows(frame, maxItems + 1)
     return
   end
 
@@ -2550,6 +2725,9 @@ local function RenderBar(frameDef, frame, entries)
     end
   end
 
+  -- If this bar was previously rendered as a list, hide leftover rows.
+  HideExtraFrameRows(frame, maxItems + 1)
+
   if frameDef and frameDef.autoSize then
     frame:SetHeight(tonumber(frameDef.height) or 20)
   end
@@ -2593,6 +2771,20 @@ local function EnsureOptionsFrame()
   if optionsFrame then return optionsFrame end
 
   local f = CreateFrame("Frame", "FR0Z3NUIFQTOptions", UIParent, "BackdropTemplate")
+
+  -- Allow closing with Escape.
+  do
+    local special = _G and _G["UISpecialFrames"]
+    if type(special) == "table" then
+      local name = "FR0Z3NUIFQTOptions"
+      local exists = false
+      for i = 1, #special do
+        if special[i] == name then exists = true break end
+      end
+      if not exists and table and table.insert then table.insert(special, name) end
+    end
+  end
+
   f:SetSize(560, 420)
   f:SetPoint("CENTER")
   f:SetFrameStrata("DIALOG")
@@ -2684,6 +2876,166 @@ local function EnsureOptionsFrame()
 
   f._tabs = tabs
   f._panels = panels
+
+  -- Shared quick color palette (used for both backgrounds and text colors)
+  local QUICK_COLOR_PALETTE = {
+    { 0.00, 0.00, 0.00 }, -- black
+    { 0.20, 0.20, 0.20 }, -- dark gray
+    { 0.75, 0.75, 0.75 }, -- light gray
+    { 1.00, 1.00, 1.00 }, -- white
+    { 1.00, 0.25, 0.25 }, -- red
+    { 1.00, 0.55, 0.10 }, -- orange
+    { 1.00, 0.90, 0.20 }, -- yellow
+    { 0.20, 1.00, 0.20 }, -- green
+    { 0.20, 0.60, 1.00 }, -- blue
+  }
+
+  local function Clamp01(v)
+    v = tonumber(v)
+    if not v then return 0 end
+    if v < 0 then return 0 end
+    if v > 1 then return 1 end
+    return v
+  end
+
+  local function NormalizeRGB(r, g, b)
+    return Clamp01(r), Clamp01(g), Clamp01(b)
+  end
+
+  local function ShowTextColorPicker(initialR, initialG, initialB, onChanged)
+    local CPF = _G and rawget(_G, "ColorPickerFrame")
+    if not CPF then
+      local CAO = _G and rawget(_G, "C_AddOns")
+      if CAO and CAO.LoadAddOn then pcall(CAO.LoadAddOn, "Blizzard_ColorPicker") end
+      local LoadAddOn = _G and rawget(_G, "LoadAddOn")
+      if LoadAddOn then pcall(LoadAddOn, "Blizzard_ColorPicker") end
+      CPF = _G and rawget(_G, "ColorPickerFrame")
+    end
+    if not (CPF and (CPF.SetupColorPickerAndShow or (CPF.Show and CPF.SetColorRGB and CPF.GetColorRGB))) then
+      Print("Color picker unavailable.")
+      return
+    end
+
+    -- Make it feel like a "pop-out" attached to our options window.
+    if CPF.ClearAllPoints and CPF.SetPoint and f and f.IsShown and f:IsShown() then
+      CPF:ClearAllPoints()
+      CPF:SetPoint("TOPRIGHT", f, "TOPLEFT", -8, -40)
+      if CPF.SetFrameStrata then CPF:SetFrameStrata("DIALOG") end
+      if CPF.SetClampedToScreen then CPF:SetClampedToScreen(true) end
+    end
+
+    local r0, g0, b0 = NormalizeRGB(initialR, initialG, initialB)
+    local prev = { r0, g0, b0 }
+    if CPF.SetupColorPickerAndShow then
+      local info = {
+        r = r0,
+        g = g0,
+        b = b0,
+        hasOpacity = false,
+        swatchFunc = function()
+          local r, g, b = CPF:GetColorRGB()
+          r, g, b = NormalizeRGB(r, g, b)
+          if onChanged then onChanged(r, g, b) end
+        end,
+        cancelFunc = function(restored)
+          local rv = restored or prev
+          local r, g, b = NormalizeRGB(rv.r or rv[1], rv.g or rv[2], rv.b or rv[3])
+          if onChanged then onChanged(r, g, b) end
+        end,
+        previousValues = prev,
+      }
+      CPF:SetupColorPickerAndShow(info)
+    else
+      CPF.hasOpacity = false
+      CPF.opacityFunc = nil
+      CPF.previousValues = prev
+
+      CPF.func = function()
+        local r, g, b = CPF:GetColorRGB()
+        r, g, b = NormalizeRGB(r, g, b)
+        if onChanged then onChanged(r, g, b) end
+      end
+
+      CPF.cancelFunc = function(restored)
+        local rv = restored or prev
+        local r, g, b = NormalizeRGB(rv[1], rv[2], rv[3])
+        if onChanged then onChanged(r, g, b) end
+      end
+
+      CPF:SetColorRGB(r0, g0, b0)
+      CPF:Show()
+    end
+  end
+
+  local function CreateQuickColorPalette(parent, anchor, point, relPoint, xOff, yOff, opts)
+    if not (parent and anchor) then return nil end
+    opts = opts or {}
+
+    local btnSize = tonumber(opts.buttonSize) or 12
+    local gap = tonumber(opts.gap) or 3
+    local cols = tonumber(opts.cols) or #QUICK_COLOR_PALETTE
+    if cols < 1 then cols = 1 end
+
+    local onPick = opts.onPick
+    local getColor = opts.getColor
+
+    local container = CreateFrame("Frame", nil, parent)
+    container:SetSize(1, 1)
+    container:SetPoint(point or "TOPLEFT", anchor, relPoint or "BOTTOMLEFT", xOff or 0, yOff or 0)
+
+    local buttons = {}
+    for i = 1, #QUICK_COLOR_PALETTE do
+      local row = math.floor((i - 1) / cols)
+      local col = (i - 1) % cols
+
+      local btn = CreateFrame("Button", nil, container)
+      btn:SetSize(btnSize, btnSize)
+      btn:SetPoint("TOPLEFT", container, "TOPLEFT", col * (btnSize + gap), -row * (btnSize + gap))
+      btn:EnableMouse(true)
+
+      local t = btn:CreateTexture(nil, "ARTWORK")
+      t:SetAllPoints()
+      if t.SetColorTexture then
+        t:SetColorTexture(QUICK_COLOR_PALETTE[i][1], QUICK_COLOR_PALETTE[i][2], QUICK_COLOR_PALETTE[i][3], 1)
+      end
+      btn._tex = t
+
+      btn:SetScript("OnClick", function()
+        if not onPick then return end
+        local r, g, b = NormalizeRGB(QUICK_COLOR_PALETTE[i][1], QUICK_COLOR_PALETTE[i][2], QUICK_COLOR_PALETTE[i][3])
+        onPick(r, g, b)
+      end)
+
+      buttons[i] = btn
+    end
+
+    local lastBtn = buttons[#buttons]
+    local moreBtn = CreateFrame("Button", nil, container, "UIPanelButtonTemplate")
+    moreBtn:SetSize(56, 18)
+    if lastBtn then
+      moreBtn:SetPoint("LEFT", lastBtn, "RIGHT", 6, 0)
+    else
+      moreBtn:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
+    end
+    moreBtn:SetText("More...")
+
+    moreBtn:SetScript("OnClick", function()
+      local r, g, b = 1, 1, 1
+      if getColor then
+        local cr, cg, cb = getColor()
+        if cr ~= nil and cg ~= nil and cb ~= nil then
+          r, g, b = NormalizeRGB(cr, cg, cb)
+        end
+      end
+      ShowTextColorPicker(r, g, b, function(nr, ng, nb)
+        if onPick then onPick(nr, ng, nb) end
+      end)
+    end)
+
+    container._buttons = buttons
+    container._moreBtn = moreBtn
+    return container
+  end
 
   f:HookScript("OnHide", function(self)
     SaveWindowPosition("options", self)
@@ -3031,7 +3383,7 @@ local function EnsureOptionsFrame()
 
   local addQuestBtn = CreateFrame("Button", nil, panels.quest, "UIPanelButtonTemplate")
   addQuestBtn:SetSize(140, 22)
-  addQuestBtn:SetPoint("TOPLEFT", 12, -314)
+  addQuestBtn:SetPoint("TOPLEFT", 12, -340)
   addQuestBtn:SetText("Add Quest Rule")
 
   panels.quest._questIDBox = questIDBox
@@ -3050,6 +3402,22 @@ local function EnsureOptionsFrame()
   cancelQuestEditBtn:SetText("Cancel Edit")
   cancelQuestEditBtn:Hide()
   panels.quest._cancelEditBtn = cancelQuestEditBtn
+
+  -- Quick color palette for quest text color
+  CreateQuickColorPalette(panels.quest, addQuestBtn, "TOPLEFT", "TOPLEFT", 0, 33, {
+    cols = 5,
+    getColor = function()
+      if type(panels.quest._questColor) == "table" then
+        return panels.quest._questColor[1], panels.quest._questColor[2], panels.quest._questColor[3]
+      end
+      return nil
+    end,
+    onPick = function(r, g, b)
+      panels.quest._questColor = { r, g, b }
+      panels.quest._questColorName = "Custom"
+      if UDDM_SetText then UDDM_SetText(questColorDrop, ColorLabel("Custom")) end
+    end,
+  })
 
   addQuestBtn:SetScript("OnClick", function()
     local wasEditing = (panels.quest._editingCustomIndex ~= nil) and true or false
@@ -3175,7 +3543,7 @@ local function EnsureOptionsFrame()
 
   local useNameCheck = CreateFrame("CheckButton", nil, panels.items, "UICheckButtonTemplate")
   useNameCheck:SetPoint("TOPLEFT", 340, -88)
-  useNameCheck.text:SetText("Use name from ID")
+  SetCheckButtonLabel(useNameCheck, "Use name from ID")
   useNameCheck:SetChecked(true)
 
   local itemsFrameLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -3208,6 +3576,21 @@ local function EnsureOptionsFrame()
   if UDDM_SetText then UDDM_SetText(itemsColorDrop, "None") end
   panels.items._color = nil
 
+  -- Quick color palette for item text color
+  CreateQuickColorPalette(panels.items, itemsColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 12, {
+    cols = 5,
+    getColor = function()
+      if type(panels.items._color) == "table" then
+        return panels.items._color[1], panels.items._color[2], panels.items._color[3]
+      end
+      return nil
+    end,
+    onPick = function(r, g, b)
+      panels.items._color = { r, g, b }
+      if UDDM_SetText then UDDM_SetText(itemsColorDrop, "Custom") end
+    end,
+  })
+
   local repFactionLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   repFactionLabel:SetPoint("TOPLEFT", 12, -180)
   repFactionLabel:SetText("Rep FactionID")
@@ -3231,17 +3614,17 @@ local function EnsureOptionsFrame()
 
   local hideAcquired = CreateFrame("CheckButton", nil, panels.items, "UICheckButtonTemplate")
   hideAcquired:SetPoint("TOPLEFT", 250, -198)
-  hideAcquired.text:SetText("Hide when acquired")
+  SetCheckButtonLabel(hideAcquired, "Hide when acquired")
   hideAcquired:SetChecked(false)
 
   local hideExalted = CreateFrame("CheckButton", nil, panels.items, "UICheckButtonTemplate")
   hideExalted:SetPoint("TOPLEFT", 400, -198)
-  hideExalted.text:SetText("Hide when exalted")
+  SetCheckButtonLabel(hideExalted, "Hide when exalted")
   hideExalted:SetChecked(false)
 
   local restedOnly = CreateFrame("CheckButton", nil, panels.items, "UICheckButtonTemplate")
   restedOnly:SetPoint("TOPLEFT", 12, -222)
-  restedOnly.text:SetText("Rested areas only")
+  SetCheckButtonLabel(restedOnly, "Rested areas only")
   restedOnly:SetChecked(false)
 
   local itemsLevelLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -3546,6 +3929,21 @@ local function EnsureOptionsFrame()
   if UDDM_SetText then UDDM_SetText(textColorDrop, "None") end
   panels.text._color = nil
 
+  -- Quick color palette for text entry color
+  CreateQuickColorPalette(panels.text, textColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 12, {
+    cols = 5,
+    getColor = function()
+      if type(panels.text._color) == "table" then
+        return panels.text._color[1], panels.text._color[2], panels.text._color[3]
+      end
+      return nil
+    end,
+    onPick = function(r, g, b)
+      panels.text._color = { r, g, b }
+      if UDDM_SetText then UDDM_SetText(textColorDrop, "Custom") end
+    end,
+  })
+
   local textRepFactionBox = CreateFrame("EditBox", nil, panels.text, "InputBoxTemplate")
   textRepFactionBox:SetSize(90, 20)
   textRepFactionBox:SetPoint("TOPLEFT", 12, -170)
@@ -3561,7 +3959,7 @@ local function EnsureOptionsFrame()
 
   local textRestedOnly = CreateFrame("CheckButton", nil, panels.text, "UICheckButtonTemplate")
   textRestedOnly:SetPoint("TOPLEFT", 250, -196)
-  textRestedOnly.text:SetText("Rested areas only")
+  SetCheckButtonLabel(textRestedOnly, "Rested areas only")
   textRestedOnly:SetChecked(false)
 
   local textLocLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -3882,7 +4280,7 @@ local function EnsureOptionsFrame()
 
   local notInGroupCheck = CreateFrame("CheckButton", nil, panels.spells, "UICheckButtonTemplate")
   notInGroupCheck:SetPoint("TOPLEFT", 12, -198)
-  notInGroupCheck.text:SetText("Not in group")
+  SetCheckButtonLabel(notInGroupCheck, "Not in group")
   notInGroupCheck:SetChecked(false)
 
   local spellsLevelLabel = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -3919,6 +4317,21 @@ local function EnsureOptionsFrame()
   if UDDM_SetWidth then UDDM_SetWidth(spellsColorDrop, 140) end
   if UDDM_SetText then UDDM_SetText(spellsColorDrop, "None") end
   panels.spells._color = nil
+
+  -- Quick color palette for spell text color
+  CreateQuickColorPalette(panels.spells, spellsColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 20, {
+    cols = 5,
+    getColor = function()
+      if type(panels.spells._color) == "table" then
+        return panels.spells._color[1], panels.spells._color[2], panels.spells._color[3]
+      end
+      return nil
+    end,
+    onPick = function(r, g, b)
+      panels.spells._color = { r, g, b }
+      if UDDM_SetText then UDDM_SetText(spellsColorDrop, "Custom") end
+    end,
+  })
 
   if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
     UDDM_Initialize(classDrop, function(self, level)
@@ -4418,11 +4831,11 @@ local function EnsureOptionsFrame()
 
   local reqInLog = CreateFrame("CheckButton", nil, panels.rules, "UICheckButtonTemplate")
   reqInLog:SetPoint("TOPLEFT", 390, -69)
-  reqInLog.text:SetText("In log")
+  SetCheckButtonLabel(reqInLog, "In log")
 
   local hideComp = CreateFrame("CheckButton", nil, panels.rules, "UICheckButtonTemplate")
   hideComp:SetPoint("TOPLEFT", 460, -69)
-  hideComp.text:SetText("Hide done")
+  SetCheckButtonLabel(hideComp, "Hide done")
   hideComp:SetChecked(true)
 
   local prereqLabel = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -4493,7 +4906,7 @@ local function EnsureOptionsFrame()
   addRuleBtn:SetText("New Rule")
   addRuleBtn:Hide()
 
-  -- Legacy inline editor controls are hidden; we use a dedicated dialog instead.
+  -- Legacy inline editor controls are hidden; create/edit happens in the type-specific tabs.
   qBox:Hide(); labelBox:Hide(); frameBox:Hide(); reqInLog:Hide(); hideComp:Hide(); prereqLabel:Hide(); prereqBox:Hide(); groupLabel:Hide(); groupBox:Hide(); orderLabel:Hide(); orderBox:Hide()
 
   local hint = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -4563,7 +4976,10 @@ local function EnsureOptionsFrame()
     return "text"
   end
 
+  local ENABLE_RULE_EDITOR_OVERLAY = false
+
   local function EnsureRuleEditor()
+    if not ENABLE_RULE_EDITOR_OVERLAY then return nil end
     if optionsFrame and optionsFrame._ruleEditorFrame then return optionsFrame._ruleEditorFrame end
     if not optionsFrame then return nil end
 
@@ -4669,13 +5085,13 @@ local function EnsureOptionsFrame()
 
     local restedOnly = CreateFrame("CheckButton", nil, ed, "UICheckButtonTemplate")
     restedOnly:SetPoint("TOPLEFT", 330, -104)
-    restedOnly.text:SetText("Rested only")
+    SetCheckButtonLabel(restedOnly, "Rested only")
     restedOnly:SetChecked(false)
     ed._restedOnly = restedOnly
 
     local hideDone = CreateFrame("CheckButton", nil, ed, "UICheckButtonTemplate")
     hideDone:SetPoint("TOPLEFT", 430, -104)
-    hideDone.text:SetText("Hide done")
+    SetCheckButtonLabel(hideDone, "Hide done")
     hideDone:SetChecked(false)
     ed._hideDone = hideDone
 
@@ -4723,7 +5139,7 @@ local function EnsureOptionsFrame()
 
     local hideExalted = CreateFrame("CheckButton", nil, ed, "UICheckButtonTemplate")
     hideExalted:SetPoint("TOPLEFT", 250, -152)
-    hideExalted.text:SetText("Hide when exalted")
+    SetCheckButtonLabel(hideExalted, "Hide when exalted")
     hideExalted:SetChecked(false)
     ed._hideExalted = hideExalted
 
@@ -4747,7 +5163,7 @@ local function EnsureOptionsFrame()
 
     local reqInLog2 = CreateFrame("CheckButton", nil, questGroup, "UICheckButtonTemplate")
     reqInLog2:SetPoint("TOPLEFT", 100, -16)
-    reqInLog2.text:SetText("In log")
+    SetCheckButtonLabel(reqInLog2, "In log")
     reqInLog2:SetChecked(false)
     ed._reqInLog = reqInLog2
 
@@ -4805,7 +5221,7 @@ local function EnsureOptionsFrame()
 
     local hideAcq = CreateFrame("CheckButton", nil, itemGroup, "UICheckButtonTemplate")
     hideAcq:SetPoint("TOPLEFT", 100, -18)
-    hideAcq.text:SetText("Hide when acquired")
+    SetCheckButtonLabel(hideAcq, "Hide when acquired")
     hideAcq:SetChecked(false)
     ed._hideAcquired = hideAcq
 
@@ -4863,7 +5279,7 @@ local function EnsureOptionsFrame()
 
     local notInGroup2 = CreateFrame("CheckButton", nil, spellGroup, "UICheckButtonTemplate")
     notInGroup2:SetPoint("TOPLEFT", 0, -44)
-    notInGroup2.text:SetText("Not in group")
+    SetCheckButtonLabel(notInGroup2, "Not in group")
     notInGroup2:SetChecked(false)
     ed._notInGroup = notInGroup2
 
@@ -5006,6 +5422,15 @@ local function EnsureOptionsFrame()
   end
 
   local function OpenRuleEditor(mode, customIndex)
+    if not ENABLE_RULE_EDITOR_OVERLAY then
+      -- Overlay editor is disabled; always edit using the main tabs.
+      if mode == "edit" and customIndex then
+        OpenCustomRuleInTab(customIndex)
+      else
+        SelectTab("quest")
+      end
+      return
+    end
     if not optionsFrame then return end
     local ed = EnsureRuleEditor()
     if not ed then return end
@@ -5013,7 +5438,6 @@ local function EnsureOptionsFrame()
     local rules = GetCustomRules()
     local src = (mode == "edit") and rules[customIndex] or nil
     if mode == "edit" and type(src) ~= "table" then return end
-    ---@type any
     local r = src or {}
 
     ed._mode = mode
@@ -5321,20 +5745,20 @@ local function EnsureOptionsFrame()
 
   -- Global List Grow control
   local listGrowAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  listGrowAuto:SetPoint("TOPLEFT", 12, -132)
-  listGrowAuto.text:SetText("List grow auto (based on anchor)")
+  listGrowAuto:SetPoint("TOPLEFT", 365, -70)
+  SetCheckButtonLabel(listGrowAuto, "List grow from anchor")
 
   local listGrowDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
-  listGrowDrop:SetPoint("TOPLEFT", 230, -146)
+  listGrowDrop:SetPoint("TOPLEFT", 350, -86)
   if UDDM_SetWidth then UDDM_SetWidth(listGrowDrop, 120) end
-  if UDDM_SetText then UDDM_SetText(listGrowDrop, "down") end
+  if UDDM_SetText then UDDM_SetText(listGrowDrop, "anchor") end
 
   local function SetListGrow(v)
     v = tostring(v or "auto"):lower()
     if v ~= "auto" and v ~= "up" and v ~= "down" then v = "auto" end
     SetUISetting("listGrow", v)
     if listGrowAuto then listGrowAuto:SetChecked(v == "auto") end
-    if UDDM_SetText then UDDM_SetText(listGrowDrop, (v == "auto") and "down" or v) end
+    if UDDM_SetText then UDDM_SetText(listGrowDrop, (v == "auto") and "anchor" or v) end
     SetDropDownEnabled(listGrowDrop, v ~= "auto")
     RefreshAll()
   end
@@ -5343,7 +5767,7 @@ local function EnsureOptionsFrame()
     local v = tostring(GetUISetting("listGrow", "auto") or "auto"):lower()
     if v ~= "auto" and v ~= "up" and v ~= "down" then v = "auto" end
     self:SetChecked(v == "auto")
-    if UDDM_SetText then UDDM_SetText(listGrowDrop, (v == "auto") and "down" or v) end
+    if UDDM_SetText then UDDM_SetText(listGrowDrop, (v == "auto") and "anchor" or v) end
     SetDropDownEnabled(listGrowDrop, v ~= "auto")
   end)
 
@@ -5375,20 +5799,20 @@ local function EnsureOptionsFrame()
 
   -- Global Bar Grow control (moved from General)
   local barGrowAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  barGrowAuto:SetPoint("TOPLEFT", 12, -156)
-  barGrowAuto.text:SetText("Bar grow auto (based on anchor)")
+  barGrowAuto:SetPoint("TOPLEFT", 365, -96)
+  SetCheckButtonLabel(barGrowAuto, "Bar grow from anchor")
 
   local barGrowDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
-  barGrowDrop:SetPoint("TOPLEFT", 230, -170)
+  barGrowDrop:SetPoint("TOPLEFT", 350, -112)
   if UDDM_SetWidth then UDDM_SetWidth(barGrowDrop, 120) end
-  if UDDM_SetText then UDDM_SetText(barGrowDrop, "center") end
+  if UDDM_SetText then UDDM_SetText(barGrowDrop, "anchor") end
 
   local function SetBarGrow(v)
     v = tostring(v or "auto"):lower()
     if v ~= "auto" and v ~= "left" and v ~= "right" and v ~= "center" then v = "auto" end
     SetUISetting("barGrow", v)
     if barGrowAuto then barGrowAuto:SetChecked(v == "auto") end
-    if UDDM_SetText then UDDM_SetText(barGrowDrop, (v == "auto") and "center" or v) end
+    if UDDM_SetText then UDDM_SetText(barGrowDrop, (v == "auto") and "anchor" or v) end
     SetDropDownEnabled(barGrowDrop, v ~= "auto")
     RefreshAll()
   end
@@ -5397,7 +5821,7 @@ local function EnsureOptionsFrame()
     local v = tostring(GetUISetting("barGrow", "auto") or "auto"):lower()
     if v ~= "auto" and v ~= "left" and v ~= "right" and v ~= "center" then v = "auto" end
     self:SetChecked(v == "auto")
-    if UDDM_SetText then UDDM_SetText(barGrowDrop, (v == "auto") and "center" or v) end
+    if UDDM_SetText then UDDM_SetText(barGrowDrop, (v == "auto") and "anchor" or v) end
     SetDropDownEnabled(barGrowDrop, v ~= "auto")
   end)
 
@@ -5489,6 +5913,7 @@ local function EnsureOptionsFrame()
       rowHeight = 16,
       maxItems = 20,
       autoSize = true,
+      bgAlpha = 0,
       hideWhenEmpty = false,
     }
     CreateAllFrames()
@@ -5537,7 +5962,7 @@ local function EnsureOptionsFrame()
 
   local frameAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
   frameAuto:SetPoint("TOPLEFT", 200, -102)
-  frameAuto.text:SetText("Auto")
+  SetCheckButtonLabel(frameAuto, "Auto")
   f._frameAuto = frameAuto
 
   local nameLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -5554,7 +5979,7 @@ local function EnsureOptionsFrame()
 
   local frameHideCombat = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
   frameHideCombat:SetPoint("TOPLEFT", 260, -102)
-  frameHideCombat.text:SetText("Hide in combat")
+  SetCheckButtonLabel(frameHideCombat, "Hide in combat")
   frameHideCombat:Hide()
   f._frameHideCombat = frameHideCombat
 
@@ -5610,6 +6035,76 @@ local function EnsureOptionsFrame()
   maxHBox:SetText("0")
   f._frameMaxHBox = maxHBox
 
+  -- Background (per-frame)
+  local bgLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  bgLabel:SetPoint("TOPLEFT", 12, -160)
+  bgLabel:SetText("Background")
+  f._frameBgLabel = bgLabel
+
+  local bgSwatch = CreateFrame("Button", nil, panels.frames)
+  bgSwatch:SetSize(18, 18)
+  bgSwatch:SetPoint("TOPLEFT", 85, -164)
+  bgSwatch:EnableMouse(true)
+  local swTex = bgSwatch:CreateTexture(nil, "ARTWORK")
+  swTex:SetAllPoints()
+  if swTex.SetColorTexture then
+    swTex:SetColorTexture(0, 0, 0, 1)
+  end
+  bgSwatch._tex = swTex
+  f._frameBgSwatch = bgSwatch
+
+  local bgAlphaSlider = CreateFrame("Slider", "FR0Z3NUIFQT_BGAlphaSlider", panels.frames, "OptionsSliderTemplate")
+  bgAlphaSlider:SetPoint("TOPLEFT", 115, -168)
+  bgAlphaSlider:SetWidth(140)
+  bgAlphaSlider:SetMinMaxValues(0, 1)
+  bgAlphaSlider:SetValueStep(0.05)
+  bgAlphaSlider:SetObeyStepOnDrag(true)
+  bgAlphaSlider:SetValue(0)
+  if _G["FR0Z3NUIFQT_BGAlphaSliderText"] then _G["FR0Z3NUIFQT_BGAlphaSliderText"]:SetText("Alpha") end
+  if _G["FR0Z3NUIFQT_BGAlphaSliderLow"] then _G["FR0Z3NUIFQT_BGAlphaSliderLow"]:SetText("0") end
+  if _G["FR0Z3NUIFQT_BGAlphaSliderHigh"] then _G["FR0Z3NUIFQT_BGAlphaSliderHigh"]:SetText("1") end
+  f._frameBgAlphaSlider = bgAlphaSlider
+
+  -- Quick palette + full picker launcher
+  local palette = {
+    { 0.00, 0.00, 0.00 }, -- black
+    { 0.20, 0.20, 0.20 }, -- dark gray
+    { 0.75, 0.75, 0.75 }, -- light gray
+    { 1.00, 1.00, 1.00 }, -- white
+    { 1.00, 0.25, 0.25 }, -- red
+    { 1.00, 0.55, 0.10 }, -- orange
+    { 1.00, 0.90, 0.20 }, -- yellow
+    { 0.20, 1.00, 0.20 }, -- green
+    { 0.20, 0.60, 1.00 }, -- blue
+  }
+
+  local paletteButtons = {}
+  local paletteStartX = 10
+  for i = 1, #palette do
+    local btn = CreateFrame("Button", nil, panels.frames)
+    btn:SetSize(12, 12)
+    if i == 1 then
+      btn:SetPoint("TOPLEFT", bgAlphaSlider, "TOPRIGHT", paletteStartX, -2)
+    else
+      btn:SetPoint("LEFT", paletteButtons[i - 1], "RIGHT", 3, 0)
+    end
+    btn:EnableMouse(true)
+    local t = btn:CreateTexture(nil, "ARTWORK")
+    t:SetAllPoints()
+    if t.SetColorTexture then
+      t:SetColorTexture(palette[i][1], palette[i][2], palette[i][3], 1)
+    end
+    btn._tex = t
+    paletteButtons[i] = btn
+  end
+  f._frameBgPaletteButtons = paletteButtons
+
+  local bgMoreBtn = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
+  bgMoreBtn:SetSize(56, 18)
+  bgMoreBtn:SetPoint("LEFT", paletteButtons[#paletteButtons], "RIGHT", 6, 0)
+  bgMoreBtn:SetText("More...")
+  f._frameBgMoreBtn = bgMoreBtn
+
   local function FindEffectiveFrameDef(id)
     id = tostring(id or "")
     if id == "" then return nil end
@@ -5657,6 +6152,28 @@ local function EnsureOptionsFrame()
         optionsFrame._frameMaxHBox:SetText("0")
         optionsFrame._frameMaxHBox:SetEnabled(false)
       end
+
+      if optionsFrame._frameBgSwatch and optionsFrame._frameBgSwatch._tex and optionsFrame._frameBgSwatch._tex.SetColorTexture then
+        optionsFrame._frameBgSwatch._tex:SetColorTexture(0, 0, 0, 1)
+      end
+      if optionsFrame._frameBgSwatch and optionsFrame._frameBgSwatch.Disable then
+        optionsFrame._frameBgSwatch:Disable()
+      end
+      if optionsFrame._frameBgAlphaSlider then
+        optionsFrame._skipBgAlphaChange = true
+        optionsFrame._frameBgAlphaSlider:SetValue(0)
+        optionsFrame._skipBgAlphaChange = false
+        optionsFrame._frameBgAlphaSlider:Disable()
+      end
+      if optionsFrame._frameBgMoreBtn and optionsFrame._frameBgMoreBtn.Disable then
+        optionsFrame._frameBgMoreBtn:Disable()
+      end
+      if type(optionsFrame._frameBgPaletteButtons) == "table" then
+        for _, b in ipairs(optionsFrame._frameBgPaletteButtons) do
+          if b and b.Disable then b:Disable() end
+        end
+      end
+
       optionsFrame._frameWidthBox:SetText("0")
       optionsFrame._frameHeightBox:SetText("0")
       optionsFrame._frameLengthBox:SetText("0")
@@ -5703,6 +6220,42 @@ local function EnsureOptionsFrame()
     optionsFrame._frameWidthBox:SetText(tostring(tonumber(def.width) or 300))
     optionsFrame._frameLengthBox:SetText(tostring(tonumber(def.maxItems) or (t == "list" and 20 or 6)))
 
+    -- Background controls
+    do
+      local c = (type(def) == "table") and def.bgColor or nil
+      local r, g, b = 0, 0, 0
+      if type(c) == "table" then
+        r = tonumber(c[1]) or 0
+        g = tonumber(c[2]) or 0
+        b = tonumber(c[3]) or 0
+      end
+      if optionsFrame._frameBgSwatch and optionsFrame._frameBgSwatch._tex and optionsFrame._frameBgSwatch._tex.SetColorTexture then
+        optionsFrame._frameBgSwatch._tex:SetColorTexture(r, g, b, 1)
+      end
+      if optionsFrame._frameBgSwatch and optionsFrame._frameBgSwatch.Enable then
+        optionsFrame._frameBgSwatch:Enable()
+      end
+
+      local a = (type(def) == "table") and tonumber(def.bgAlpha)
+      if a == nil then a = 0 end
+      if a < 0 then a = 0 end
+      if a > 1 then a = 1 end
+      if optionsFrame._frameBgAlphaSlider then
+        optionsFrame._skipBgAlphaChange = true
+        optionsFrame._frameBgAlphaSlider:SetValue(a)
+        optionsFrame._skipBgAlphaChange = false
+        optionsFrame._frameBgAlphaSlider:Enable()
+      end
+      if optionsFrame._frameBgMoreBtn and optionsFrame._frameBgMoreBtn.Enable then
+        optionsFrame._frameBgMoreBtn:Enable()
+      end
+      if type(optionsFrame._frameBgPaletteButtons) == "table" then
+        for _, b in ipairs(optionsFrame._frameBgPaletteButtons) do
+          if b and b.Enable then b:Enable() end
+        end
+      end
+    end
+
     -- Auto means: use defaults/fallback sizing (clear overrides)
     local isAuto = false
     local custom = nil
@@ -5728,6 +6281,212 @@ local function EnsureOptionsFrame()
       optionsFrame._frameMaxHBox:SetEnabled(enableInputs and (t == "list"))
     end
   end
+
+  local function ShowFrameBGColorPicker(initialR, initialG, initialB, initialA, onChanged)
+    local CPF = _G and rawget(_G, "ColorPickerFrame")
+    if not CPF then
+      local CAO = _G and rawget(_G, "C_AddOns")
+      if CAO and CAO.LoadAddOn then pcall(CAO.LoadAddOn, "Blizzard_ColorPicker") end
+      local LoadAddOn = _G and rawget(_G, "LoadAddOn")
+      if LoadAddOn then pcall(LoadAddOn, "Blizzard_ColorPicker") end
+      CPF = _G and rawget(_G, "ColorPickerFrame")
+    end
+    if not (CPF and (CPF.SetupColorPickerAndShow or (CPF.Show and CPF.SetColorRGB and CPF.GetColorRGB))) then
+      Print("Color picker unavailable.")
+      return
+    end
+
+    local function Clamp01Local(v)
+      v = tonumber(v)
+      if not v then return 0 end
+      if v < 0 then return 0 end
+      if v > 1 then return 1 end
+      return v
+    end
+
+    -- Make it feel like a "pop-out" attached to our options window.
+    if CPF.ClearAllPoints and CPF.SetPoint and optionsFrame and optionsFrame.IsShown and optionsFrame:IsShown() then
+      CPF:ClearAllPoints()
+      -- Prefer opening to the left of the options frame; clamp will keep it on-screen.
+      CPF:SetPoint("TOPRIGHT", optionsFrame, "TOPLEFT", -8, -40)
+      if CPF.SetFrameStrata then CPF:SetFrameStrata("DIALOG") end
+      if CPF.SetClampedToScreen then CPF:SetClampedToScreen(true) end
+    end
+
+    local r0 = Clamp01Local(initialR)
+    local g0 = Clamp01Local(initialG)
+    local b0 = Clamp01Local(initialB)
+    local a0 = Clamp01Local(initialA)
+    local prev = { r0, g0, b0, a0 }
+
+    local function CurrentOpacity()
+      if OpacitySliderFrame and OpacitySliderFrame.GetValue then
+        return 1 - (tonumber(OpacitySliderFrame:GetValue()) or 0)
+      end
+      if CPF.opacity ~= nil then
+        return 1 - (tonumber(CPF.opacity) or 0)
+      end
+      return a0
+    end
+
+    if CPF.SetupColorPickerAndShow then
+      local info = {
+        r = r0,
+        g = g0,
+        b = b0,
+        opacity = 1 - a0,
+        hasOpacity = true,
+        swatchFunc = function()
+          local r, g, b = CPF:GetColorRGB()
+          local a = Clamp01Local(CurrentOpacity())
+          if onChanged then onChanged(r, g, b, a) end
+        end,
+        opacityFunc = function()
+          local r, g, b = CPF:GetColorRGB()
+          local a = Clamp01Local(CurrentOpacity())
+          if onChanged then onChanged(r, g, b, a) end
+        end,
+        cancelFunc = function(restored)
+          local rv = restored or prev
+          local r = rv.r or rv[1]
+          local g = rv.g or rv[2]
+          local b = rv.b or rv[3]
+          local a = rv.a or rv[4]
+          if rv.opacity ~= nil and a == nil then a = 1 - (tonumber(rv.opacity) or 0) end
+          if onChanged then onChanged(r, g, b, a) end
+        end,
+        previousValues = prev,
+      }
+      CPF:SetupColorPickerAndShow(info)
+    else
+      CPF.hasOpacity = true
+      CPF.opacity = 1 - a0
+      CPF.previousValues = prev
+
+      CPF.func = function()
+        local r, g, b = CPF:GetColorRGB()
+        local a = Clamp01Local(CurrentOpacity())
+        if onChanged then onChanged(r, g, b, a) end
+      end
+
+      CPF.opacityFunc = function()
+        local r, g, b = CPF:GetColorRGB()
+        local a = Clamp01Local(CurrentOpacity())
+        if onChanged then onChanged(r, g, b, a) end
+      end
+
+      CPF.cancelFunc = function(restored)
+        local rv = restored or prev
+        if onChanged then onChanged(rv[1], rv[2], rv[3], rv[4]) end
+      end
+
+      CPF:SetColorRGB(r0, g0, b0)
+      CPF:Show()
+    end
+  end
+
+  local function ApplyBGToSelectedFrame(r, g, b, a)
+    if not optionsFrame then return end
+    local id = tostring(optionsFrame._selectedFrameID or "")
+    if id == "" then return end
+    local eff = FindEffectiveFrameDef(id)
+    if not eff then return end
+    local def = FindOrCreateCustomFrameDef(id)
+    if not def then return end
+
+    def.bgColor = { tonumber(r) or 0, tonumber(g) or 0, tonumber(b) or 0 }
+    if a ~= nil then
+      def.bgAlpha = tonumber(a) or 0
+    end
+    UpdateFrameEditor()
+    RefreshAll()
+    RefreshFramesList()
+  end
+
+  bgSwatch:SetScript("OnClick", function()
+    if not optionsFrame then return end
+    local id = tostring(optionsFrame._selectedFrameID or "")
+    if id == "" then return end
+    local eff = FindEffectiveFrameDef(id)
+    if not eff then return end
+    local def = FindOrCreateCustomFrameDef(id)
+    if not def then return end
+
+    local c = (type(eff) == "table") and eff.bgColor or nil
+    local r, g, b = 0, 0, 0
+    if type(c) == "table" then
+      r = tonumber(c[1]) or 0
+      g = tonumber(c[2]) or 0
+      b = tonumber(c[3]) or 0
+    end
+    local a = (type(eff) == "table") and tonumber(eff.bgAlpha)
+    if a == nil then a = 0 end
+    if a < 0 then a = 0 end
+    if a > 1 then a = 1 end
+
+    ShowFrameBGColorPicker(r, g, b, a, function(nr, ng, nb, na)
+      ApplyBGToSelectedFrame(nr, ng, nb, na)
+    end)
+  end)
+
+  for i, btn in ipairs(paletteButtons) do
+    btn:SetScript("OnClick", function()
+      local c = palette[i]
+      if not c then return end
+      local a = nil
+      if optionsFrame and optionsFrame._frameBgAlphaSlider and optionsFrame._frameBgAlphaSlider.GetValue then
+        a = tonumber(optionsFrame._frameBgAlphaSlider:GetValue())
+      end
+      if a == nil then a = 0 end
+      -- If the background is currently hidden, picking a color should make it visible.
+      if a <= 0 then
+        a = 0.25
+        if optionsFrame and optionsFrame._frameBgAlphaSlider and optionsFrame._frameBgAlphaSlider.SetValue then
+          optionsFrame._skipBgAlphaChange = true
+          optionsFrame._frameBgAlphaSlider:SetValue(a)
+          optionsFrame._skipBgAlphaChange = false
+        end
+      end
+      ApplyBGToSelectedFrame(c[1], c[2], c[3], a)
+    end)
+  end
+
+  bgMoreBtn:SetScript("OnClick", function()
+    if not optionsFrame then return end
+    local id = tostring(optionsFrame._selectedFrameID or "")
+    if id == "" then return end
+    local eff = FindEffectiveFrameDef(id)
+    if not eff then return end
+
+    local c = (type(eff) == "table") and eff.bgColor or nil
+    local r, g, b = 0, 0, 0
+    if type(c) == "table" then
+      r = tonumber(c[1]) or 0
+      g = tonumber(c[2]) or 0
+      b = tonumber(c[3]) or 0
+    end
+    local a = (type(eff) == "table") and tonumber(eff.bgAlpha)
+    if a == nil then a = 0 end
+    if a < 0 then a = 0 end
+    if a > 1 then a = 1 end
+
+    ShowFrameBGColorPicker(r, g, b, a, function(nr, ng, nb, na)
+      ApplyBGToSelectedFrame(nr, ng, nb, na)
+    end)
+  end)
+
+  bgAlphaSlider:SetScript("OnValueChanged", function(self, value)
+    if not optionsFrame or optionsFrame._skipBgAlphaChange then return end
+    local id = tostring(optionsFrame._selectedFrameID or "")
+    if id == "" then return end
+    local eff = FindEffectiveFrameDef(id)
+    if not eff then return end
+    local def = FindOrCreateCustomFrameDef(id)
+    if not def then return end
+    def.bgAlpha = tonumber(value) or 0
+    RefreshAll()
+    RefreshFramesList()
+  end)
 
   frameHideCombat:SetScript("OnClick", function(self)
     if not optionsFrame then return end
@@ -5861,9 +6620,38 @@ local function EnsureOptionsFrame()
         row:SetHeight(rowH)
         row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         row.text:SetPoint("LEFT", 2, 0)
+
+        row.up = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        row.up:SetSize(18, 18)
+        row.up:SetText("^")
+        row.up:SetScript("OnEnter", function(self)
+          if GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Move up")
+            GameTooltip:Show()
+          end
+        end)
+        row.up:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
+        row.down = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        row.down:SetSize(18, 18)
+        row.down:SetText("v")
+        row.down:SetScript("OnEnter", function(self)
+          if GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Move down")
+            GameTooltip:Show()
+          end
+        end)
+        row.down:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
         row.del = CreateFrame("Button", nil, row, "UIPanelCloseButton")
         row.del:SetSize(20, 20)
         row.del:SetPoint("RIGHT", 6, 0)
+
+        row.down:SetPoint("RIGHT", row.del, "LEFT", -2, 0)
+        row.up:SetPoint("RIGHT", row.down, "LEFT", -2, 0)
+        row.text:SetPoint("RIGHT", row.up, "LEFT", -4, 0)
         frows[i] = row
       end
 
@@ -5877,7 +6665,27 @@ local function EnsureOptionsFrame()
       end
 
       local idx = i
+      row.up:SetEnabled(idx > 1)
+      row.down:SetEnabled(idx < #frames)
+      row.up:SetScript("OnClick", function()
+        if idx <= 1 then return end
+        frames[idx], frames[idx - 1] = frames[idx - 1], frames[idx]
+        RefreshAll()
+        RefreshFramesList()
+      end)
+
+      row.down:SetScript("OnClick", function()
+        if idx >= #frames then return end
+        frames[idx], frames[idx + 1] = frames[idx + 1], frames[idx]
+        RefreshAll()
+        RefreshFramesList()
+      end)
+
       row.del:SetScript("OnClick", function()
+        if not (IsShiftKeyDown and IsShiftKeyDown()) then
+          Print("Hold SHIFT and click X to delete a frame.")
+          return
+        end
         local id = tostring(frames[idx] and frames[idx].id or "")
         table.remove(frames, idx)
         if id ~= "" then DestroyFrameByID(id) end
@@ -6030,11 +6838,40 @@ local function EnsureOptionsFrame()
 
         row.action = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
         row.action:SetSize(70, 18)
-        row.action:SetPoint("RIGHT", -22, 0)
+
+        row.up = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        row.up:SetSize(18, 18)
+        row.up:SetText("^")
+        row.up:SetScript("OnEnter", function(self)
+          if GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Move up")
+            GameTooltip:Show()
+          end
+        end)
+        row.up:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
+        row.down = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        row.down:SetSize(18, 18)
+        row.down:SetText("v")
+        row.down:SetScript("OnEnter", function(self)
+          if GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Move down")
+            GameTooltip:Show()
+          end
+        end)
+        row.down:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
+        row.action:SetPoint("RIGHT", -62, 0)
 
         row.del = CreateFrame("Button", nil, row, "UIPanelCloseButton")
         row.del:SetSize(20, 20)
         row.del:SetPoint("RIGHT", 6, 0)
+
+        row.down:SetPoint("RIGHT", row.del, "LEFT", -2, 0)
+        row.up:SetPoint("RIGHT", row.down, "LEFT", -2, 0)
+        row.text:SetPoint("RIGHT", row.action, "LEFT", -6, 0)
 
         rows[i] = row
       end
@@ -6074,10 +6911,62 @@ local function EnsureOptionsFrame()
         return nil
       end
 
+      local function MoveCustomByIndex(ci, delta)
+        local custom = GetCustomRules()
+        if type(ci) ~= "number" then return end
+        local ni = ci + delta
+        if ni < 1 or ni > #custom then return end
+        custom[ci], custom[ni] = custom[ni], custom[ci]
+
+        if optionsFrame and optionsFrame._editingCustomRuleIndex then
+          if optionsFrame._editingCustomRuleIndex == ci then
+            optionsFrame._editingCustomRuleIndex = ni
+          elseif optionsFrame._editingCustomRuleIndex == ni then
+            optionsFrame._editingCustomRuleIndex = ci
+          end
+        end
+
+        RefreshAll()
+        RefreshRulesList()
+      end
+
+      local function SetMoveButtonsVisible(isVisible)
+        if isVisible then
+          row.up:Show()
+          row.down:Show()
+        else
+          row.up:Hide()
+          row.down:Hide()
+        end
+      end
+
       if view == "custom" then
+        SetMoveButtonsVisible(true)
         row.action:SetText("Edit")
         row.action:Show()
-        row.action:SetScript("OnClick", function() OpenCustomRuleInTab(idx) end)
+        row.action:SetScript("OnClick", function()
+          local ci = FindCustomIndex(list[idx])
+          if not ci then return end
+          OpenCustomRuleInTab(ci)
+        end)
+
+        do
+          local ci = FindCustomIndex(list[idx])
+          local n = #(GetCustomRules() or {})
+          row.up:SetEnabled(ci ~= nil and ci > 1)
+          row.down:SetEnabled(ci ~= nil and ci < n)
+        end
+
+        row.up:SetScript("OnClick", function()
+          local ci = FindCustomIndex(list[idx])
+          if not ci then return end
+          MoveCustomByIndex(ci, -1)
+        end)
+        row.down:SetScript("OnClick", function()
+          local ci = FindCustomIndex(list[idx])
+          if not ci then return end
+          MoveCustomByIndex(ci, 1)
+        end)
 
         row:SetScript("OnMouseUp", nil)
 
@@ -6096,6 +6985,7 @@ local function EnsureOptionsFrame()
           Print("Moved custom rule to Trash.")
         end)
       elseif view == "defaults" then
+        SetMoveButtonsVisible(false)
         row:SetScript("OnMouseUp", nil)
         row.action:SetText("Override")
         row.action:Show()
@@ -6119,6 +7009,7 @@ local function EnsureOptionsFrame()
 
         row.del:Hide()
       elseif view == "trash" then
+        SetMoveButtonsVisible(false)
         row:SetScript("OnMouseUp", nil)
         row.action:SetText("Restore")
         row.action:Show()
@@ -6152,6 +7043,7 @@ local function EnsureOptionsFrame()
 
         local src2 = (sourceOf and sourceOf[r]) or "custom"
         if src2 == "default" then
+          SetMoveButtonsVisible(false)
           row.action:SetText("Override")
           row.action:Show()
           row.action:SetScript("OnClick", function()
@@ -6173,12 +7065,31 @@ local function EnsureOptionsFrame()
           end)
           row.del:Hide()
         elseif src2 == "custom" then
+          SetMoveButtonsVisible(true)
           row.action:SetText("Edit")
           row.action:Show()
           row.action:SetScript("OnClick", function()
             local ci = FindCustomIndex(r)
             if not ci then return end
             OpenCustomRuleInTab(ci)
+          end)
+
+          do
+            local ci = FindCustomIndex(r)
+            local n = #(GetCustomRules() or {})
+            row.up:SetEnabled(ci ~= nil and ci > 1)
+            row.down:SetEnabled(ci ~= nil and ci < n)
+          end
+
+          row.up:SetScript("OnClick", function()
+            local ci = FindCustomIndex(r)
+            if not ci then return end
+            MoveCustomByIndex(ci, -1)
+          end)
+          row.down:SetScript("OnClick", function()
+            local ci = FindCustomIndex(r)
+            if not ci then return end
+            MoveCustomByIndex(ci, 1)
           end)
 
           row.del:Show()
@@ -6200,6 +7111,7 @@ local function EnsureOptionsFrame()
           end)
         else
           -- auto: no edit/delete
+          SetMoveButtonsVisible(false)
           row.action:Hide()
           row.del:Hide()
         end
@@ -6290,16 +7202,8 @@ local function RenderList(frameDef, frame, entries)
     if point:find("BOTTOM", 1, true) then return "up" end
     if point:find("TOP", 1, true) then return "down" end
 
-    local cy
-    if frame and frame.GetCenter then
-      local _, y = frame:GetCenter()
-      cy = y
-    end
-    local h = UIParent and UIParent.GetHeight and UIParent:GetHeight() or nil
-    if cy and h and cy > (h / 2) then
-      return "down"
-    end
-    return "up"
+    -- For CENTER/LEFT/RIGHT anchors, pick a stable default.
+    return "down"
   end
 
   if frame.title then
@@ -6333,6 +7237,17 @@ local function RenderList(frameDef, frame, entries)
   if offset > maxOffset then
     offset = maxOffset
     SetFrameScrollOffset(frame and frame._id, offset)
+  end
+
+  -- Edit-mode scroll buttons live on the frame (requested).
+  if frame and frame._scrollUp and frame._scrollDown then
+    local show = editMode and maxOffset > 0
+    frame._scrollUp:SetShown(show)
+    frame._scrollDown:SetShown(show)
+    if show then
+      frame._scrollUp:SetEnabled(offset > 0)
+      frame._scrollDown:SetEnabled(offset < maxOffset)
+    end
   end
 
   local shown = 0
@@ -6580,9 +7495,10 @@ RefreshAll = function()
       if editMode then
         local a = (type(def) == "table") and tonumber(def.bgAlpha) or nil
         if not a or a < 0.25 then a = 0.25 end
-        ApplyFAOBackdrop(f, a)
-      elseif type(def) == "table" and def.bgAlpha ~= nil then
-        ApplyFAOBackdrop(f, def.bgAlpha)
+        local c = (type(def) == "table") and def.bgColor or nil
+        ApplyFAOBackdrop(f, a, c)
+      elseif type(def) == "table" and (def.bgAlpha ~= nil or def.bgColor ~= nil) then
+        ApplyFAOBackdrop(f, def.bgAlpha, def.bgColor)
       end
 
       local t = tostring(def.type or "list"):lower()
@@ -6687,13 +7603,17 @@ end)
 SLASH_FR0Z3NUIFQT1 = "/fqt"
 if not SlashCmdList["FR0Z3NUIFQT"] then
   rawset(SlashCmdList, "FR0Z3NUIFQT", function(msg)
-  msg = tostring(msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-  if msg == "" then
+  local raw = tostring(msg or "")
+  local trimmed = raw:gsub("^%s+", ""):gsub("%s+$", "")
+  local cmd, rest = trimmed:match("^(%S+)%s*(.-)$")
+  cmd = tostring(cmd or ""):lower()
+  rest = tostring(rest or "")
+  if cmd == "" then
     ShowOptions()
     return
   end
-  if msg == "weakaura" or msg:match("^weakaura%s+") then
-    local arg = msg:match("^weakaura%s+(.+)$")
+  if cmd == "weakaura" then
+    local arg = rest ~= "" and rest or nil
     local ensure = _G and rawget(_G, "EnsureWeakAuraImportFrame")
     local f
     if type(ensure) == "function" then
@@ -6708,27 +7628,27 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     f:Show()
     return
   end
-  if msg == "on" then
+  if cmd == "on" then
     framesEnabled = true
     RefreshAll()
     Print("Enabled.")
     return
   end
-  if msg == "off" then
+  if cmd == "off" then
     framesEnabled = false
     RefreshAll()
     Print("Disabled.")
     return
   end
 
-  if msg == "reset" then
+  if cmd == "reset" then
     ResetFramePositionsToDefaults()
     RefreshAll()
     Print("Frame positions reset to defaults.")
     return
   end
 
-  if msg == "twdebug" then
+  if cmd == "twdebug" then
     Print("Timewalking debug:")
     EnsureCalendarOpened()
     if not (C_Calendar and C_Calendar.GetNumDayEvents) then
