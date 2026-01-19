@@ -1652,13 +1652,28 @@ local function BuildRuleStatus(rule, ctx)
       s = s:gsub("\r", "\n")
       local parts = {}
       for line in s:gmatch("[^\n]+") do
-        line = tostring(line or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        if line ~= "" then
+        line = tostring(line or ""):gsub("%s+$", "")
+        if line:gsub("%s+", "") ~= "" then
           parts[#parts + 1] = line
         end
       end
       if parts[1] == nil then return nil end
       return table.concat(parts, "\n")
+    end
+
+    local NBSP = "\194\160"
+    local function PreserveLeadingWhitespaceForDisplay(s)
+      if s == nil then return nil end
+      s = tostring(s or "")
+      local function Conv(ws)
+        ws = tostring(ws or "")
+        ws = ws:gsub(" ", NBSP)
+        ws = ws:gsub("\t", NBSP .. NBSP .. NBSP .. NBSP)
+        return ws
+      end
+      s = s:gsub("^([ \t]+)", Conv)
+      s = s:gsub("\n([ \t]+)", function(ws) return "\n" .. Conv(ws) end)
+      return s
     end
 
     local questTitle = nil
@@ -1674,7 +1689,7 @@ local function BuildRuleStatus(rule, ctx)
     local qi = (type(rule) == "table") and (rule.questInfo or nil) or nil
     local fullInfo = NormalizeQuestInfoToMultiline(qi)
     if fullInfo and fullInfo ~= "" then
-      title = fullInfo
+      title = PreserveLeadingWhitespaceForDisplay(fullInfo)
     else
       title = questTitle
     end
@@ -3431,7 +3446,10 @@ local function EnsureOptionsFrame()
     if targetFrame == "" then targetFrame = "list1" end
 
     local infoText = tostring(qiBox:GetText() or "")
-    infoText = infoText:gsub("^%s+", ""):gsub("%s+$", "")
+    infoText = infoText:gsub("\r\n?", "\n")
+    -- Preserve leading spaces/tabs for indentation; only strip trailing whitespace and blank-line padding.
+    infoText = infoText:gsub("^\n+", ""):gsub("\n+$", "")
+    infoText = infoText:gsub("%s+$", "")
     local questInfo = (infoText ~= "") and infoText or nil
 
     local titleText = tostring(qTitleBox:GetText() or "")
@@ -5851,6 +5869,41 @@ local function EnsureOptionsFrame()
     end)
   end
 
+  -- Global List Padding control
+  local listPadLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  listPadLabel:SetPoint("TOPLEFT", 365, -132)
+  listPadLabel:SetText("List padding (px)")
+
+  local listPadBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
+  listPadBox:SetSize(40, 20)
+  listPadBox:SetPoint("TOPLEFT", 365, -148)
+  listPadBox:SetAutoFocus(false)
+  listPadBox:SetNumeric(true)
+
+  local function RefreshListPadBox(self)
+    local v = tonumber(GetUISetting("listPadding", 0) or 0) or 0
+    if v < 0 then v = 0 end
+    if v > 50 then v = 50 end
+    self:SetText(tostring(v))
+  end
+
+  listPadBox:SetScript("OnShow", function(self)
+    RefreshListPadBox(self)
+  end)
+  listPadBox:SetScript("OnEnterPressed", function(self)
+    local v = tonumber(self:GetText() or "") or 0
+    if v < 0 then v = 0 end
+    if v > 50 then v = 50 end
+    SetUISetting("listPadding", v)
+    RefreshListPadBox(self)
+    if self.ClearFocus then self:ClearFocus() end
+    RefreshAll()
+  end)
+  listPadBox:SetScript("OnEscapePressed", function(self)
+    RefreshListPadBox(self)
+    if self.ClearFocus then self:ClearFocus() end
+  end)
+
   local function NextFrameID(prefix)
     local used = {}
     for _, def in ipairs(GetEffectiveFrames()) do
@@ -7185,6 +7238,13 @@ local function RenderList(frameDef, frame, entries)
   local maxItems = tonumber(frameDef.maxItems) or 20
   local rowH = tonumber(frameDef.rowHeight) or 16
 
+  local listPad = 0
+  if not editMode then
+    listPad = tonumber(GetUISetting("listPadding", 0) or 0) or 0
+    if listPad < 0 then listPad = 0 end
+    if listPad > 50 then listPad = 50 end
+  end
+
   local function DetermineListGrow()
     local g = GetUISetting("listGrow", nil)
     if g == nil and type(frameDef) == "table" then
@@ -7342,6 +7402,11 @@ local function RenderList(frameDef, frame, entries)
       end
       yCursor = yCursor + h
       if wrapText then yCursor = yCursor + 2 end
+
+      -- Optional extra gap between quest entries.
+      if wrapText and listPad > 0 and entries[i + offset + 1] ~= nil then
+        yCursor = yCursor + listPad
+      end
 
       if maxY and yCursor > maxY and shown > 0 then
         -- Stop early; remaining rows are hidden below.

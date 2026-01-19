@@ -1101,7 +1101,9 @@ function EnsureWeakAuraImportFrame()
       if s == nil then return nil end
       s = tostring(s or "")
       s = s:gsub("\r\n?", "\n")
-      s = s:gsub("^%s+", ""):gsub("%s+$", "")
+      -- Preserve leading spaces/tabs for indentation; only strip trailing whitespace and blank-line padding.
+      s = s:gsub("^\n+", ""):gsub("\n+$", "")
+      s = s:gsub("%s+$", "")
       return (s ~= "") and s or nil
     end
 
