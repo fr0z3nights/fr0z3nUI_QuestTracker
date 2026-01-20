@@ -8,8 +8,7 @@
 ## SavedVariablesPerCharacter: fr0z3nUI_QuestTracker_Char
 
 fr0z3nUI_QuestTracker_DB.lua
-fr0z3nUI_QuestTracker_WADB.lua
-fr0z3nUI_QuestTracker_DB_Imported.lua
+fr0z3nUI_QuestTracker_DB2.lua
 fr0z3nUI_QuestTracker_Core.lua
 fr0z3nUI_QuestTracker_Options.lua
 fr0z3nUI_QuestTracker_WeakAuras.lua
