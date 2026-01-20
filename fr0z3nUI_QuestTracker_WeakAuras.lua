@@ -618,6 +618,12 @@ end
 function EnsureWeakAuraImportFrame()
   if weakAuraImportFrame then return weakAuraImportFrame end
 
+  local function NormalizeFaction(v)
+    v = tostring(v or "")
+    if v == "Alliance" or v == "Horde" then return v end
+    return nil
+  end
+
   local function ParseQuestIDList(text)
     local out = nil
     local t = tostring(text or "")
@@ -844,6 +850,81 @@ function EnsureWeakAuraImportFrame()
   status:SetText("")
   f._status = status
 
+  -- Faction selection (matches WeakAuras Load -> Faction). Used as an override when importing.
+  local factionLabel = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  factionLabel:SetPoint("BOTTOMRIGHT", -12, 68)
+  factionLabel:SetText("Faction (Load tab)")
+
+  local factionBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  factionBtn:SetSize(150, 22)
+  factionBtn:SetPoint("BOTTOMRIGHT", -12, 44)
+  f._factionBtn = factionBtn
+
+  -- Values: "AUTO" (default), "NONE" (Both/Off), "Alliance", "Horde"
+  f._factionOverride = tostring((GetUISetting and GetUISetting("waImportFaction")) or "AUTO")
+  if f._factionOverride ~= "AUTO" and f._factionOverride ~= "NONE" and f._factionOverride ~= "Alliance" and f._factionOverride ~= "Horde" then
+    f._factionOverride = "AUTO"
+  end
+
+  local function FactionChoiceLabel()
+    local det = NormalizeFaction(f._factionDetected)
+    local mode = tostring(f._factionOverride or "AUTO")
+    if mode == "Alliance" or mode == "Horde" then
+      return mode
+    elseif mode == "NONE" then
+      return "Both (Off)"
+    else
+      return det and ("Auto: " .. det) or "Auto"
+    end
+  end
+
+  local function SetFactionChoice(v)
+    v = tostring(v or "AUTO")
+    if v ~= "AUTO" and v ~= "NONE" and v ~= "Alliance" and v ~= "Horde" then v = "AUTO" end
+    f._factionOverride = v
+    if SetUISetting then
+      SetUISetting("waImportFaction", v)
+    end
+    factionBtn:SetText(FactionChoiceLabel())
+  end
+
+  local function GetImportFactionForRule(specFaction)
+    local mode = tostring(f._factionOverride or "AUTO")
+    if mode == "Alliance" or mode == "Horde" then
+      return mode
+    elseif mode == "NONE" then
+      return nil
+    end
+    return NormalizeFaction(specFaction) or NormalizeFaction(f._factionDetected)
+  end
+
+  factionBtn:SetText(FactionChoiceLabel())
+  factionBtn:SetScript("OnClick", function()
+    if MenuUtil and MenuUtil.CreateContextMenu then
+      MenuUtil.CreateContextMenu(factionBtn, function(_, root)
+        if root and root.CreateTitle then root:CreateTitle("Faction") end
+        if root and root.CreateRadio then
+          root:CreateRadio("Auto", function() return (f._factionOverride == "AUTO") end, function() SetFactionChoice("AUTO") end)
+          root:CreateRadio("Both (Off)", function() return (f._factionOverride == "NONE") end, function() SetFactionChoice("NONE") end)
+          root:CreateRadio("Alliance", function() return (f._factionOverride == "Alliance") end, function() SetFactionChoice("Alliance") end)
+          root:CreateRadio("Horde", function() return (f._factionOverride == "Horde") end, function() SetFactionChoice("Horde") end)
+        elseif root and root.CreateButton then
+          root:CreateButton("Auto", function() SetFactionChoice("AUTO") end)
+          root:CreateButton("Both (Off)", function() SetFactionChoice("NONE") end)
+          root:CreateButton("Alliance", function() SetFactionChoice("Alliance") end)
+          root:CreateButton("Horde", function() SetFactionChoice("Horde") end)
+        end
+      end)
+    else
+      -- Fallback: simple cycle
+      local cur = tostring(f._factionOverride or "AUTO")
+      if cur == "AUTO" then SetFactionChoice("NONE")
+      elseif cur == "NONE" then SetFactionChoice("Alliance")
+      elseif cur == "Alliance" then SetFactionChoice("Horde")
+      else SetFactionChoice("AUTO") end
+    end
+  end)
+
   local function RenderResults(questIDs, auraName, totalCount, primaryCount)
     auraName = tostring(auraName or "")
     local specs = f._questRuleSpecs
@@ -965,6 +1046,10 @@ function EnsureWeakAuraImportFrame()
       f._factionDetected = (not mixed) and fac or nil
     end
 
+    if f._factionBtn and f._factionBtn.SetText then
+      f._factionBtn:SetText(FactionChoiceLabel())
+    end
+
     local knownIDs, notKnownIDs = ExtractSpellIDsFromWeakAura(data, include)
     f._spellKnownIDs = knownIDs or {}
     f._spellNotKnownIDs = notKnownIDs or {}
@@ -1081,6 +1166,8 @@ function EnsureWeakAuraImportFrame()
         spellKnown = knownSpellID,
         notSpellKnown = notKnownSpellID,
         displayText = (displayText ~= "") and displayText or nil,
+        factionOverride = tostring(f._factionOverride or "AUTO"),
+        factionDetected = NormalizeFaction(f._factionDetected),
       }
       SaveWAExportSnapshot(snapshot)
       local exportCount = 0
@@ -1147,11 +1234,12 @@ function EnsureWeakAuraImportFrame()
       local k3 = tostring(targetFrame) .. "|" .. tostring(tonumber(knownSpellID) or 0) .. "|" .. tostring(tonumber(notKnownSpellID) or 0)
       if not existingSpell[k3] then
         local key = string.format("custom:spell:%s:%d", tostring(targetFrame), (#rules + 1))
+        local ruleFaction = GetImportFactionForRule(nil)
         local r = {
           key = key,
           frameID = targetFrame,
           label = label,
-          faction = (f._factionDetected == "Alliance" or f._factionDetected == "Horde") and f._factionDetected or nil,
+          faction = ruleFaction,
           hideWhenCompleted = false,
         }
         if knownSpellID then r.spellKnown = knownSpellID end
@@ -1194,7 +1282,7 @@ function EnsureWeakAuraImportFrame()
         local mainQuestID = (type(spec) == "table") and tonumber(spec.questID) or nil
         if mainQuestID and mainQuestID > 0 then
           local prereq = (type(spec.prereq) == "table" and #spec.prereq > 0) and CopyArray(spec.prereq) or nil
-          local ruleFaction = (type(spec) == "table" and (spec.faction == "Alliance" or spec.faction == "Horde")) and spec.faction or nil
+          local ruleFaction = GetImportFactionForRule(type(spec) == "table" and spec.faction or nil)
 
           -- If trigger parsing couldn't associate prereqs but this is a single-trigger import,
           -- fall back to the overall detected questIDs (minus the main).
@@ -1311,6 +1399,7 @@ function EnsureWeakAuraImportFrame()
       end
 
       local questInfo = NormalizeInfoText(displayText)
+      local ruleFaction = GetImportFactionForRule(nil)
       local dkBase = tostring(mainQuestID) .. "|" .. tostring(targetFrame) .. "|" .. PrereqListKey(prereq) .. "|" .. "" .. "|"
       local infoKey = NormalizeInfoKey(questInfo)
       local dk = dkBase .. infoKey
@@ -1324,6 +1413,7 @@ function EnsureWeakAuraImportFrame()
           frameID = targetFrame,
           label = questLabel,
           questInfo = questInfo,
+          faction = ruleFaction,
           prereq = prereq,
           hideWhenCompleted = true,
         }

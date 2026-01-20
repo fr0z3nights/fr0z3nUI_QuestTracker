@@ -1,4 +1,4 @@
-local addonName, ns = ...
+﻿local addonName, ns = ...
 
 local PREFIX = "|cff00ccff[FQT]|r "
 local function Print(msg)
@@ -9,8 +9,23 @@ ns.Print = Print
 
 local framesEnabled = true
 local editMode = false
+local barContentsFrame
+
+-- Exposed for split Options UI module.
+ns.GetEditMode = function()
+  return editMode and true or false
+end
+
+ns.SetEditMode = function(v)
+  editMode = v and true or false
+  if not editMode and barContentsFrame and barContentsFrame.Hide then
+    barContentsFrame:Hide()
+  end
+end
 
 local GetUISetting, SetUISetting
+
+local RuleKey
 
 local GetPlayerClass, GetPrimaryProfessionNames, HasTradeSkillLine, CanQueryTradeSkillLines
 
@@ -90,9 +105,56 @@ local function NormalizePlayerLevelOp(op)
 end
 
 local function NormalizeLocationID(value)
-  local n = tonumber((tostring(value or ""):gsub("[^0-9]", "")))
-  if n and n > 0 then return n end
-  return nil
+  if value == nil then return nil end
+  if type(value) == "number" then
+    if value > 0 then return value end
+    return nil
+  end
+
+  local s = tostring(value or "")
+  s = s:gsub("%s+", "")
+  if s == "" or s == "0" then return nil end
+
+  local out = {}
+  local seen = {}
+  for token in s:gmatch("[^,;]+") do
+    local digits = token:match("^%a*(%d+)$") or token:match("^(%d+)$")
+    local n = digits and tonumber(digits) or nil
+    if n and n > 0 and not seen[n] then
+      out[#out + 1] = n
+      seen[n] = true
+    end
+  end
+
+  if not out[1] then return nil end
+  if #out == 1 then return out[1] end
+  local parts = {}
+  for i = 1, #out do parts[i] = tostring(out[i]) end
+  return table.concat(parts, ",")
+end
+
+local function ParseLocationIDs(value)
+  if value == nil then return nil end
+  if type(value) == "number" then
+    if value > 0 then return { value } end
+    return nil
+  end
+
+  local s = tostring(value or "")
+  s = s:gsub("%s+", "")
+  if s == "" or s == "0" then return nil end
+
+  local out = {}
+  local seen = {}
+  for token in s:gmatch("[^,;]+") do
+    local digits = token:match("^%a*(%d+)$") or token:match("^(%d+)$")
+    local n = digits and tonumber(digits) or nil
+    if n and n > 0 and not seen[n] then
+      out[#out + 1] = n
+      seen[n] = true
+    end
+  end
+  return out[1] and out or nil
 end
 
 local function NormalizeRuleInPlace(rule)
@@ -156,6 +218,13 @@ local function EnsureRulesNormalized()
     end
   end
 
+  local edits = settings.defaultRuleEdits
+  if type(edits) == "table" then
+    for _, r in pairs(edits) do
+      NormalizeRuleInPlace(r)
+    end
+  end
+
   _rulesNormalized = true
 end
 
@@ -167,6 +236,7 @@ local function NormalizeSV()
   fr0z3nUI_QuestTracker_Acc.settings.ui = fr0z3nUI_QuestTracker_Acc.settings.ui or {}
   fr0z3nUI_QuestTracker_Acc.settings.customRules = fr0z3nUI_QuestTracker_Acc.settings.customRules or {}
   fr0z3nUI_QuestTracker_Acc.settings.customRulesTrash = fr0z3nUI_QuestTracker_Acc.settings.customRulesTrash or {}
+  fr0z3nUI_QuestTracker_Acc.settings.defaultRuleEdits = fr0z3nUI_QuestTracker_Acc.settings.defaultRuleEdits or {}
   fr0z3nUI_QuestTracker_Acc.settings.customFrames = fr0z3nUI_QuestTracker_Acc.settings.customFrames or {}
   fr0z3nUI_QuestTracker_Char.settings = fr0z3nUI_QuestTracker_Char.settings or {}
 
@@ -226,6 +296,8 @@ local function GetCustomRulesTrash()
   return t
 end
 
+ns.GetCustomRulesTrash = GetCustomRulesTrash
+
 local function GetCustomFrames()
   NormalizeSV()
   local t = fr0z3nUI_QuestTracker_Acc.settings.customFrames
@@ -236,6 +308,8 @@ local function GetCustomFrames()
   return t
 end
 
+ns.GetCustomFrames = GetCustomFrames
+
 local function ShallowCopyTable(src)
   if type(src) ~= "table" then return nil end
   local out = {}
@@ -245,13 +319,48 @@ local function ShallowCopyTable(src)
   return out
 end
 
+ns.ShallowCopyTable = ShallowCopyTable
+
+local function GetDefaultRuleEdits()
+  NormalizeSV()
+  local t = fr0z3nUI_QuestTracker_Acc.settings.defaultRuleEdits
+  if type(t) ~= "table" then
+    t = {}
+    fr0z3nUI_QuestTracker_Acc.settings.defaultRuleEdits = t
+  end
+  return t
+end
+
+ns.GetDefaultRuleEdits = GetDefaultRuleEdits
+
+local function GetEffectiveDefaultRules()
+  local out = {}
+  local edits = GetDefaultRuleEdits()
+
+  for _, base in ipairs(ns.rules or {}) do
+    local key = RuleKey and RuleKey(base) or nil
+    local edited = key and edits[key] or nil
+    if type(edited) == "table" then
+      out[#out + 1] = edited
+    else
+      out[#out + 1] = base
+    end
+  end
+
+  return out
+end
+
+ns.GetEffectiveDefaultRules = GetEffectiveDefaultRules
+
 local function GetEffectiveRules()
   local out = {}
-  for _, r in ipairs(ns.rules or {}) do out[#out + 1] = r end
+  for _, r in ipairs(GetEffectiveDefaultRules()) do out[#out + 1] = r end
   for _, r in ipairs(GetCustomRules()) do out[#out + 1] = r end
 
   return out
 end
+
+ns.GetEffectiveRules = GetEffectiveRules
 
 local function GetEffectiveFrames()
   -- Merge defaults + custom frames (custom overrides defaults if id matches).
@@ -290,6 +399,8 @@ local function GetEffectiveFrames()
   end
   return out
 end
+
+ns.GetEffectiveFrames = GetEffectiveFrames
 
 GetUISetting = function(key, default)
   NormalizeSV()
@@ -366,7 +477,7 @@ end
 
 ns.RestoreWindowPosition = RestoreWindowPosition
 
-local function RuleKey(rule)
+RuleKey = function(rule)
   if type(rule) ~= "table" then return nil end
   if rule.key ~= nil then return tostring(rule.key) end
   if rule.questID then return "q:" .. tostring(rule.questID) end
@@ -375,12 +486,16 @@ local function RuleKey(rule)
   return nil
 end
 
+ns.RuleKey = RuleKey
+
 local function IsRuleDisabled(rule)
   NormalizeSV()
   local key = RuleKey(rule)
   if not key then return false end
   return fr0z3nUI_QuestTracker_Char.settings.disabledRules[key] and true or false
 end
+
+ns.IsRuleDisabled = IsRuleDisabled
 
 local function ToggleRuleDisabled(rule)
   NormalizeSV()
@@ -389,6 +504,8 @@ local function ToggleRuleDisabled(rule)
   local t = fr0z3nUI_QuestTracker_Char.settings.disabledRules
   t[key] = not t[key]
 end
+
+ns.ToggleRuleDisabled = ToggleRuleDisabled
 
 local function DeepCopyValue(v, seen)
   if type(v) ~= "table" then return v end
@@ -402,12 +519,16 @@ local function DeepCopyValue(v, seen)
   return out
 end
 
+ns.DeepCopyValue = DeepCopyValue
+
 local function MakeUniqueRuleKey(prefix)
   prefix = tostring(prefix or "custom")
   local t = tostring((type(time) == "function") and time() or 0)
   local r = tostring(math.random(100000, 999999))
   return prefix .. ":" .. t .. ":" .. r
 end
+
+ns.MakeUniqueRuleKey = MakeUniqueRuleKey
 
 local function EnsureUniqueKeyForCustomRule(rule)
   if type(rule) ~= "table" then return end
@@ -423,6 +544,8 @@ local function EnsureUniqueKeyForCustomRule(rule)
     rule.key = MakeUniqueRuleKey("custom")
   end
 end
+
+ns.EnsureUniqueKeyForCustomRule = EnsureUniqueKeyForCustomRule
 
 local function IsQuestCompleted(questID)
   if not questID then return false end
@@ -652,6 +775,8 @@ local function GetStandingIDByFactionID(factionID)
   return nil
 end
 
+ns.GetStandingIDByFactionID = GetStandingIDByFactionID
+
 local function GetMaxPlayerLevelSafe()
   if GetMaxPlayerLevel then
     return tonumber(GetMaxPlayerLevel())
@@ -742,6 +867,20 @@ local function GetItemCountSafe(itemID)
   return 0
 end
 
+local function GetCurrencyQuantitySafe(currencyID)
+  currencyID = tonumber(currencyID)
+  if not currencyID or currencyID <= 0 then return 0 end
+
+  if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
+    local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, currencyID)
+    if ok and type(info) == "table" then
+      return tonumber(info.quantity) or 0
+    end
+  end
+
+  return 0
+end
+
 local function GetItemNameSafe(itemID)
   itemID = tonumber(itemID)
   if not itemID then return nil end
@@ -759,6 +898,8 @@ local function GetItemNameSafe(itemID)
 
   return nil
 end
+
+ns.GetItemNameSafe = GetItemNameSafe
 
 local function HasAuraSpellID(spellID)
   if not spellID then return false end
@@ -1447,12 +1588,34 @@ local function BuildRuleStatus(rule, ctx)
 
   -- Class gate (optional)
   if not editMode and type(rule) == "table" and rule.class ~= nil then
-    local want = tostring(rule.class):upper()
-    if want ~= "" and want ~= "NONE" then
-      local have = tostring((ctx and ctx.class) or GetPlayerClass() or ""):upper()
-      if have == "" or have ~= want then
+    local have = tostring((ctx and ctx.class) or GetPlayerClass() or ""):upper()
+    local want = rule.class
+
+    if type(want) == "table" then
+      local ok = false
+      for _, c in ipairs(want) do
+        if tostring(c):upper() == have then
+          ok = true
+          break
+        end
+      end
+      if not ok then
         return nil
       end
+    else
+      local w = tostring(want):upper()
+      if w ~= "" and w ~= "NONE" then
+        if have == "" or have ~= w then
+          return nil
+        end
+      end
+    end
+  end
+
+  -- Primary-professions-missing gate (optional)
+  if not editMode and type(rule) == "table" and rule.missingPrimaryProfessions == true then
+    if not (IsPrimaryProfessionSlotMissing(1) or IsPrimaryProfessionSlotMissing(2)) then
+      return nil
     end
   end
 
@@ -1465,11 +1628,15 @@ local function BuildRuleStatus(rule, ctx)
 
   -- Location gate (optional; uiMapID)
   if not editMode and type(rule) == "table" and rule.locationID ~= nil then
-    local want = tonumber((tostring(rule.locationID):gsub("[^0-9]", "")))
-    if want and want > 0 then
+    local wants = ParseLocationIDs(rule.locationID)
+    if wants and wants[1] then
       local have = (ctx and ctx.mapID) or GetBestMapIDSafe()
-      if have and have ~= want then
-        return nil
+      if have then
+        local ok = false
+        for i = 1, #wants do
+          if have == wants[i] then ok = true break end
+        end
+        if not ok then return nil end
       end
     end
   end
@@ -1512,7 +1679,7 @@ local function BuildRuleStatus(rule, ctx)
       if minStanding and standingID < minStanding then
         return nil
       end
-      if rule.rep.hideWhenExalted == true and standingID >= 8 then
+      if rule.rep.hideWhenExalted == true and standingID >= 8 and rule.rep.sellWhenExalted ~= true then
         return nil
       end
     end
@@ -1600,7 +1767,38 @@ local function BuildRuleStatus(rule, ctx)
 
   if type(rule.item) == "table" and rule.item.itemID then
     local itemID = tonumber(rule.item.itemID)
+
+    if not editMode then
+      local currencyID = tonumber(rule.item.currencyID)
+      local currencyRequired = tonumber(rule.item.currencyRequired)
+      if currencyID and currencyRequired and currencyID > 0 and currencyRequired > 0 then
+        if GetCurrencyQuantitySafe(currencyID) < currencyRequired then
+          return nil
+        end
+      end
+    end
+
+    -- Optional quest-gating for quest-collection items.
+    if not editMode then
+      local qid = tonumber(rule.item.questID)
+      if qid and qid > 0 and IsQuestCompleted(qid) then
+        return nil
+      end
+      local after = tonumber(rule.item.afterQuestID)
+      if after and after > 0 and not IsQuestCompleted(after) then
+        return nil
+      end
+    end
+
     local count = GetItemCountSafe(itemID)
+
+    if not editMode then
+      local showBelow = tonumber(rule.item.showWhenBelow)
+      if showBelow and showBelow > 0 and count >= showBelow then
+        return nil
+      end
+    end
+
     if not editMode then
       if rule.item.hideWhenAcquired == true and count > 0 then
         return nil
@@ -1609,10 +1807,27 @@ local function BuildRuleStatus(rule, ctx)
         return nil
       end
     end
+
     if rule.item.required and tonumber(rule.item.required) then
       extra = string.format("%d/%d", count, tonumber(rule.item.required))
     else
-      extra = tostring(count)
+      local showBelow = tonumber(rule.item.showWhenBelow)
+      if showBelow and showBelow > 0 then
+        extra = string.format("%d/%d", count, showBelow)
+      else
+        extra = tostring(count)
+      end
+    end
+
+    -- Optional vendor reminder: if exalted, show a SELL prompt for remaining items.
+    if not editMode and type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
+      local standingID = GetStandingIDByFactionID(rule.rep.factionID)
+      if standingID and standingID >= 8 then
+        if count <= 0 then
+          return nil
+        end
+        extra = "SELL " .. tostring(count)
+      end
     end
   end
 
@@ -2091,6 +2306,9 @@ local _dragState = nil
 local function FindOwningTrackerFrame(widget)
   local w = widget
   while w do
+    if w._isTrackerFrame then
+      return w
+    end
     local id = w._id
     if id ~= nil and framesByID and framesByID[tostring(id)] == w then
       return w
@@ -2122,6 +2340,8 @@ local function AssignRuleToFrame(rule, frameID)
   rule.frameID = frameID
   return true
 end
+
+ns.AssignRuleToFrame = AssignRuleToFrame
 
 local function ReorderCustomRulesInFrame(frame, movedRule, destAbsIndex)
   if type(movedRule) ~= "table" then return false end
@@ -2356,6 +2576,7 @@ local function CreateListFrame(def)
 end
 
 local function EnsureFontString(parent, idx, fontDef)
+  parent.items = parent.items or {}
   if parent.items[idx] then return parent.items[idx] end
   local fs = parent:CreateFontString(nil, "OVERLAY", parent._itemFont or "GameFontHighlight")
   fs:SetJustifyH("LEFT")
@@ -2376,7 +2597,7 @@ local function EnsureRowButton(frame, idx)
     if not (e and e.rule) then return end
     _dragState = {
       srcFrame = frame,
-      srcFrameID = frame and frame._id,
+      srcFrameID = frame and (frame._targetID or frame._id),
       rule = e.rule,
       srcAbsIndex = tonumber(self._entryAbsIndex) or nil,
     }
@@ -2399,8 +2620,8 @@ local function EnsureRowButton(frame, idx)
     local targetFrame = FindOwningTrackerFrame(focus)
     if not (srcFrame and targetFrame and srcFrame._id and targetFrame._id) then return end
 
-    local srcID = tostring(srcFrame._id)
-    local targetID = tostring(targetFrame._id)
+    local srcID = tostring(srcFrame._targetID or srcFrame._id)
+    local targetID = tostring(targetFrame._targetID or targetFrame._id)
 
     -- Destination index in target frame, based on cursor position.
     local def = targetFrame._lastFrameDef or {}
@@ -2473,6 +2694,8 @@ FindCustomRuleIndex = function(rule)
   return nil
 end
 
+ns.FindCustomRuleIndex = FindCustomRuleIndex
+
 -- WeakAuras tooling moved to fr0z3nUI_QuestTracker_WeakAuras.lua
 UnassignRuleFromFrame = function(rule, frameID)
   if type(rule) ~= "table" then return false end
@@ -2496,6 +2719,8 @@ UnassignRuleFromFrame = function(rule, frameID)
 
   return true
 end
+
+ns.UnassignRuleFromFrame = UnassignRuleFromFrame
 
 local function RenderBar(frameDef, frame, entries)
   local maxItems = tonumber(frameDef.maxItems) or 6
@@ -2782,4449 +3007,10 @@ local function ResetFramePositionsToDefaults()
   end
 end
 
-local function EnsureOptionsFrame()
-  if optionsFrame then return optionsFrame end
+ns.ResetFramePositionsToDefaults = ResetFramePositionsToDefaults
 
-  local f = CreateFrame("Frame", "FR0Z3NUIFQTOptions", UIParent, "BackdropTemplate")
-
-  -- Allow closing with Escape.
-  do
-    local special = _G and _G["UISpecialFrames"]
-    if type(special) == "table" then
-      local name = "FR0Z3NUIFQTOptions"
-      local exists = false
-      for i = 1, #special do
-        if special[i] == name then exists = true break end
-      end
-      if not exists and table and table.insert then table.insert(special, name) end
-    end
-  end
-
-  f:SetSize(560, 420)
-  f:SetPoint("CENTER")
-  f:SetFrameStrata("DIALOG")
-  f:SetClampedToScreen(true)
-  f:SetMovable(true)
-  f:EnableMouse(true)
-  RestoreWindowPosition("options", f, "CENTER", "CENTER", 0, 0)
-  f:RegisterForDrag("LeftButton")
-  f:SetScript("OnDragStart", f.StartMoving)
-  f:SetScript("OnDragStop", function(self)
-    if self.StopMovingOrSizing then self:StopMovingOrSizing() end
-    SaveWindowPosition("options", self)
-  end)
-  ApplyFAOBackdrop(f, 0.85)
-
-  f:HookScript("OnShow", function(self)
-    RestoreWindowPosition("options", self, "CENTER", "CENTER", 0, 0)
-  end)
-
-  local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  title:SetPoint("TOPLEFT", 12, -10)
-  title:SetText("|cff00ccff[FQT]|r QuestTracker")
-
-  local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
-  close:SetPoint("TOPRIGHT", f, "TOPRIGHT", 2, 2)
-
-  -- Tabs
-  local function MakePanel()
-    local p = CreateFrame("Frame", nil, f)
-    p:SetAllPoints(f)
-    return p
-  end
-
-  local panels = {
-    quest = MakePanel(),
-    items = MakePanel(),
-    text = MakePanel(),
-    spells = MakePanel(),
-    rules = MakePanel(),
-    frames = MakePanel(),
-  }
-
-  local function SetPanelShown(name)
-    for k, p in pairs(panels) do
-      p:SetShown(k == name)
-    end
-    if optionsFrame then
-      optionsFrame._activeTab = name
-      SetUISetting("optionsTab", name)
-    end
-    if name == "rules" then
-      RefreshRulesList()
-    elseif name == "frames" then
-      RefreshFramesList()
-    end
-  end
-
-  local tabOrder = { "frames", "rules", "items", "quest", "spells", "text" }
-  local tabText = {
-    frames = "Frames",
-    rules = "Rules",
-    items = "Items",
-    quest = "Quest",
-    spells = "Spell",
-    text = "Text",
-  }
-  local tabs = {}
-
-  local function SelectTab(name)
-    SetPanelShown(name)
-    for _, btn in ipairs(tabs) do
-      btn:SetEnabled(btn._tabName ~= name)
-    end
-  end
-
-  for i, name in ipairs(tabOrder) do
-    local btn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    btn:SetSize(70, 18)
-    btn:SetText(tabText[name] or name)
-    btn._tabName = name
-    if i == 1 then
-      btn:SetPoint("TOPLEFT", title, "TOPRIGHT", 10, 2)
-    else
-      btn:SetPoint("LEFT", tabs[i - 1], "RIGHT", 4, 0)
-    end
-    btn:SetScript("OnClick", function() SelectTab(name) end)
-    tabs[i] = btn
-  end
-
-  f._tabs = tabs
-  f._panels = panels
-
-  -- Shared quick color palette (used for both backgrounds and text colors)
-  local QUICK_COLOR_PALETTE = {
-    { 0.00, 0.00, 0.00 }, -- black
-    { 0.20, 0.20, 0.20 }, -- dark gray
-    { 0.75, 0.75, 0.75 }, -- light gray
-    { 1.00, 1.00, 1.00 }, -- white
-    { 1.00, 0.25, 0.25 }, -- red
-    { 1.00, 0.55, 0.10 }, -- orange
-    { 1.00, 0.90, 0.20 }, -- yellow
-    { 0.20, 1.00, 0.20 }, -- green
-    { 0.20, 0.60, 1.00 }, -- blue
-  }
-
-  local function Clamp01(v)
-    v = tonumber(v)
-    if not v then return 0 end
-    if v < 0 then return 0 end
-    if v > 1 then return 1 end
-    return v
-  end
-
-  local function NormalizeRGB(r, g, b)
-    return Clamp01(r), Clamp01(g), Clamp01(b)
-  end
-
-  local function ShowTextColorPicker(initialR, initialG, initialB, onChanged)
-    local CPF = _G and rawget(_G, "ColorPickerFrame")
-    if not CPF then
-      local CAO = _G and rawget(_G, "C_AddOns")
-      if CAO and CAO.LoadAddOn then pcall(CAO.LoadAddOn, "Blizzard_ColorPicker") end
-      local LoadAddOn = _G and rawget(_G, "LoadAddOn")
-      if LoadAddOn then pcall(LoadAddOn, "Blizzard_ColorPicker") end
-      CPF = _G and rawget(_G, "ColorPickerFrame")
-    end
-    if not (CPF and (CPF.SetupColorPickerAndShow or (CPF.Show and CPF.SetColorRGB and CPF.GetColorRGB))) then
-      Print("Color picker unavailable.")
-      return
-    end
-
-    -- Make it feel like a "pop-out" attached to our options window.
-    if CPF.ClearAllPoints and CPF.SetPoint and f and f.IsShown and f:IsShown() then
-      CPF:ClearAllPoints()
-      CPF:SetPoint("TOPRIGHT", f, "TOPLEFT", -8, -40)
-      if CPF.SetFrameStrata then CPF:SetFrameStrata("DIALOG") end
-      if CPF.SetClampedToScreen then CPF:SetClampedToScreen(true) end
-    end
-
-    local r0, g0, b0 = NormalizeRGB(initialR, initialG, initialB)
-    local prev = { r0, g0, b0 }
-    if CPF.SetupColorPickerAndShow then
-      local info = {
-        r = r0,
-        g = g0,
-        b = b0,
-        hasOpacity = false,
-        swatchFunc = function()
-          local r, g, b = CPF:GetColorRGB()
-          r, g, b = NormalizeRGB(r, g, b)
-          if onChanged then onChanged(r, g, b) end
-        end,
-        cancelFunc = function(restored)
-          local rv = restored or prev
-          local r, g, b = NormalizeRGB(rv.r or rv[1], rv.g or rv[2], rv.b or rv[3])
-          if onChanged then onChanged(r, g, b) end
-        end,
-        previousValues = prev,
-      }
-      CPF:SetupColorPickerAndShow(info)
-    else
-      CPF.hasOpacity = false
-      CPF.opacityFunc = nil
-      CPF.previousValues = prev
-
-      CPF.func = function()
-        local r, g, b = CPF:GetColorRGB()
-        r, g, b = NormalizeRGB(r, g, b)
-        if onChanged then onChanged(r, g, b) end
-      end
-
-      CPF.cancelFunc = function(restored)
-        local rv = restored or prev
-        local r, g, b = NormalizeRGB(rv[1], rv[2], rv[3])
-        if onChanged then onChanged(r, g, b) end
-      end
-
-      CPF:SetColorRGB(r0, g0, b0)
-      CPF:Show()
-    end
-  end
-
-  local function CreateQuickColorPalette(parent, anchor, point, relPoint, xOff, yOff, opts)
-    if not (parent and anchor) then return nil end
-    opts = opts or {}
-
-    local btnSize = tonumber(opts.buttonSize) or 12
-    local gap = tonumber(opts.gap) or 3
-    local cols = tonumber(opts.cols) or #QUICK_COLOR_PALETTE
-    if cols < 1 then cols = 1 end
-
-    local onPick = opts.onPick
-    local getColor = opts.getColor
-
-    local container = CreateFrame("Frame", nil, parent)
-    container:SetSize(1, 1)
-    container:SetPoint(point or "TOPLEFT", anchor, relPoint or "BOTTOMLEFT", xOff or 0, yOff or 0)
-
-    local buttons = {}
-    for i = 1, #QUICK_COLOR_PALETTE do
-      local row = math.floor((i - 1) / cols)
-      local col = (i - 1) % cols
-
-      local btn = CreateFrame("Button", nil, container)
-      btn:SetSize(btnSize, btnSize)
-      btn:SetPoint("TOPLEFT", container, "TOPLEFT", col * (btnSize + gap), -row * (btnSize + gap))
-      btn:EnableMouse(true)
-
-      local t = btn:CreateTexture(nil, "ARTWORK")
-      t:SetAllPoints()
-      if t.SetColorTexture then
-        t:SetColorTexture(QUICK_COLOR_PALETTE[i][1], QUICK_COLOR_PALETTE[i][2], QUICK_COLOR_PALETTE[i][3], 1)
-      end
-      btn._tex = t
-
-      btn:SetScript("OnClick", function()
-        if not onPick then return end
-        local r, g, b = NormalizeRGB(QUICK_COLOR_PALETTE[i][1], QUICK_COLOR_PALETTE[i][2], QUICK_COLOR_PALETTE[i][3])
-        onPick(r, g, b)
-      end)
-
-      buttons[i] = btn
-    end
-
-    local lastBtn = buttons[#buttons]
-    local moreBtn = CreateFrame("Button", nil, container, "UIPanelButtonTemplate")
-    moreBtn:SetSize(56, 18)
-    if lastBtn then
-      moreBtn:SetPoint("LEFT", lastBtn, "RIGHT", 6, 0)
-    else
-      moreBtn:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
-    end
-    moreBtn:SetText("More...")
-
-    moreBtn:SetScript("OnClick", function()
-      local r, g, b = 1, 1, 1
-      if getColor then
-        local cr, cg, cb = getColor()
-        if cr ~= nil and cg ~= nil and cb ~= nil then
-          r, g, b = NormalizeRGB(cr, cg, cb)
-        end
-      end
-      ShowTextColorPicker(r, g, b, function(nr, ng, nb)
-        if onPick then onPick(nr, ng, nb) end
-      end)
-    end)
-
-    container._buttons = buttons
-    container._moreBtn = moreBtn
-    return container
-  end
-
-  f:HookScript("OnHide", function(self)
-    SaveWindowPosition("options", self)
-    if editMode then
-      editMode = false
-      RefreshAll()
-    end
-  end)
-
-  -- QUEST tab
-  local questTitle = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  questTitle:SetPoint("TOPLEFT", 12, -40)
-  questTitle:SetText("Quest")
-
-  local function AddPlaceholder(editBox, text)
-    if not (editBox and editBox.CreateFontString) then return end
-    local ph = editBox:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    ph:SetPoint("TOPLEFT", 6, -6)
-    ph:SetJustifyH("LEFT")
-    ph:SetText(text)
-    local function Update()
-      local hasText = tostring(editBox:GetText() or "") ~= ""
-      local focused = editBox.HasFocus and editBox:HasFocus() and true or false
-      ph:SetShown((not hasText) and (not focused))
-    end
-    editBox:HookScript("OnEditFocusGained", Update)
-    editBox:HookScript("OnEditFocusLost", Update)
-    editBox:HookScript("OnTextChanged", Update)
-    editBox:HookScript("OnShow", Update)
-    Update()
-    editBox._placeholder = ph
-  end
-
-  local qiLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  qiLabel:SetPoint("TOPLEFT", 12, -70)
-  qiLabel:SetText("Quest Info")
-
-  local qiScroll = CreateFrame("ScrollFrame", nil, panels.quest, "UIPanelScrollFrameTemplate")
-  qiScroll:SetPoint("TOPLEFT", 12, -90)
-  qiScroll:SetSize(530, 90)
-
-  local qiBox = CreateFrame("EditBox", nil, qiScroll)
-  qiBox:SetMultiLine(true)
-  qiBox:SetAutoFocus(false)
-  qiBox:SetFontObject("ChatFontNormal")
-  qiBox:SetWidth(500)
-  qiBox:SetTextInsets(6, 6, 6, 6)
-  qiBox:SetText("")
-  qiBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  qiBox:SetScript("OnCursorChanged", function(self, x, y, w, h)
-    if not qiScroll then return end
-    qiScroll:UpdateScrollChildRect()
-    local offset = qiScroll:GetVerticalScroll() or 0
-    local height = qiScroll:GetHeight() or 0
-    local top = -y
-    if top < offset then
-      qiScroll:SetVerticalScroll(top)
-    elseif top > offset + height - 20 then
-      qiScroll:SetVerticalScroll(top - height + 20)
-    end
-  end)
-
-  qiScroll:SetScrollChild(qiBox)
-  AddPlaceholder(qiBox, "Quest Info (what to display)")
-
-  local qidLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  qidLabel:SetPoint("TOPLEFT", 12, -190)
-  qidLabel:SetText("QuestID")
-
-  local questIDBox = CreateFrame("EditBox", nil, panels.quest, "InputBoxTemplate")
-  questIDBox:SetSize(90, 20)
-  questIDBox:SetPoint("TOPLEFT", 12, -206)
-  questIDBox:SetAutoFocus(false)
-  questIDBox:SetNumeric(true)
-  questIDBox:SetText("0")
-
-  local afterLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  afterLabel:SetPoint("TOPLEFT", 110, -190)
-  afterLabel:SetText("After Quest (optional)")
-
-  local afterBox = CreateFrame("EditBox", nil, panels.quest, "InputBoxTemplate")
-  afterBox:SetSize(120, 20)
-  afterBox:SetPoint("TOPLEFT", 110, -206)
-  afterBox:SetAutoFocus(false)
-  afterBox:SetNumeric(true)
-  afterBox:SetText("0")
-
-  local barLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  barLabel:SetPoint("TOPLEFT", 245, -190)
-  barLabel:SetText("Bar / List")
-
-  local factionLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  factionLabel:SetPoint("TOPLEFT", 410, -190)
-  factionLabel:SetText("Faction")
-
-  local qTitleLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  qTitleLabel:SetPoint("TOPLEFT", 12, -230)
-  qTitleLabel:SetText("Title (optional)")
-
-  local qTitleBox = CreateFrame("EditBox", nil, panels.quest, "InputBoxTemplate")
-  qTitleBox:SetSize(220, 20)
-  qTitleBox:SetPoint("TOPLEFT", 12, -246)
-  qTitleBox:SetAutoFocus(false)
-  qTitleBox:SetText("")
-  AddPlaceholder(qTitleBox, "Custom title (leave blank for quest name)")
-
-  local colorLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  colorLabel:SetPoint("TOPLEFT", 12, -270)
-  colorLabel:SetText("Color")
-
-  local qLevelLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  qLevelLabel:SetPoint("TOPLEFT", 180, -270)
-  qLevelLabel:SetText("Player level")
-
-  local questFrameDrop = CreateFrame("Frame", nil, panels.quest, "UIDropDownMenuTemplate")
-  questFrameDrop:SetPoint("TOPLEFT", 230, -218)
-  local UDDM_SetWidth = _G and rawget(_G, "UIDropDownMenu_SetWidth")
-  local UDDM_SetText = _G and rawget(_G, "UIDropDownMenu_SetText")
-  local UDDM_Initialize = _G and rawget(_G, "UIDropDownMenu_Initialize")
-  local UDDM_CreateInfo = _G and rawget(_G, "UIDropDownMenu_CreateInfo")
-  local UDDM_AddButton = _G and rawget(_G, "UIDropDownMenu_AddButton")
-
-  if UDDM_SetWidth then UDDM_SetWidth(questFrameDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(questFrameDrop, "list1") end
-  panels.quest._questTargetFrameID = "list1"
-
-  local questFactionDrop = CreateFrame("Frame", nil, panels.quest, "UIDropDownMenuTemplate")
-  questFactionDrop:SetPoint("TOPLEFT", 395, -218)
-  if UDDM_SetWidth then UDDM_SetWidth(questFactionDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(questFactionDrop, "Both (Off)") end
-  panels.quest._questFaction = nil
-
-  local questColorDrop = CreateFrame("Frame", nil, panels.quest, "UIDropDownMenuTemplate")
-  questColorDrop:SetPoint("TOPLEFT", -8, -298)
-  if UDDM_SetWidth then UDDM_SetWidth(questColorDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(questColorDrop, "None") end
-  panels.quest._questColor = nil
-  panels.quest._questColorName = "None"
-
-  local qLevelOpDrop = CreateFrame("Frame", nil, panels.quest, "UIDropDownMenuTemplate")
-  qLevelOpDrop:SetPoint("TOPLEFT", 165, -298)
-  if UDDM_SetWidth then UDDM_SetWidth(qLevelOpDrop, 70) end
-  if UDDM_SetText then UDDM_SetText(qLevelOpDrop, "Off") end
-  panels.quest._playerLevelOp = nil
-
-  local qLevelBox = CreateFrame("EditBox", nil, panels.quest, "InputBoxTemplate")
-  qLevelBox:SetSize(50, 20)
-  qLevelBox:SetPoint("TOPLEFT", 270, -294)
-  qLevelBox:SetAutoFocus(false)
-  qLevelBox:SetNumeric(true)
-  qLevelBox:SetText("0")
-
-  local qLocLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  qLocLabel:SetPoint("TOPLEFT", 330, -270)
-  qLocLabel:SetText("LocationID (uiMapID)")
-
-  local qLocBox = CreateFrame("EditBox", nil, panels.quest, "InputBoxTemplate")
-  qLocBox:SetSize(90, 20)
-  qLocBox:SetPoint("TOPLEFT", 330, -294)
-  qLocBox:SetAutoFocus(false)
-  qLocBox:SetText("0")
-
-  local function ColorLabel(v)
-    if v == nil then return "None" end
-    if type(v) == "string" then return v end
-    return "Custom"
-  end
-
-  local function SetQuestColor(name)
-    if name == "None" then
-      panels.quest._questColor = nil
-    elseif name == "Green" then
-      panels.quest._questColor = { 0.1, 1.0, 0.1 }
-    elseif name == "Blue" then
-      panels.quest._questColor = { 0.2, 0.6, 1.0 }
-    elseif name == "Yellow" then
-      panels.quest._questColor = { 1.0, 0.9, 0.2 }
-    elseif name == "Red" then
-      panels.quest._questColor = { 1.0, 0.2, 0.2 }
-    elseif name == "Cyan" then
-      panels.quest._questColor = { 0.2, 1.0, 1.0 }
-    else
-      panels.quest._questColor = nil
-      name = "None"
-    end
-    panels.quest._questColorName = name
-    if UDDM_SetText then UDDM_SetText(questColorDrop, ColorLabel(name)) end
-  end
-
-  local function FactionLabel(v)
-    v = tostring(v or "")
-    if v == "Alliance" then return "Alliance" end
-    if v == "Horde" then return "Horde" end
-    return "Both (Off)"
-  end
-
-  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(questFrameDrop, function(self, level)
-      local info = UDDM_CreateInfo()
-      for _, def in ipairs(GetEffectiveFrames()) do
-        if type(def) == "table" and def.id then
-          local id = tostring(def.id)
-          info.text = id .. " (" .. tostring(def.type or "list") .. ")"
-          info.checked = (panels.quest._questTargetFrameID == id) and true or false
-          info.func = function()
-            panels.quest._questTargetFrameID = id
-            if UDDM_SetText then UDDM_SetText(questFrameDrop, id) end
-          end
-          UDDM_AddButton(info)
-        end
-      end
-    end)
-
-    UDDM_Initialize(questFactionDrop, function(self, level)
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Both (Off)"
-        info.checked = (panels.quest._questFaction == nil) and true or false
-        info.func = function()
-          panels.quest._questFaction = nil
-          if UDDM_SetText then UDDM_SetText(questFactionDrop, FactionLabel(nil)) end
-        end
-        UDDM_AddButton(info)
-      end
-
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Alliance"
-        info.checked = (panels.quest._questFaction == "Alliance") and true or false
-        info.func = function()
-          panels.quest._questFaction = "Alliance"
-          if UDDM_SetText then UDDM_SetText(questFactionDrop, FactionLabel("Alliance")) end
-        end
-        UDDM_AddButton(info)
-      end
-
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Horde"
-        info.checked = (panels.quest._questFaction == "Horde") and true or false
-        info.func = function()
-          panels.quest._questFaction = "Horde"
-          if UDDM_SetText then UDDM_SetText(questFactionDrop, FactionLabel("Horde")) end
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    UDDM_Initialize(questColorDrop, function(self, level)
-      for _, name in ipairs({ "None", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.checked = (panels.quest._questColorName == name) and true or false
-        info.func = function() SetQuestColor(name) end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    UDDM_Initialize(qLevelOpDrop, function(self, level)
-      local function Add(name, op)
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.checked = (panels.quest._playerLevelOp == op) and true or false
-        info.func = function()
-          panels.quest._playerLevelOp = op
-          if UDDM_SetText then UDDM_SetText(qLevelOpDrop, name) end
-        end
-        UDDM_AddButton(info)
-      end
-      Add("Off", nil)
-      Add("<", "<")
-      Add("<=", "<=")
-      Add("=", "=")
-      Add(">=", ">=")
-      Add(">", ">")
-      Add("!=", "!=")
-    end)
-  else
-    -- fallback: simple editbox if dropdown template is unavailable
-    local fb = CreateFrame("EditBox", nil, panels.quest, "InputBoxTemplate")
-    fb:SetSize(80, 20)
-    fb:SetPoint("TOPLEFT", 245, -206)
-    fb:SetAutoFocus(false)
-    fb:SetText("list1")
-    fb:SetScript("OnEnterPressed", function(self)
-      local v = tostring(self:GetText() or ""):gsub("%s+", "")
-      if v == "" then v = "list1" end
-      panels.quest._questTargetFrameID = v
-      self:SetText(v)
-      self:ClearFocus()
-    end)
-    questFrameDrop:Hide()
-
-    local fbf = CreateFrame("EditBox", nil, panels.quest, "InputBoxTemplate")
-    fbf:SetSize(80, 20)
-    fbf:SetPoint("TOPLEFT", 410, -206)
-    fbf:SetAutoFocus(false)
-    fbf:SetText("both")
-    fbf:SetScript("OnEnterPressed", function(self)
-      local v = tostring(self:GetText() or ""):lower():gsub("%s+", "")
-      if v == "a" or v == "alliance" then
-        panels.quest._questFaction = "Alliance"
-        self:SetText("Alliance")
-      elseif v == "h" or v == "horde" then
-        panels.quest._questFaction = "Horde"
-        self:SetText("Horde")
-      else
-        panels.quest._questFaction = nil
-        self:SetText("both")
-      end
-      self:ClearFocus()
-    end)
-    questFactionDrop:Hide()
-
-    local cfb = CreateFrame("EditBox", nil, panels.quest, "InputBoxTemplate")
-    cfb:SetSize(80, 20)
-    cfb:SetPoint("TOPLEFT", 12, -292)
-    cfb:SetAutoFocus(false)
-    cfb:SetText("none")
-    cfb:SetScript("OnEnterPressed", function(self)
-      local v = tostring(self:GetText() or ""):lower():gsub("%s+", "")
-      if v == "green" then
-        panels.quest._questColor = { 0.1, 1.0, 0.1 }
-      elseif v == "blue" then
-        panels.quest._questColor = { 0.2, 0.6, 1.0 }
-      elseif v == "yellow" then
-        panels.quest._questColor = { 1.0, 0.9, 0.2 }
-      elseif v == "red" then
-        panels.quest._questColor = { 1.0, 0.2, 0.2 }
-      elseif v == "cyan" then
-        panels.quest._questColor = { 0.2, 1.0, 1.0 }
-      else
-        panels.quest._questColor = nil
-        v = "none"
-      end
-      self:SetText(v)
-      self:ClearFocus()
-    end)
-    questColorDrop:Hide()
-
-    qLevelOpDrop:Hide()
-    qLevelLabel:Hide()
-    qLevelBox:Hide()
-  end
-
-  local addQuestBtn = CreateFrame("Button", nil, panels.quest, "UIPanelButtonTemplate")
-  addQuestBtn:SetSize(140, 22)
-  addQuestBtn:SetPoint("TOPLEFT", 12, -340)
-  addQuestBtn:SetText("Add Quest Rule")
-
-  panels.quest._questIDBox = questIDBox
-  panels.quest._questInfoBox = qiBox
-  panels.quest._questAfterBox = afterBox
-  panels.quest._titleBox = qTitleBox
-  panels.quest._locBox = qLocBox
-  panels.quest._questFrameDrop = questFrameDrop
-  panels.quest._questFactionDrop = questFactionDrop
-  panels.quest._questColorDrop = questColorDrop
-  panels.quest._addQuestBtn = addQuestBtn
-
-  local cancelQuestEditBtn = CreateFrame("Button", nil, panels.quest, "UIPanelButtonTemplate")
-  cancelQuestEditBtn:SetSize(120, 22)
-  cancelQuestEditBtn:SetPoint("LEFT", addQuestBtn, "RIGHT", 8, 0)
-  cancelQuestEditBtn:SetText("Cancel Edit")
-  cancelQuestEditBtn:Hide()
-  panels.quest._cancelEditBtn = cancelQuestEditBtn
-
-  -- Quick color palette for quest text color
-  CreateQuickColorPalette(panels.quest, addQuestBtn, "TOPLEFT", "TOPLEFT", 0, 33, {
-    cols = 5,
-    getColor = function()
-      if type(panels.quest._questColor) == "table" then
-        return panels.quest._questColor[1], panels.quest._questColor[2], panels.quest._questColor[3]
-      end
-      return nil
-    end,
-    onPick = function(r, g, b)
-      panels.quest._questColor = { r, g, b }
-      panels.quest._questColorName = "Custom"
-      if UDDM_SetText then UDDM_SetText(questColorDrop, ColorLabel("Custom")) end
-    end,
-  })
-
-  addQuestBtn:SetScript("OnClick", function()
-    local wasEditing = (panels.quest._editingCustomIndex ~= nil) and true or false
-    local questID = tonumber(questIDBox:GetText() or "")
-    if not questID or questID <= 0 then
-      Print("Enter a questID > 0.")
-      return
-    end
-
-    local targetFrame = tostring(panels.quest._questTargetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = "list1" end
-
-    local infoText = tostring(qiBox:GetText() or "")
-    infoText = infoText:gsub("\r\n?", "\n")
-    -- Preserve leading spaces/tabs for indentation; only strip trailing whitespace and blank-line padding.
-    infoText = infoText:gsub("^\n+", ""):gsub("\n+$", "")
-    infoText = infoText:gsub("%s+$", "")
-    local questInfo = (infoText ~= "") and infoText or nil
-
-    local titleText = tostring(qTitleBox:GetText() or "")
-    titleText = titleText:gsub("^%s+", ""):gsub("%s+$", "")
-    local title = (titleText ~= "") and titleText or nil
-
-    local afterID = tonumber(afterBox:GetText() or "")
-    local prereq = nil
-    if afterID and afterID > 0 then
-      prereq = { afterID }
-    end
-
-    local locText = tostring(qLocBox:GetText() or ""):gsub("%s+", "")
-    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
-
-    local rules = GetCustomRules()
-    if panels.quest._editingCustomIndex and type(rules[panels.quest._editingCustomIndex]) == "table" then
-      local rule = rules[panels.quest._editingCustomIndex]
-      rule.questID = questID
-      rule.frameID = targetFrame
-      rule.questInfo = questInfo
-      rule.label = title
-      rule.prereq = prereq
-      rule.faction = panels.quest._questFaction
-      rule.color = panels.quest._questColor
-      rule.locationID = locationID
-
-      local op = panels.quest._playerLevelOp
-      local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
-      if lvl and lvl <= 0 then lvl = nil end
-      if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
-      else
-        rule.playerLevelOp = nil
-        rule.playerLevel = nil
-      end
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = true end
-
-      panels.quest._editingCustomIndex = nil
-      addQuestBtn:SetText("Add Quest Rule")
-      cancelQuestEditBtn:Hide()
-      Print("Saved quest rule.")
-    else
-      local key = string.format("custom:q:%d:%s:%d", tostring(questID), tostring(targetFrame), (#rules + 1))
-
-      local op = panels.quest._playerLevelOp
-      local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
-      if lvl and lvl <= 0 then lvl = nil end
-      if not (op and lvl) then op = nil; lvl = nil end
-
-      rules[#rules + 1] = {
-        key = key,
-        questID = questID,
-        frameID = targetFrame,
-        questInfo = questInfo,
-        label = title,
-        prereq = prereq,
-        faction = panels.quest._questFaction,
-        color = panels.quest._questColor,
-        locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
-        hideWhenCompleted = true,
-      }
-
-      Print("Added quest rule for quest " .. questID .. " -> " .. targetFrame)
-    end
-
-    CreateAllFrames()
-    RefreshAll()
-    RefreshRulesList()
-    if wasEditing then
-      SelectTab("rules")
-    end
-  end)
-
-  cancelQuestEditBtn:SetScript("OnClick", function()
-    panels.quest._editingCustomIndex = nil
-    addQuestBtn:SetText("Add Quest Rule")
-    cancelQuestEditBtn:Hide()
-  end)
-
-  -- ITEMS tab
-  local itemsTitle = panels.items:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  itemsTitle:SetPoint("TOPLEFT", 12, -40)
-  itemsTitle:SetText("Items")
-
-  local itemIDLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  itemIDLabel:SetPoint("TOPLEFT", 12, -70)
-  itemIDLabel:SetText("ItemID")
-
-  local itemIDBox = CreateFrame("EditBox", nil, panels.items, "InputBoxTemplate")
-  itemIDBox:SetSize(90, 20)
-  itemIDBox:SetPoint("TOPLEFT", 12, -86)
-  itemIDBox:SetAutoFocus(false)
-  itemIDBox:SetNumeric(true)
-  itemIDBox:SetText("0")
-
-  local itemNameLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  itemNameLabel:SetPoint("TOPLEFT", 110, -70)
-  itemNameLabel:SetText("Label (optional)")
-
-  local itemLabelBox = CreateFrame("EditBox", nil, panels.items, "InputBoxTemplate")
-  itemLabelBox:SetSize(220, 20)
-  itemLabelBox:SetPoint("TOPLEFT", 110, -86)
-  itemLabelBox:SetAutoFocus(false)
-  itemLabelBox:SetText("")
-
-  local useNameCheck = CreateFrame("CheckButton", nil, panels.items, "UICheckButtonTemplate")
-  useNameCheck:SetPoint("TOPLEFT", 340, -88)
-  SetCheckButtonLabel(useNameCheck, "Use name from ID")
-  useNameCheck:SetChecked(true)
-
-  local itemsFrameLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  itemsFrameLabel:SetPoint("TOPLEFT", 12, -116)
-  itemsFrameLabel:SetText("Bar / List")
-
-  local itemsFrameDrop = CreateFrame("Frame", nil, panels.items, "UIDropDownMenuTemplate")
-  itemsFrameDrop:SetPoint("TOPLEFT", -8, -144)
-  if UDDM_SetWidth then UDDM_SetWidth(itemsFrameDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(itemsFrameDrop, "list1") end
-  panels.items._targetFrameID = "list1"
-
-  local itemsFactionLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  itemsFactionLabel:SetPoint("TOPLEFT", 180, -116)
-  itemsFactionLabel:SetText("Faction")
-
-  local itemsFactionDrop = CreateFrame("Frame", nil, panels.items, "UIDropDownMenuTemplate")
-  itemsFactionDrop:SetPoint("TOPLEFT", 165, -144)
-  if UDDM_SetWidth then UDDM_SetWidth(itemsFactionDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(itemsFactionDrop, "Both (Off)") end
-  panels.items._faction = nil
-
-  local itemsColorLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  itemsColorLabel:SetPoint("TOPLEFT", 340, -116)
-  itemsColorLabel:SetText("Color")
-
-  local itemsColorDrop = CreateFrame("Frame", nil, panels.items, "UIDropDownMenuTemplate")
-  itemsColorDrop:SetPoint("TOPLEFT", 325, -144)
-  if UDDM_SetWidth then UDDM_SetWidth(itemsColorDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(itemsColorDrop, "None") end
-  panels.items._color = nil
-
-  -- Quick color palette for item text color
-  CreateQuickColorPalette(panels.items, itemsColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 12, {
-    cols = 5,
-    getColor = function()
-      if type(panels.items._color) == "table" then
-        return panels.items._color[1], panels.items._color[2], panels.items._color[3]
-      end
-      return nil
-    end,
-    onPick = function(r, g, b)
-      panels.items._color = { r, g, b }
-      if UDDM_SetText then UDDM_SetText(itemsColorDrop, "Custom") end
-    end,
-  })
-
-  local repFactionLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  repFactionLabel:SetPoint("TOPLEFT", 12, -180)
-  repFactionLabel:SetText("Rep FactionID")
-
-  local repFactionBox = CreateFrame("EditBox", nil, panels.items, "InputBoxTemplate")
-  repFactionBox:SetSize(90, 20)
-  repFactionBox:SetPoint("TOPLEFT", 12, -196)
-  repFactionBox:SetAutoFocus(false)
-  repFactionBox:SetNumeric(true)
-  repFactionBox:SetText("0")
-
-  local repMinLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  repMinLabel:SetPoint("TOPLEFT", 110, -180)
-  repMinLabel:SetText("Min Rep")
-
-  local repMinDrop = CreateFrame("Frame", nil, panels.items, "UIDropDownMenuTemplate")
-  repMinDrop:SetPoint("TOPLEFT", 95, -208)
-  if UDDM_SetWidth then UDDM_SetWidth(repMinDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(repMinDrop, "Off") end
-  panels.items._repMinStanding = nil
-
-  local hideAcquired = CreateFrame("CheckButton", nil, panels.items, "UICheckButtonTemplate")
-  hideAcquired:SetPoint("TOPLEFT", 250, -198)
-  SetCheckButtonLabel(hideAcquired, "Hide when acquired")
-  hideAcquired:SetChecked(false)
-
-  local hideExalted = CreateFrame("CheckButton", nil, panels.items, "UICheckButtonTemplate")
-  hideExalted:SetPoint("TOPLEFT", 400, -198)
-  SetCheckButtonLabel(hideExalted, "Hide when exalted")
-  hideExalted:SetChecked(false)
-
-  local restedOnly = CreateFrame("CheckButton", nil, panels.items, "UICheckButtonTemplate")
-  restedOnly:SetPoint("TOPLEFT", 12, -222)
-  SetCheckButtonLabel(restedOnly, "Rested areas only")
-  restedOnly:SetChecked(false)
-
-  local itemsLevelLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  itemsLevelLabel:SetPoint("TOPLEFT", 250, -228)
-  itemsLevelLabel:SetText("Player level")
-
-  local itemsLevelOpDrop = CreateFrame("Frame", nil, panels.items, "UIDropDownMenuTemplate")
-  itemsLevelOpDrop:SetPoint("TOPLEFT", 235, -248)
-  if UDDM_SetWidth then UDDM_SetWidth(itemsLevelOpDrop, 70) end
-  if UDDM_SetText then UDDM_SetText(itemsLevelOpDrop, "Off") end
-  panels.items._playerLevelOp = nil
-
-  local itemsLevelBox = CreateFrame("EditBox", nil, panels.items, "InputBoxTemplate")
-  itemsLevelBox:SetSize(50, 20)
-  itemsLevelBox:SetPoint("TOPLEFT", 340, -244)
-  itemsLevelBox:SetAutoFocus(false)
-  itemsLevelBox:SetNumeric(true)
-  itemsLevelBox:SetText("0")
-
-  local itemsLocLabel = panels.items:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  itemsLocLabel:SetPoint("TOPLEFT", 12, -252)
-  itemsLocLabel:SetText("LocationID (uiMapID)")
-
-  local itemsLocBox = CreateFrame("EditBox", nil, panels.items, "InputBoxTemplate")
-  itemsLocBox:SetSize(90, 20)
-  itemsLocBox:SetPoint("TOPLEFT", 12, -268)
-  itemsLocBox:SetAutoFocus(false)
-  itemsLocBox:SetText("0")
-
-  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(itemsFrameDrop, function(self, level)
-      for _, def in ipairs(GetEffectiveFrames()) do
-        if type(def) == "table" and def.id then
-          local id = tostring(def.id)
-          local info = UDDM_CreateInfo()
-          info.text = id .. " (" .. tostring(def.type or "list") .. ")"
-          info.checked = (panels.items._targetFrameID == id) and true or false
-          info.func = function()
-            panels.items._targetFrameID = id
-            if UDDM_SetText then UDDM_SetText(itemsFrameDrop, id) end
-          end
-          UDDM_AddButton(info)
-        end
-      end
-    end)
-
-    UDDM_Initialize(itemsFactionDrop, function(self, level)
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Both (Off)"
-        info.checked = (panels.items._faction == nil) and true or false
-        info.func = function()
-          panels.items._faction = nil
-          if UDDM_SetText then UDDM_SetText(itemsFactionDrop, "Both (Off)") end
-        end
-        UDDM_AddButton(info)
-      end
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Alliance"
-        info.checked = (panels.items._faction == "Alliance") and true or false
-        info.func = function()
-          panels.items._faction = "Alliance"
-          if UDDM_SetText then UDDM_SetText(itemsFactionDrop, "Alliance") end
-        end
-        UDDM_AddButton(info)
-      end
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Horde"
-        info.checked = (panels.items._faction == "Horde") and true or false
-        info.func = function()
-          panels.items._faction = "Horde"
-          if UDDM_SetText then UDDM_SetText(itemsFactionDrop, "Horde") end
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    local function SetItemsColor(name)
-      if name == "None" then
-        panels.items._color = nil
-      elseif name == "Green" then
-        panels.items._color = { 0.1, 1.0, 0.1 }
-      elseif name == "Blue" then
-        panels.items._color = { 0.2, 0.6, 1.0 }
-      elseif name == "Yellow" then
-        panels.items._color = { 1.0, 0.9, 0.2 }
-      elseif name == "Red" then
-        panels.items._color = { 1.0, 0.2, 0.2 }
-      elseif name == "Cyan" then
-        panels.items._color = { 0.2, 1.0, 1.0 }
-      else
-        panels.items._color = nil
-        name = "None"
-      end
-      if UDDM_SetText then UDDM_SetText(itemsColorDrop, name) end
-    end
-
-    UDDM_Initialize(itemsColorDrop, function(self, level)
-      for _, name in ipairs({ "None", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.func = function() SetItemsColor(name) end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    UDDM_Initialize(repMinDrop, function(self, level)
-      local function Add(name, standing)
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.checked = (panels.items._repMinStanding == standing) and true or false
-        info.func = function()
-          panels.items._repMinStanding = standing
-          if UDDM_SetText then UDDM_SetText(repMinDrop, name) end
-        end
-        UDDM_AddButton(info)
-      end
-      Add("Off", nil)
-      Add("Friendly", 5)
-      Add("Honored", 6)
-      Add("Revered", 7)
-      Add("Exalted", 8)
-    end)
-
-    UDDM_Initialize(itemsLevelOpDrop, function(self, level)
-      local function Add(name, op)
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.checked = (panels.items._playerLevelOp == op) and true or false
-        info.func = function()
-          panels.items._playerLevelOp = op
-          if UDDM_SetText then UDDM_SetText(itemsLevelOpDrop, name) end
-        end
-        UDDM_AddButton(info)
-      end
-      Add("Off", nil)
-      Add("<", "<")
-      Add("<=", "<=")
-      Add("=", "=")
-      Add(">=", ">=")
-      Add(">", ">")
-      Add("!=", "!=")
-    end)
-  end
-
-  local addItemBtn = CreateFrame("Button", nil, panels.items, "UIPanelButtonTemplate")
-  addItemBtn:SetSize(140, 22)
-  addItemBtn:SetPoint("TOPLEFT", 12, -312)
-  addItemBtn:SetText("Add Item Entry")
-
-  panels.items._itemIDBox = itemIDBox
-  panels.items._itemLabelBox = itemLabelBox
-  panels.items._useNameCheck = useNameCheck
-  panels.items._repFactionBox = repFactionBox
-  panels.items._repMinDrop = repMinDrop
-  panels.items._hideAcquired = hideAcquired
-  panels.items._hideExalted = hideExalted
-  panels.items._restedOnly = restedOnly
-  panels.items._locBox = itemsLocBox
-  panels.items._itemsFrameDrop = itemsFrameDrop
-  panels.items._itemsFactionDrop = itemsFactionDrop
-  panels.items._itemsColorDrop = itemsColorDrop
-  panels.items._addItemBtn = addItemBtn
-
-  local cancelItemEditBtn = CreateFrame("Button", nil, panels.items, "UIPanelButtonTemplate")
-  cancelItemEditBtn:SetSize(120, 22)
-  cancelItemEditBtn:SetPoint("LEFT", addItemBtn, "RIGHT", 8, 0)
-  cancelItemEditBtn:SetText("Cancel Edit")
-  cancelItemEditBtn:Hide()
-  panels.items._cancelEditBtn = cancelItemEditBtn
-
-  addItemBtn:SetScript("OnClick", function()
-    local wasEditing = (panels.items._editingCustomIndex ~= nil) and true or false
-    local itemID = tonumber(itemIDBox:GetText() or "")
-    if not itemID or itemID <= 0 then
-      Print("Enter an itemID > 0.")
-      return
-    end
-
-    local targetFrame = tostring(panels.items._targetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = "list1" end
-
-    local repFactionID = tonumber(repFactionBox:GetText() or "")
-    if repFactionID and repFactionID <= 0 then repFactionID = nil end
-
-    local labelText = tostring(itemLabelBox:GetText() or "")
-    labelText = labelText:gsub("^%s+", ""):gsub("%s+$", "")
-    local label = (useNameCheck:GetChecked() and true or false) and nil or ((labelText ~= "") and labelText or nil)
-
-    local rep = nil
-    if repFactionID and panels.items._repMinStanding then
-      rep = { factionID = repFactionID, minStanding = panels.items._repMinStanding, hideWhenExalted = hideExalted:GetChecked() and true or false }
-    elseif repFactionID and hideExalted:GetChecked() then
-      rep = { factionID = repFactionID, hideWhenExalted = true }
-    end
-
-    local locText = tostring(itemsLocBox:GetText() or ""):gsub("%s+", "")
-    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
-
-    local rules = GetCustomRules()
-    if panels.items._editingCustomIndex and type(rules[panels.items._editingCustomIndex]) == "table" then
-      local rule = rules[panels.items._editingCustomIndex]
-      rule.frameID = targetFrame
-      rule.faction = panels.items._faction
-      rule.color = panels.items._color
-      rule.restedOnly = restedOnly:GetChecked() and true or false
-      rule.label = label
-      rule.rep = rep
-      rule.locationID = locationID
-
-      local op = panels.items._playerLevelOp
-      local lvl = itemsLevelBox and tonumber(itemsLevelBox:GetText() or "") or nil
-      if lvl and lvl <= 0 then lvl = nil end
-      if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
-      else
-        rule.playerLevelOp = nil
-        rule.playerLevel = nil
-      end
-
-      rule.item = rule.item or {}
-      rule.item.itemID = itemID
-      rule.item.required = tonumber(rule.item.required) or 1
-      rule.item.hideWhenAcquired = hideAcquired:GetChecked() and true or false
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
-
-      panels.items._editingCustomIndex = nil
-      addItemBtn:SetText("Add Item Entry")
-      cancelItemEditBtn:Hide()
-      Print("Saved item entry.")
-    else
-      local key = string.format("custom:item:%d:%s:%d", tostring(itemID), tostring(targetFrame), (#rules + 1))
-      local op = panels.items._playerLevelOp
-      local lvl = itemsLevelBox and tonumber(itemsLevelBox:GetText() or "") or nil
-      if lvl and lvl <= 0 then lvl = nil end
-      if not (op and lvl) then op = nil; lvl = nil end
-      rules[#rules + 1] = {
-        key = key,
-        frameID = targetFrame,
-        faction = panels.items._faction,
-        color = panels.items._color,
-        restedOnly = restedOnly:GetChecked() and true or false,
-        label = label,
-        rep = rep,
-        locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
-        item = {
-          itemID = itemID,
-          required = 1,
-          hideWhenAcquired = hideAcquired:GetChecked() and true or false,
-        },
-        hideWhenCompleted = false,
-      }
-
-      Print("Added item entry for item " .. itemID .. " -> " .. targetFrame)
-    end
-
-    CreateAllFrames()
-    RefreshAll()
-    RefreshRulesList()
-    if wasEditing then
-      SelectTab("rules")
-    end
-  end)
-
-  cancelItemEditBtn:SetScript("OnClick", function()
-    panels.items._editingCustomIndex = nil
-    addItemBtn:SetText("Add Item Entry")
-    cancelItemEditBtn:Hide()
-  end)
-
-  -- TEXT tab
-  local textTitle = panels.text:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  textTitle:SetPoint("TOPLEFT", 12, -40)
-  textTitle:SetText("Text")
-
-  local textBox = CreateFrame("EditBox", nil, panels.text, "InputBoxTemplate")
-  textBox:SetSize(400, 20)
-  textBox:SetPoint("TOPLEFT", 12, -70)
-  textBox:SetAutoFocus(false)
-  textBox:SetText("")
-
-  local textFrameDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
-  textFrameDrop:SetPoint("TOPLEFT", -8, -114)
-  if UDDM_SetWidth then UDDM_SetWidth(textFrameDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(textFrameDrop, "list1") end
-  panels.text._targetFrameID = "list1"
-
-  local textFactionDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
-  textFactionDrop:SetPoint("TOPLEFT", 165, -114)
-  if UDDM_SetWidth then UDDM_SetWidth(textFactionDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(textFactionDrop, "Both (Off)") end
-  panels.text._faction = nil
-
-  local textColorDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
-  textColorDrop:SetPoint("TOPLEFT", 325, -114)
-  if UDDM_SetWidth then UDDM_SetWidth(textColorDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(textColorDrop, "None") end
-  panels.text._color = nil
-
-  -- Quick color palette for text entry color
-  CreateQuickColorPalette(panels.text, textColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 12, {
-    cols = 5,
-    getColor = function()
-      if type(panels.text._color) == "table" then
-        return panels.text._color[1], panels.text._color[2], panels.text._color[3]
-      end
-      return nil
-    end,
-    onPick = function(r, g, b)
-      panels.text._color = { r, g, b }
-      if UDDM_SetText then UDDM_SetText(textColorDrop, "Custom") end
-    end,
-  })
-
-  local textRepFactionBox = CreateFrame("EditBox", nil, panels.text, "InputBoxTemplate")
-  textRepFactionBox:SetSize(90, 20)
-  textRepFactionBox:SetPoint("TOPLEFT", 12, -170)
-  textRepFactionBox:SetAutoFocus(false)
-  textRepFactionBox:SetNumeric(true)
-  textRepFactionBox:SetText("0")
-
-  local textRepMinDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
-  textRepMinDrop:SetPoint("TOPLEFT", 95, -182)
-  if UDDM_SetWidth then UDDM_SetWidth(textRepMinDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(textRepMinDrop, "Off") end
-  panels.text._repMinStanding = nil
-
-  local textRestedOnly = CreateFrame("CheckButton", nil, panels.text, "UICheckButtonTemplate")
-  textRestedOnly:SetPoint("TOPLEFT", 250, -196)
-  SetCheckButtonLabel(textRestedOnly, "Rested areas only")
-  textRestedOnly:SetChecked(false)
-
-  local textLocLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  textLocLabel:SetPoint("TOPLEFT", 250, -156)
-  textLocLabel:SetText("LocationID (uiMapID)")
-
-  local textLocBox = CreateFrame("EditBox", nil, panels.text, "InputBoxTemplate")
-  textLocBox:SetSize(90, 20)
-  textLocBox:SetPoint("TOPLEFT", 250, -172)
-  textLocBox:SetAutoFocus(false)
-  textLocBox:SetText("0")
-
-  local textLevelLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  textLevelLabel:SetPoint("TOPLEFT", 400, -156)
-  textLevelLabel:SetText("Player level")
-
-  local textLevelOpDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
-  textLevelOpDrop:SetPoint("TOPLEFT", 385, -176)
-  if UDDM_SetWidth then UDDM_SetWidth(textLevelOpDrop, 70) end
-  if UDDM_SetText then UDDM_SetText(textLevelOpDrop, "Off") end
-  panels.text._playerLevelOp = nil
-
-  local textLevelBox = CreateFrame("EditBox", nil, panels.text, "InputBoxTemplate")
-  textLevelBox:SetSize(50, 20)
-  textLevelBox:SetPoint("TOPLEFT", 490, -172)
-  textLevelBox:SetAutoFocus(false)
-  textLevelBox:SetNumeric(true)
-  textLevelBox:SetText("0")
-
-  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(textFrameDrop, function(self, level)
-      for _, def in ipairs(GetEffectiveFrames()) do
-        if type(def) == "table" and def.id then
-          local id = tostring(def.id)
-          local info = UDDM_CreateInfo()
-          info.text = id .. " (" .. tostring(def.type or "list") .. ")"
-          info.checked = (panels.text._targetFrameID == id) and true or false
-          info.func = function()
-            panels.text._targetFrameID = id
-            if UDDM_SetText then UDDM_SetText(textFrameDrop, id) end
-          end
-          UDDM_AddButton(info)
-        end
-      end
-    end)
-
-    UDDM_Initialize(textFactionDrop, function(self, level)
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Both (Off)"
-        info.checked = (panels.text._faction == nil) and true or false
-        info.func = function()
-          panels.text._faction = nil
-          if UDDM_SetText then UDDM_SetText(textFactionDrop, "Both (Off)") end
-        end
-        UDDM_AddButton(info)
-      end
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Alliance"
-        info.checked = (panels.text._faction == "Alliance") and true or false
-        info.func = function()
-          panels.text._faction = "Alliance"
-          if UDDM_SetText then UDDM_SetText(textFactionDrop, "Alliance") end
-        end
-        UDDM_AddButton(info)
-      end
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Horde"
-        info.checked = (panels.text._faction == "Horde") and true or false
-        info.func = function()
-          panels.text._faction = "Horde"
-          if UDDM_SetText then UDDM_SetText(textFactionDrop, "Horde") end
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    local function SetTextColor(name)
-      if name == "None" then
-        panels.text._color = nil
-      elseif name == "Green" then
-        panels.text._color = { 0.1, 1.0, 0.1 }
-      elseif name == "Blue" then
-        panels.text._color = { 0.2, 0.6, 1.0 }
-      elseif name == "Yellow" then
-        panels.text._color = { 1.0, 0.9, 0.2 }
-      elseif name == "Red" then
-        panels.text._color = { 1.0, 0.2, 0.2 }
-      elseif name == "Cyan" then
-        panels.text._color = { 0.2, 1.0, 1.0 }
-      else
-        panels.text._color = nil
-        name = "None"
-      end
-      if UDDM_SetText then UDDM_SetText(textColorDrop, name) end
-    end
-
-    UDDM_Initialize(textColorDrop, function(self, level)
-      for _, name in ipairs({ "None", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.func = function() SetTextColor(name) end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    UDDM_Initialize(textRepMinDrop, function(self, level)
-      local function Add(name, standing)
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.checked = (panels.text._repMinStanding == standing) and true or false
-        info.func = function()
-          panels.text._repMinStanding = standing
-          if UDDM_SetText then UDDM_SetText(textRepMinDrop, name) end
-        end
-        UDDM_AddButton(info)
-      end
-      Add("Off", nil)
-      Add("Friendly", 5)
-      Add("Honored", 6)
-      Add("Revered", 7)
-      Add("Exalted", 8)
-    end)
-
-    UDDM_Initialize(textLevelOpDrop, function(self, level)
-      local function Add(name, op)
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.checked = (panels.text._playerLevelOp == op) and true or false
-        info.func = function()
-          panels.text._playerLevelOp = op
-          if UDDM_SetText then UDDM_SetText(textLevelOpDrop, name) end
-        end
-        UDDM_AddButton(info)
-      end
-      Add("Off", nil)
-      Add("<", "<")
-      Add("<=", "<=")
-      Add("=", "=")
-      Add(">=", ">=")
-      Add(">", ">")
-      Add("!=", "!=")
-    end)
-  end
-
-  local addTextBtn = CreateFrame("Button", nil, panels.text, "UIPanelButtonTemplate")
-  addTextBtn:SetSize(140, 22)
-  addTextBtn:SetPoint("TOPLEFT", 12, -236)
-  addTextBtn:SetText("Add Text Entry")
-
-  panels.text._textBox = textBox
-  panels.text._textFrameDrop = textFrameDrop
-  panels.text._textFactionDrop = textFactionDrop
-  panels.text._textColorDrop = textColorDrop
-  panels.text._repFactionBox = textRepFactionBox
-  panels.text._repMinDrop = textRepMinDrop
-  panels.text._restedOnly = textRestedOnly
-  panels.text._locBox = textLocBox
-  panels.text._addTextBtn = addTextBtn
-
-  local cancelTextEditBtn = CreateFrame("Button", nil, panels.text, "UIPanelButtonTemplate")
-  cancelTextEditBtn:SetSize(120, 22)
-  cancelTextEditBtn:SetPoint("LEFT", addTextBtn, "RIGHT", 8, 0)
-  cancelTextEditBtn:SetText("Cancel Edit")
-  cancelTextEditBtn:Hide()
-  panels.text._cancelEditBtn = cancelTextEditBtn
-
-  addTextBtn:SetScript("OnClick", function()
-    local wasEditing = (panels.text._editingCustomIndex ~= nil) and true or false
-    local t = tostring(textBox:GetText() or "")
-    t = t:gsub("^%s+", ""):gsub("%s+$", "")
-    if t == "" then
-      Print("Enter some text.")
-      return
-    end
-
-    local targetFrame = tostring(panels.text._targetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = "list1" end
-
-    local repFactionID = tonumber(textRepFactionBox:GetText() or "")
-    if repFactionID and repFactionID <= 0 then repFactionID = nil end
-    local rep = nil
-    if repFactionID and panels.text._repMinStanding then
-      rep = { factionID = repFactionID, minStanding = panels.text._repMinStanding }
-    end
-
-    local locText = tostring(textLocBox:GetText() or ""):gsub("%s+", "")
-    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
-
-    local rules = GetCustomRules()
-    if panels.text._editingCustomIndex and type(rules[panels.text._editingCustomIndex]) == "table" then
-      local rule = rules[panels.text._editingCustomIndex]
-      rule.frameID = targetFrame
-      rule.label = t
-      rule.faction = panels.text._faction
-      rule.color = panels.text._color
-      rule.rep = rep
-      rule.restedOnly = textRestedOnly:GetChecked() and true or false
-      rule.locationID = locationID
-
-      local op = panels.text._playerLevelOp
-      local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
-      if lvl and lvl <= 0 then lvl = nil end
-      if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
-      else
-        rule.playerLevelOp = nil
-        rule.playerLevel = nil
-      end
-
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
-
-      panels.text._editingCustomIndex = nil
-      addTextBtn:SetText("Add Text Entry")
-      cancelTextEditBtn:Hide()
-      Print("Saved text entry.")
-    else
-      local key = string.format("custom:text:%s:%s:%d", tostring(targetFrame), tostring(t), (#rules + 1))
-      local op = panels.text._playerLevelOp
-      local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
-      if lvl and lvl <= 0 then lvl = nil end
-      if not (op and lvl) then op = nil; lvl = nil end
-      rules[#rules + 1] = {
-        key = key,
-        frameID = targetFrame,
-        label = t,
-        faction = panels.text._faction,
-        color = panels.text._color,
-        rep = rep,
-        restedOnly = textRestedOnly:GetChecked() and true or false,
-        locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
-        hideWhenCompleted = false,
-      }
-
-      Print("Added text entry -> " .. targetFrame)
-    end
-
-    CreateAllFrames()
-    RefreshAll()
-    RefreshRulesList()
-    if wasEditing then
-      SelectTab("rules")
-    end
-  end)
-
-  cancelTextEditBtn:SetScript("OnClick", function()
-    panels.text._editingCustomIndex = nil
-    addTextBtn:SetText("Add Text Entry")
-    cancelTextEditBtn:Hide()
-  end)
-
-  -- SPELLS tab
-  local spellsTitle = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  spellsTitle:SetPoint("TOPLEFT", 12, -40)
-  spellsTitle:SetText("Spells")
-
-  local spellsDetailsScroll = CreateFrame("ScrollFrame", nil, panels.spells, "UIPanelScrollFrameTemplate")
-  spellsDetailsScroll:SetPoint("TOPLEFT", 12, -70)
-  spellsDetailsScroll:SetSize(530, 70)
-
-  local spellsDetailsBox = CreateFrame("EditBox", nil, spellsDetailsScroll)
-  spellsDetailsBox:SetMultiLine(true)
-  spellsDetailsBox:SetAutoFocus(false)
-  spellsDetailsBox:SetFontObject("ChatFontNormal")
-  spellsDetailsBox:SetWidth(500)
-  spellsDetailsBox:SetTextInsets(6, 6, 6, 6)
-  spellsDetailsBox:SetText("")
-  spellsDetailsBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  spellsDetailsScroll:SetScrollChild(spellsDetailsBox)
-  AddPlaceholder(spellsDetailsBox, "Details")
-
-  local classLabel = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  classLabel:SetPoint("TOPLEFT", 12, -146)
-  classLabel:SetText("Class")
-
-  local classDrop = CreateFrame("Frame", nil, panels.spells, "UIDropDownMenuTemplate")
-  classDrop:SetPoint("TOPLEFT", -8, -174)
-  if UDDM_SetWidth then UDDM_SetWidth(classDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(classDrop, "None") end
-  panels.spells._class = nil
-
-  local knownLabel = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  knownLabel:SetPoint("TOPLEFT", 180, -146)
-  knownLabel:SetText("Spell Known")
-
-  local knownBox = CreateFrame("EditBox", nil, panels.spells, "InputBoxTemplate")
-  knownBox:SetSize(90, 20)
-  knownBox:SetPoint("TOPLEFT", 180, -162)
-  knownBox:SetAutoFocus(false)
-  knownBox:SetNumeric(true)
-  knownBox:SetText("0")
-
-  local notKnownLabel = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  notKnownLabel:SetPoint("TOPLEFT", 280, -146)
-  notKnownLabel:SetText("Not Spell Known")
-
-  local notKnownBox = CreateFrame("EditBox", nil, panels.spells, "InputBoxTemplate")
-  notKnownBox:SetSize(90, 20)
-  notKnownBox:SetPoint("TOPLEFT", 280, -162)
-  notKnownBox:SetAutoFocus(false)
-  notKnownBox:SetNumeric(true)
-  notKnownBox:SetText("0")
-
-  local locLabel = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  locLabel:SetPoint("TOPLEFT", 380, -146)
-  locLabel:SetText("LocationID (uiMapID)")
-
-  local locBox = CreateFrame("EditBox", nil, panels.spells, "InputBoxTemplate")
-  locBox:SetSize(90, 20)
-  locBox:SetPoint("TOPLEFT", 380, -162)
-  locBox:SetAutoFocus(false)
-  locBox:SetText("0")
-
-  local notInGroupCheck = CreateFrame("CheckButton", nil, panels.spells, "UICheckButtonTemplate")
-  notInGroupCheck:SetPoint("TOPLEFT", 12, -198)
-  SetCheckButtonLabel(notInGroupCheck, "Not in group")
-  notInGroupCheck:SetChecked(false)
-
-  local spellsLevelLabel = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  spellsLevelLabel:SetPoint("TOPLEFT", 180, -202)
-  spellsLevelLabel:SetText("Player level")
-
-  local spellsLevelOpDrop = CreateFrame("Frame", nil, panels.spells, "UIDropDownMenuTemplate")
-  spellsLevelOpDrop:SetPoint("TOPLEFT", 165, -222)
-  if UDDM_SetWidth then UDDM_SetWidth(spellsLevelOpDrop, 70) end
-  if UDDM_SetText then UDDM_SetText(spellsLevelOpDrop, "Off") end
-  panels.spells._playerLevelOp = nil
-
-  local spellsLevelBox = CreateFrame("EditBox", nil, panels.spells, "InputBoxTemplate")
-  spellsLevelBox:SetSize(50, 20)
-  spellsLevelBox:SetPoint("TOPLEFT", 270, -218)
-  spellsLevelBox:SetAutoFocus(false)
-  spellsLevelBox:SetNumeric(true)
-  spellsLevelBox:SetText("0")
-
-  local spellsFrameDrop = CreateFrame("Frame", nil, panels.spells, "UIDropDownMenuTemplate")
-  spellsFrameDrop:SetPoint("TOPLEFT", -8, -238)
-  if UDDM_SetWidth then UDDM_SetWidth(spellsFrameDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(spellsFrameDrop, "list1") end
-  panels.spells._targetFrameID = "list1"
-
-  local spellsFactionDrop = CreateFrame("Frame", nil, panels.spells, "UIDropDownMenuTemplate")
-  spellsFactionDrop:SetPoint("TOPLEFT", 165, -238)
-  if UDDM_SetWidth then UDDM_SetWidth(spellsFactionDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(spellsFactionDrop, "Both (Off)") end
-  panels.spells._faction = nil
-
-  local spellsColorDrop = CreateFrame("Frame", nil, panels.spells, "UIDropDownMenuTemplate")
-  spellsColorDrop:SetPoint("TOPLEFT", 325, -238)
-  if UDDM_SetWidth then UDDM_SetWidth(spellsColorDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(spellsColorDrop, "None") end
-  panels.spells._color = nil
-
-  -- Quick color palette for spell text color
-  CreateQuickColorPalette(panels.spells, spellsColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 20, {
-    cols = 5,
-    getColor = function()
-      if type(panels.spells._color) == "table" then
-        return panels.spells._color[1], panels.spells._color[2], panels.spells._color[3]
-      end
-      return nil
-    end,
-    onPick = function(r, g, b)
-      panels.spells._color = { r, g, b }
-      if UDDM_SetText then UDDM_SetText(spellsColorDrop, "Custom") end
-    end,
-  })
-
-  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(classDrop, function(self, level)
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "None"
-        info.checked = (panels.spells._class == nil) and true or false
-        info.func = function()
-          panels.spells._class = nil
-          if UDDM_SetText then UDDM_SetText(classDrop, "None") end
-        end
-        UDDM_AddButton(info)
-      end
-
-      for _, tok in ipairs({
-        "DEATHKNIGHT","DEMONHUNTER","DRUID","EVOKER","HUNTER","MAGE","MONK","PALADIN","PRIEST","ROGUE","SHAMAN","WARLOCK","WARRIOR",
-      }) do
-        local info = UDDM_CreateInfo()
-        info.text = tok
-        info.checked = (panels.spells._class == tok) and true or false
-        info.func = function()
-          panels.spells._class = tok
-          if UDDM_SetText then UDDM_SetText(classDrop, tok) end
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    UDDM_Initialize(spellsFrameDrop, function(self, level)
-      for _, def in ipairs(GetEffectiveFrames()) do
-        if type(def) == "table" and def.id then
-          local id = tostring(def.id)
-          local info = UDDM_CreateInfo()
-          info.text = id .. " (" .. tostring(def.type or "list") .. ")"
-          info.checked = (panels.spells._targetFrameID == id) and true or false
-          info.func = function()
-            panels.spells._targetFrameID = id
-            if UDDM_SetText then UDDM_SetText(spellsFrameDrop, id) end
-          end
-          UDDM_AddButton(info)
-        end
-      end
-    end)
-
-    UDDM_Initialize(spellsFactionDrop, function(self, level)
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Both (Off)"
-        info.checked = (panels.spells._faction == nil) and true or false
-        info.func = function()
-          panels.spells._faction = nil
-          if UDDM_SetText then UDDM_SetText(spellsFactionDrop, "Both (Off)") end
-        end
-        UDDM_AddButton(info)
-      end
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Alliance"
-        info.checked = (panels.spells._faction == "Alliance") and true or false
-        info.func = function()
-          panels.spells._faction = "Alliance"
-          if UDDM_SetText then UDDM_SetText(spellsFactionDrop, "Alliance") end
-        end
-        UDDM_AddButton(info)
-      end
-      do
-        local info = UDDM_CreateInfo()
-        info.text = "Horde"
-        info.checked = (panels.spells._faction == "Horde") and true or false
-        info.func = function()
-          panels.spells._faction = "Horde"
-          if UDDM_SetText then UDDM_SetText(spellsFactionDrop, "Horde") end
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    local function SetSpellsColor(name)
-      if name == "None" then
-        panels.spells._color = nil
-      elseif name == "Green" then
-        panels.spells._color = { 0.1, 1.0, 0.1 }
-      elseif name == "Blue" then
-        panels.spells._color = { 0.2, 0.6, 1.0 }
-      elseif name == "Yellow" then
-        panels.spells._color = { 1.0, 0.9, 0.2 }
-      elseif name == "Red" then
-        panels.spells._color = { 1.0, 0.2, 0.2 }
-      elseif name == "Cyan" then
-        panels.spells._color = { 0.2, 1.0, 1.0 }
-      else
-        panels.spells._color = nil
-        name = "None"
-      end
-      if UDDM_SetText then UDDM_SetText(spellsColorDrop, name) end
-    end
-
-    UDDM_Initialize(spellsColorDrop, function(self, level)
-      for _, name in ipairs({ "None", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.func = function() SetSpellsColor(name) end
-        UDDM_AddButton(info)
-      end
-    end)
-
-    UDDM_Initialize(spellsLevelOpDrop, function(self, level)
-      local function Add(name, op)
-        local info = UDDM_CreateInfo()
-        info.text = name
-        info.checked = (panels.spells._playerLevelOp == op) and true or false
-        info.func = function()
-          panels.spells._playerLevelOp = op
-          if UDDM_SetText then UDDM_SetText(spellsLevelOpDrop, name) end
-        end
-        UDDM_AddButton(info)
-      end
-      Add("Off", nil)
-      Add("<", "<")
-      Add("<=", "<=")
-      Add("=", "=")
-      Add(">=", ">=")
-      Add(">", ">")
-      Add("!=", "!=")
-    end)
-  end
-
-  local addSpellBtn = CreateFrame("Button", nil, panels.spells, "UIPanelButtonTemplate")
-  addSpellBtn:SetSize(140, 22)
-  addSpellBtn:SetPoint("TOPLEFT", 12, -280)
-  addSpellBtn:SetText("Add Spell Rule")
-
-  panels.spells._detailsBox = spellsDetailsBox
-  panels.spells._classDrop = classDrop
-  panels.spells._knownBox = knownBox
-  panels.spells._notKnownBox = notKnownBox
-  panels.spells._locBox = locBox
-  panels.spells._notInGroup = notInGroupCheck
-  panels.spells._spellsFrameDrop = spellsFrameDrop
-  panels.spells._spellsFactionDrop = spellsFactionDrop
-  panels.spells._spellsColorDrop = spellsColorDrop
-  panels.spells._addSpellBtn = addSpellBtn
-
-  local cancelSpellEditBtn = CreateFrame("Button", nil, panels.spells, "UIPanelButtonTemplate")
-  cancelSpellEditBtn:SetSize(120, 22)
-  cancelSpellEditBtn:SetPoint("LEFT", addSpellBtn, "RIGHT", 8, 0)
-  cancelSpellEditBtn:SetText("Cancel Edit")
-  cancelSpellEditBtn:Hide()
-  panels.spells._cancelEditBtn = cancelSpellEditBtn
-
-  addSpellBtn:SetScript("OnClick", function()
-    local wasEditing = (panels.spells._editingCustomIndex ~= nil) and true or false
-    local targetFrame = tostring(panels.spells._targetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = "list1" end
-
-    local known = tonumber(knownBox:GetText() or "")
-    if known and known <= 0 then known = nil end
-    local notKnown = tonumber(notKnownBox:GetText() or "")
-    if notKnown and notKnown <= 0 then notKnown = nil end
-    if not known and not notKnown then
-      Print("Enter Spell Known and/or Not Spell Known.")
-      return
-    end
-
-    local locText = tostring(locBox:GetText() or ""):gsub("%s+", "")
-    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
-
-    local details = tostring(spellsDetailsBox:GetText() or "")
-    details = details:gsub("^%s+", ""):gsub("%s+$", "")
-    local label = (details ~= "") and details or nil
-
-    local rules = GetCustomRules()
-    if panels.spells._editingCustomIndex and type(rules[panels.spells._editingCustomIndex]) == "table" then
-      local rule = rules[panels.spells._editingCustomIndex]
-      rule.frameID = targetFrame
-      rule.label = label
-      rule.class = panels.spells._class
-      rule.faction = panels.spells._faction
-      rule.color = panels.spells._color
-      rule.notInGroup = notInGroupCheck:GetChecked() and true or false
-      rule.locationID = locationID
-      rule.spellKnown = known
-      rule.notSpellKnown = notKnown
-
-      local op = panels.spells._playerLevelOp
-      local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
-      if lvl and lvl <= 0 then lvl = nil end
-      if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
-      else
-        rule.playerLevelOp = nil
-        rule.playerLevel = nil
-      end
-
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
-
-      panels.spells._editingCustomIndex = nil
-      addSpellBtn:SetText("Add Spell Rule")
-      cancelSpellEditBtn:Hide()
-      Print("Saved spell rule.")
-    else
-      local key = string.format("custom:spell:%s:%d", tostring(targetFrame), (#rules + 1))
-
-      local op = panels.spells._playerLevelOp
-      local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
-      if lvl and lvl <= 0 then lvl = nil end
-      if not (op and lvl) then op = nil; lvl = nil end
-
-      local r = {
-        key = key,
-        frameID = targetFrame,
-        label = label,
-        class = panels.spells._class,
-        faction = panels.spells._faction,
-        color = panels.spells._color,
-        notInGroup = notInGroupCheck:GetChecked() and true or false,
-        locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
-        hideWhenCompleted = false,
-      }
-      if known then r.spellKnown = known end
-      if notKnown then r.notSpellKnown = notKnown end
-
-      rules[#rules + 1] = r
-      Print("Added spell rule -> " .. targetFrame)
-    end
-    CreateAllFrames()
-    RefreshAll()
-    RefreshRulesList()
-    if wasEditing then
-      SelectTab("rules")
-    end
-  end)
-
-  cancelSpellEditBtn:SetScript("OnClick", function()
-    panels.spells._editingCustomIndex = nil
-    addSpellBtn:SetText("Add Spell Rule")
-    cancelSpellEditBtn:Hide()
-  end)
-
-  local function ClearTabEdits()
-    if panels.quest then
-      panels.quest._editingCustomIndex = nil
-      if panels.quest._addQuestBtn then panels.quest._addQuestBtn:SetText("Add Quest Rule") end
-      if panels.quest._cancelEditBtn then panels.quest._cancelEditBtn:Hide() end
-    end
-    if panels.items then
-      panels.items._editingCustomIndex = nil
-      if panels.items._addItemBtn then panels.items._addItemBtn:SetText("Add Item Entry") end
-      if panels.items._cancelEditBtn then panels.items._cancelEditBtn:Hide() end
-    end
-    if panels.text then
-      panels.text._editingCustomIndex = nil
-      if panels.text._addTextBtn then panels.text._addTextBtn:SetText("Add Text Entry") end
-      if panels.text._cancelEditBtn then panels.text._cancelEditBtn:Hide() end
-    end
-    if panels.spells then
-      panels.spells._editingCustomIndex = nil
-      if panels.spells._addSpellBtn then panels.spells._addSpellBtn:SetText("Add Spell Rule") end
-      if panels.spells._cancelEditBtn then panels.spells._cancelEditBtn:Hide() end
-    end
-  end
-
-  local function ColorToNameLite(color)
-    if type(color) ~= "table" then return "None" end
-    local r, g, b = tonumber(color[1]), tonumber(color[2]), tonumber(color[3])
-    if r == 0.1 and g == 1.0 and b == 0.1 then return "Green" end
-    if r == 0.2 and g == 0.6 and b == 1.0 then return "Blue" end
-    if r == 1.0 and g == 0.9 and b == 0.2 then return "Yellow" end
-    if r == 1.0 and g == 0.2 and b == 0.2 then return "Red" end
-    if r == 0.2 and g == 1.0 and b == 1.0 then return "Cyan" end
-    return "Custom"
-  end
-
-  local function RepStandingLabelLite(standing)
-    standing = tonumber(standing)
-    if not standing then return "Off" end
-    if standing == 5 then return "Friendly" end
-    if standing == 6 then return "Honored" end
-    if standing == 7 then return "Revered" end
-    if standing == 8 then return "Exalted" end
-    return tostring(standing)
-  end
-
-  local function DetectRuleTypeLite(r)
-    if type(r) ~= "table" then return "text" end
-    if tonumber(r.questID) and tonumber(r.questID) > 0 then return "quest" end
-    if type(r.item) == "table" and tonumber(r.item.itemID) and tonumber(r.item.itemID) > 0 then return "item" end
-    if r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup then return "spell" end
-    return "text"
-  end
-
-  local function OpenCustomRuleInTab(customIndex)
-    if not optionsFrame then return end
-    local rules = GetCustomRules()
-    local rule = rules[customIndex]
-    if type(rule) ~= "table" then return end
-
-    if optionsFrame._ruleEditorFrame then
-      optionsFrame._ruleEditorFrame._skipRestore = true
-      optionsFrame._ruleEditorFrame:Hide()
-    end
-    ClearTabEdits()
-
-    local t = DetectRuleTypeLite(rule)
-    if t == "quest" then
-      SelectTab("quest")
-      panels.quest._editingCustomIndex = customIndex
-      if panels.quest._addQuestBtn then panels.quest._addQuestBtn:SetText("Save Quest Rule") end
-      if panels.quest._cancelEditBtn then panels.quest._cancelEditBtn:Show() end
-
-      if panels.quest._questIDBox then panels.quest._questIDBox:SetText(tostring(tonumber(rule.questID) or 0)) end
-      if panels.quest._questInfoBox then panels.quest._questInfoBox:SetText(tostring(rule.questInfo or rule.label or "")) end
-      if panels.quest._titleBox then panels.quest._titleBox:SetText(tostring(rule.label or "")) end
-      local after = 0
-      if type(rule.prereq) == "table" then
-        local n = tonumber(rule.prereq[1])
-        if n and n > 0 then after = n end
-      end
-      if panels.quest._questAfterBox then panels.quest._questAfterBox:SetText(tostring(after)) end
-      if panels.quest._locBox then panels.quest._locBox:SetText(tostring(rule.locationID or "0")) end
-
-      local frameID = tostring(rule.frameID or "list1")
-      panels.quest._questTargetFrameID = frameID
-      if UDDM_SetText and panels.quest._questFrameDrop then UDDM_SetText(panels.quest._questFrameDrop, frameID) end
-
-      panels.quest._questFaction = (rule.faction == "Alliance" or rule.faction == "Horde") and rule.faction or nil
-      if UDDM_SetText and panels.quest._questFactionDrop and FactionLabel then
-        UDDM_SetText(panels.quest._questFactionDrop, FactionLabel(panels.quest._questFaction))
-      end
-
-      panels.quest._questColor = rule.color
-      if UDDM_SetText and panels.quest._questColorDrop and ColorLabel then
-        local name = ColorToNameLite(rule.color)
-        if name == "Custom" then name = ColorLabel("Custom") end
-        UDDM_SetText(panels.quest._questColorDrop, ColorLabel(name == "Custom" and "Custom" or name))
-      end
-
-      panels.quest._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and qLevelOpDrop then UDDM_SetText(qLevelOpDrop, panels.quest._playerLevelOp or "Off") end
-      if qLevelBox then qLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
-      return
-    end
-
-    if t == "item" then
-      SelectTab("items")
-      panels.items._editingCustomIndex = customIndex
-      if panels.items._addItemBtn then panels.items._addItemBtn:SetText("Save Item Entry") end
-      if panels.items._cancelEditBtn then panels.items._cancelEditBtn:Show() end
-
-      local itemID = (type(rule.item) == "table") and tonumber(rule.item.itemID) or 0
-      if panels.items._itemIDBox then panels.items._itemIDBox:SetText(tostring(itemID or 0)) end
-
-      local useName = (rule.label == nil)
-      if panels.items._useNameCheck then panels.items._useNameCheck:SetChecked(useName and true or false) end
-      if panels.items._itemLabelBox then panels.items._itemLabelBox:SetText(useName and "" or tostring(rule.label or "")) end
-
-      local frameID = tostring(rule.frameID or "list1")
-      panels.items._targetFrameID = frameID
-      if UDDM_SetText and panels.items._itemsFrameDrop then UDDM_SetText(panels.items._itemsFrameDrop, frameID) end
-
-      panels.items._faction = (rule.faction == "Alliance" or rule.faction == "Horde") and rule.faction or nil
-      if UDDM_SetText and panels.items._itemsFactionDrop then
-        UDDM_SetText(panels.items._itemsFactionDrop, panels.items._faction and tostring(panels.items._faction) or "Both (Off)")
-      end
-
-      panels.items._color = rule.color
-      if UDDM_SetText and panels.items._itemsColorDrop then
-        UDDM_SetText(panels.items._itemsColorDrop, ColorToNameLite(rule.color))
-      end
-
-      if panels.items._restedOnly then panels.items._restedOnly:SetChecked(rule.restedOnly and true or false) end
-      if panels.items._locBox then panels.items._locBox:SetText(tostring(rule.locationID or "0")) end
-      if panels.items._hideAcquired and type(rule.item) == "table" then
-        panels.items._hideAcquired:SetChecked(rule.item.hideWhenAcquired and true or false)
-      end
-
-      local repFactionID = 0
-      local repMin = nil
-      local repHideEx = false
-      if type(rule.rep) == "table" and rule.rep.factionID then
-        repFactionID = tonumber(rule.rep.factionID) or 0
-        repMin = tonumber(rule.rep.minStanding)
-        repHideEx = (rule.rep.hideWhenExalted == true)
-      end
-      if panels.items._repFactionBox then panels.items._repFactionBox:SetText(tostring(repFactionID or 0)) end
-      panels.items._repMinStanding = repMin
-      if UDDM_SetText and panels.items._repMinDrop then UDDM_SetText(panels.items._repMinDrop, RepStandingLabelLite(repMin)) end
-      if panels.items._hideExalted then panels.items._hideExalted:SetChecked(repHideEx and true or false) end
-
-      panels.items._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and itemsLevelOpDrop then UDDM_SetText(itemsLevelOpDrop, panels.items._playerLevelOp or "Off") end
-      if itemsLevelBox then itemsLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
-      return
-    end
-
-    if t == "spell" then
-      SelectTab("spells")
-      panels.spells._editingCustomIndex = customIndex
-      if panels.spells._addSpellBtn then panels.spells._addSpellBtn:SetText("Save Spell Rule") end
-      if panels.spells._cancelEditBtn then panels.spells._cancelEditBtn:Show() end
-
-      if panels.spells._detailsBox then panels.spells._detailsBox:SetText(tostring(rule.label or "")) end
-      if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown) or 0)) end
-      if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown) or 0)) end
-      if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.locationID or "0")) end
-      if panels.spells._notInGroup then panels.spells._notInGroup:SetChecked(rule.notInGroup and true or false) end
-
-      panels.spells._class = rule.class
-      if UDDM_SetText and panels.spells._classDrop then UDDM_SetText(panels.spells._classDrop, panels.spells._class or "None") end
-
-      local frameID = tostring(rule.frameID or "list1")
-      panels.spells._targetFrameID = frameID
-      if UDDM_SetText and panels.spells._spellsFrameDrop then UDDM_SetText(panels.spells._spellsFrameDrop, frameID) end
-
-      panels.spells._faction = (rule.faction == "Alliance" or rule.faction == "Horde") and rule.faction or nil
-      if UDDM_SetText and panels.spells._spellsFactionDrop then
-        UDDM_SetText(panels.spells._spellsFactionDrop, panels.spells._faction and tostring(panels.spells._faction) or "Both (Off)")
-      end
-
-      panels.spells._color = rule.color
-      if UDDM_SetText and panels.spells._spellsColorDrop then
-        UDDM_SetText(panels.spells._spellsColorDrop, ColorToNameLite(rule.color))
-      end
-
-      panels.spells._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and spellsLevelOpDrop then UDDM_SetText(spellsLevelOpDrop, panels.spells._playerLevelOp or "Off") end
-      if spellsLevelBox then spellsLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
-      return
-    end
-
-    -- text
-    SelectTab("text")
-    panels.text._editingCustomIndex = customIndex
-    if panels.text._addTextBtn then panels.text._addTextBtn:SetText("Save Text Entry") end
-    if panels.text._cancelEditBtn then panels.text._cancelEditBtn:Show() end
-
-    if panels.text._textBox then panels.text._textBox:SetText(tostring(rule.label or "")) end
-
-    local frameID = tostring(rule.frameID or "list1")
-    panels.text._targetFrameID = frameID
-    if UDDM_SetText and panels.text._textFrameDrop then UDDM_SetText(panels.text._textFrameDrop, frameID) end
-
-    panels.text._faction = (rule.faction == "Alliance" or rule.faction == "Horde") and rule.faction or nil
-    if UDDM_SetText and panels.text._textFactionDrop then
-      UDDM_SetText(panels.text._textFactionDrop, panels.text._faction and tostring(panels.text._faction) or "Both (Off)")
-    end
-
-    panels.text._color = rule.color
-    if UDDM_SetText and panels.text._textColorDrop then
-      UDDM_SetText(panels.text._textColorDrop, ColorToNameLite(rule.color))
-    end
-
-    local repFactionID = 0
-    local repMin = nil
-    if type(rule.rep) == "table" and rule.rep.factionID then
-      repFactionID = tonumber(rule.rep.factionID) or 0
-      repMin = tonumber(rule.rep.minStanding)
-    end
-    if panels.text._repFactionBox then panels.text._repFactionBox:SetText(tostring(repFactionID or 0)) end
-    panels.text._repMinStanding = repMin
-    if UDDM_SetText and panels.text._repMinDrop then UDDM_SetText(panels.text._repMinDrop, RepStandingLabelLite(repMin)) end
-    if panels.text._restedOnly then panels.text._restedOnly:SetChecked(rule.restedOnly and true or false) end
-    if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.locationID or "0")) end
-
-    panels.text._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-    if UDDM_SetText and textLevelOpDrop then UDDM_SetText(textLevelOpDrop, panels.text._playerLevelOp or "Off") end
-    if textLevelBox then textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
-  end
-
-  -- RULES tab (existing custom rules UI)
-  local rulesTitle = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  rulesTitle:SetPoint("TOPLEFT", 12, -40)
-  rulesTitle:SetText("Custom Rules")
-  f._rulesTitle = rulesTitle
-
-  local qBox = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
-  qBox:SetSize(70, 20)
-  qBox:SetPoint("TOPLEFT", 12, -65)
-  qBox:SetAutoFocus(false)
-  qBox:SetNumeric(true)
-  qBox:SetText("0")
-
-  local labelBox = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
-  labelBox:SetSize(210, 20)
-  labelBox:SetPoint("TOPLEFT", 90, -65)
-  labelBox:SetAutoFocus(false)
-  labelBox:SetText("")
-
-  local frameBox = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
-  frameBox:SetSize(70, 20)
-  frameBox:SetPoint("TOPLEFT", 310, -65)
-  frameBox:SetAutoFocus(false)
-  frameBox:SetText("bar1")
-
-  local reqInLog = CreateFrame("CheckButton", nil, panels.rules, "UICheckButtonTemplate")
-  reqInLog:SetPoint("TOPLEFT", 390, -69)
-  SetCheckButtonLabel(reqInLog, "In log")
-
-  local hideComp = CreateFrame("CheckButton", nil, panels.rules, "UICheckButtonTemplate")
-  hideComp:SetPoint("TOPLEFT", 460, -69)
-  SetCheckButtonLabel(hideComp, "Hide done")
-  hideComp:SetChecked(true)
-
-  local prereqLabel = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  prereqLabel:SetPoint("TOPLEFT", 12, -90)
-  prereqLabel:SetText("Prereq questIDs (comma-separated):")
-
-  local prereqBox = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
-  prereqBox:SetSize(210, 20)
-  prereqBox:SetPoint("TOPLEFT", 200, -96)
-  prereqBox:SetAutoFocus(false)
-  prereqBox:SetText("")
-
-  local groupLabel = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  groupLabel:SetPoint("TOPLEFT", 420, -90)
-  groupLabel:SetText("Group")
-
-  local groupBox = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
-  groupBox:SetSize(70, 20)
-  groupBox:SetPoint("TOPLEFT", 420, -96)
-  groupBox:SetAutoFocus(false)
-  groupBox:SetText("")
-
-  local orderLabel = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  orderLabel:SetPoint("TOPLEFT", 498, -90)
-  orderLabel:SetText("Order")
-
-  local orderBox = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
-  orderBox:SetSize(40, 20)
-  orderBox:SetPoint("TOPLEFT", 498, -96)
-  orderBox:SetAutoFocus(false)
-  orderBox:SetNumeric(true)
-  orderBox:SetText("0")
-
-  local viewLabel = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  viewLabel:SetPoint("TOPLEFT", 410, -46)
-  viewLabel:SetText("View")
-
-  local rulesViewDrop = CreateFrame("Frame", nil, panels.rules, "UIDropDownMenuTemplate")
-  rulesViewDrop:SetPoint("TOPLEFT", 440, -60)
-  if UDDM_SetWidth then UDDM_SetWidth(rulesViewDrop, 120) end
-  if UDDM_SetText then UDDM_SetText(rulesViewDrop, "All") end
-  f._rulesViewDrop = rulesViewDrop
-
-  local function GetRulesView()
-    if not optionsFrame then return "all" end
-    local v = tostring(optionsFrame._rulesView or GetUISetting("rulesView", "all") or "all")
-    if v ~= "all" and v ~= "custom" and v ~= "defaults" and v ~= "trash" then v = "all" end
-    return v
-  end
-
-  local function SetRulesView(v)
-    if not optionsFrame then return end
-    v = tostring(v or "all")
-    if v ~= "all" and v ~= "custom" and v ~= "defaults" and v ~= "trash" then v = "all" end
-    optionsFrame._rulesView = v
-    SetUISetting("rulesView", v)
-    if UDDM_SetText then
-      UDDM_SetText(rulesViewDrop, (v == "all") and "All" or (v == "defaults") and "Defaults" or (v == "trash") and "Trash" or "Custom")
-    end
-    RefreshRulesList()
-  end
-
-  f._rulesView = tostring(GetUISetting("rulesView", "all") or "all")
-
-  local addRuleBtn = CreateFrame("Button", nil, panels.rules, "UIPanelButtonTemplate")
-  addRuleBtn:SetSize(90, 22)
-  addRuleBtn:SetPoint("TOPLEFT", 12, -122)
-  addRuleBtn:SetText("New Rule")
-  addRuleBtn:Hide()
-
-  -- Legacy inline editor controls are hidden; create/edit happens in the type-specific tabs.
-  qBox:Hide(); labelBox:Hide(); frameBox:Hide(); reqInLog:Hide(); hideComp:Hide(); prereqLabel:Hide(); prereqBox:Hide(); groupLabel:Hide(); groupBox:Hide(); orderLabel:Hide(); orderBox:Hide()
-
-  local hint = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  hint:SetPoint("TOPLEFT", 110, -127)
-  hint:SetText("Create rules using the Quest / Items / Spell / Text tabs. Use this list to enable/disable and edit.")
-
-  local function RepStandingLabel(standing)
-    standing = tonumber(standing)
-    if not standing then return "Off" end
-    if standing == 5 then return "Friendly" end
-    if standing == 6 then return "Honored" end
-    if standing == 7 then return "Revered" end
-    if standing == 8 then return "Exalted" end
-    return tostring(standing)
-  end
-
-  local function ColorToName(color)
-    if type(color) ~= "table" then return "None" end
-    local r, g, b = tonumber(color[1]), tonumber(color[2]), tonumber(color[3])
-    if r == 0.1 and g == 1.0 and b == 0.1 then return "Green" end
-    if r == 0.2 and g == 0.6 and b == 1.0 then return "Blue" end
-    if r == 1.0 and g == 0.9 and b == 0.2 then return "Yellow" end
-    if r == 1.0 and g == 0.2 and b == 0.2 then return "Red" end
-    if r == 0.2 and g == 1.0 and b == 1.0 then return "Cyan" end
-    return "None"
-  end
-
-  local function NameToColor(name)
-    name = tostring(name or "None")
-    if name == "Green" then return { 0.1, 1.0, 0.1 } end
-    if name == "Blue" then return { 0.2, 0.6, 1.0 } end
-    if name == "Yellow" then return { 1.0, 0.9, 0.2 } end
-    if name == "Red" then return { 1.0, 0.2, 0.2 } end
-    if name == "Cyan" then return { 0.2, 1.0, 1.0 } end
-    return nil
-  end
-
-  local function ParsePrereqList(text)
-    local prereq = nil
-    local t = tostring(text or "")
-    t = t:gsub(";", ",")
-    for token in t:gmatch("[^,%s]+") do
-      local n = tonumber(token)
-      if n and n > 0 then
-        prereq = prereq or {}
-        prereq[#prereq + 1] = n
-      end
-    end
-    return prereq
-  end
-
-  local function PrereqListToText(prereq)
-    if type(prereq) ~= "table" then return "" end
-    local out = {}
-    for _, n in ipairs(prereq) do
-      local v = tonumber(n)
-      if v and v > 0 then out[#out + 1] = tostring(v) end
-    end
-    return table.concat(out, ",")
-  end
-
-  local function DetectRuleType(r)
-    if type(r) ~= "table" then return "text" end
-    if tonumber(r.questID) and tonumber(r.questID) > 0 then return "quest" end
-    if type(r.item) == "table" and r.item.itemID then return "item" end
-    if r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup then return "spell" end
-    return "text"
-  end
-
-  local ENABLE_RULE_EDITOR_OVERLAY = false
-
-  local function EnsureRuleEditor()
-    if not ENABLE_RULE_EDITOR_OVERLAY then return nil end
-    if optionsFrame and optionsFrame._ruleEditorFrame then return optionsFrame._ruleEditorFrame end
-    if not optionsFrame then return nil end
-
-    local ed = CreateFrame("Frame", nil, optionsFrame, "BackdropTemplate")
-    ed:SetPoint("TOPLEFT", optionsFrame, "TOPLEFT", 12, -40)
-    ed:SetPoint("BOTTOMRIGHT", optionsFrame, "BOTTOMRIGHT", -12, 44)
-    ed:SetFrameStrata("DIALOG")
-    ed:SetClampedToScreen(true)
-    ApplyFAOBackdrop(ed, 0.9)
-    ed:Hide()
-    ed._skipRestore = false
-
-    ed:HookScript("OnShow", function(self)
-      if not optionsFrame then return end
-      optionsFrame._tabBeforeRuleEditor = optionsFrame._tabBeforeRuleEditor or optionsFrame._activeTab or "rules"
-      for _, p in pairs(panels) do
-        if p and p.Hide then p:Hide() end
-      end
-      for _, btn in ipairs(tabs) do
-        if btn and btn.SetEnabled then btn:SetEnabled(false) end
-      end
-    end)
-
-    ed:HookScript("OnHide", function(self)
-      if self._skipRestore then
-        self._skipRestore = false
-        return
-      end
-      if not optionsFrame or not optionsFrame.IsShown or not optionsFrame:IsShown() then return end
-
-      for _, btn in ipairs(tabs) do
-        if btn and btn.SetEnabled then btn:SetEnabled(true) end
-      end
-
-      local prev = tostring(optionsFrame._tabBeforeRuleEditor or "rules")
-      optionsFrame._tabBeforeRuleEditor = nil
-      if not panels[prev] then prev = "rules" end
-      SelectTab(prev)
-    end)
-
-    local title = ed:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", 12, -10)
-    title:SetText("Rule Editor")
-    ed._title = title
-
-    local close = CreateFrame("Button", nil, ed, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", ed, "TOPRIGHT", 2, 2)
-
-    local typeLabel = ed:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    typeLabel:SetPoint("TOPLEFT", 12, -36)
-    typeLabel:SetText("Type")
-
-    local typeDrop = CreateFrame("Frame", nil, ed, "UIDropDownMenuTemplate")
-    typeDrop:SetPoint("TOPLEFT", -8, -56)
-    if UDDM_SetWidth then UDDM_SetWidth(typeDrop, 150) end
-    if UDDM_SetText then UDDM_SetText(typeDrop, "Text") end
-    ed._typeDrop = typeDrop
-    ed._type = "text"
-
-    local frameLabel = ed:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    frameLabel:SetPoint("TOPLEFT", 180, -36)
-    frameLabel:SetText("FrameID")
-
-    local frameIDBox = CreateFrame("EditBox", nil, ed, "InputBoxTemplate")
-    frameIDBox:SetSize(90, 20)
-    frameIDBox:SetPoint("TOPLEFT", 180, -52)
-    frameIDBox:SetAutoFocus(false)
-    frameIDBox:SetText("list1")
-    ed._frameIDBox = frameIDBox
-
-    local labelLabel = ed:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    labelLabel:SetPoint("TOPLEFT", 280, -36)
-    labelLabel:SetText("Custom name")
-
-    local labelEdit = CreateFrame("EditBox", nil, ed, "InputBoxTemplate")
-    labelEdit:SetSize(220, 20)
-    labelEdit:SetPoint("TOPLEFT", 280, -52)
-    labelEdit:SetAutoFocus(false)
-    labelEdit:SetText("")
-    ed._labelEdit = labelEdit
-
-    local factionLabel = ed:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    factionLabel:SetPoint("TOPLEFT", 12, -84)
-    factionLabel:SetText("Faction")
-
-    local factionDrop = CreateFrame("Frame", nil, ed, "UIDropDownMenuTemplate")
-    factionDrop:SetPoint("TOPLEFT", -8, -104)
-    if UDDM_SetWidth then UDDM_SetWidth(factionDrop, 150) end
-    if UDDM_SetText then UDDM_SetText(factionDrop, "Both (Off)") end
-    ed._factionDrop = factionDrop
-    ed._faction = nil
-
-    local colorLabel = ed:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    colorLabel:SetPoint("TOPLEFT", 180, -84)
-    colorLabel:SetText("Color")
-
-    local colorDrop = CreateFrame("Frame", nil, ed, "UIDropDownMenuTemplate")
-    colorDrop:SetPoint("TOPLEFT", 165, -104)
-    if UDDM_SetWidth then UDDM_SetWidth(colorDrop, 150) end
-    if UDDM_SetText then UDDM_SetText(colorDrop, "None") end
-    ed._colorDrop = colorDrop
-    ed._colorName = "None"
-
-    local restedOnly = CreateFrame("CheckButton", nil, ed, "UICheckButtonTemplate")
-    restedOnly:SetPoint("TOPLEFT", 330, -104)
-    SetCheckButtonLabel(restedOnly, "Rested only")
-    restedOnly:SetChecked(false)
-    ed._restedOnly = restedOnly
-
-    local hideDone = CreateFrame("CheckButton", nil, ed, "UICheckButtonTemplate")
-    hideDone:SetPoint("TOPLEFT", 430, -104)
-    SetCheckButtonLabel(hideDone, "Hide done")
-    hideDone:SetChecked(false)
-    ed._hideDone = hideDone
-
-    local levelLabel = ed:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    levelLabel:SetPoint("TOPLEFT", 330, -84)
-    levelLabel:SetText("Player level")
-
-    local levelOpDrop = CreateFrame("Frame", nil, ed, "UIDropDownMenuTemplate")
-    levelOpDrop:SetPoint("TOPLEFT", 315, -104)
-    if UDDM_SetWidth then UDDM_SetWidth(levelOpDrop, 70) end
-    if UDDM_SetText then UDDM_SetText(levelOpDrop, "Off") end
-    ed._playerLevelOpDrop = levelOpDrop
-    ed._playerLevelOp = nil
-
-    local levelBox = CreateFrame("EditBox", nil, ed, "InputBoxTemplate")
-    levelBox:SetSize(50, 20)
-    levelBox:SetPoint("TOPLEFT", 420, -100)
-    levelBox:SetAutoFocus(false)
-    levelBox:SetNumeric(true)
-    levelBox:SetText("0")
-    ed._playerLevelBox = levelBox
-
-    local repFactionLabel = ed:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    repFactionLabel:SetPoint("TOPLEFT", 12, -132)
-    repFactionLabel:SetText("Rep FactionID")
-
-    local repFactionBox = CreateFrame("EditBox", nil, ed, "InputBoxTemplate")
-    repFactionBox:SetSize(90, 20)
-    repFactionBox:SetPoint("TOPLEFT", 12, -148)
-    repFactionBox:SetAutoFocus(false)
-    repFactionBox:SetNumeric(true)
-    repFactionBox:SetText("0")
-    ed._repFactionBox = repFactionBox
-
-    local repMinLabel = ed:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    repMinLabel:SetPoint("TOPLEFT", 110, -132)
-    repMinLabel:SetText("Min Rep")
-
-    local repMinDrop = CreateFrame("Frame", nil, ed, "UIDropDownMenuTemplate")
-    repMinDrop:SetPoint("TOPLEFT", 95, -160)
-    if UDDM_SetWidth then UDDM_SetWidth(repMinDrop, 150) end
-    if UDDM_SetText then UDDM_SetText(repMinDrop, "Off") end
-    ed._repMinDrop = repMinDrop
-    ed._repMinStanding = nil
-
-    local hideExalted = CreateFrame("CheckButton", nil, ed, "UICheckButtonTemplate")
-    hideExalted:SetPoint("TOPLEFT", 250, -152)
-    SetCheckButtonLabel(hideExalted, "Hide when exalted")
-    hideExalted:SetChecked(false)
-    ed._hideExalted = hideExalted
-
-    local questGroup = CreateFrame("Frame", nil, ed)
-    questGroup:SetPoint("TOPLEFT", 12, -190)
-    questGroup:SetPoint("TOPRIGHT", -12, -190)
-    questGroup:SetHeight(90)
-    ed._questGroup = questGroup
-
-    local questIDLabel = questGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    questIDLabel:SetPoint("TOPLEFT", 0, 0)
-    questIDLabel:SetText("QuestID")
-
-    local questIDBox = CreateFrame("EditBox", nil, questGroup, "InputBoxTemplate")
-    questIDBox:SetSize(90, 20)
-    questIDBox:SetPoint("TOPLEFT", 0, -16)
-    questIDBox:SetAutoFocus(false)
-    questIDBox:SetNumeric(true)
-    questIDBox:SetText("0")
-    ed._questIDBox = questIDBox
-
-    local reqInLog2 = CreateFrame("CheckButton", nil, questGroup, "UICheckButtonTemplate")
-    reqInLog2:SetPoint("TOPLEFT", 100, -16)
-    SetCheckButtonLabel(reqInLog2, "In log")
-    reqInLog2:SetChecked(false)
-    ed._reqInLog = reqInLog2
-
-    local prereq2Label = questGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    prereq2Label:SetPoint("TOPLEFT", 0, -44)
-    prereq2Label:SetText("Prereq questIDs")
-
-    local prereq2Box = CreateFrame("EditBox", nil, questGroup, "InputBoxTemplate")
-    prereq2Box:SetSize(200, 20)
-    prereq2Box:SetPoint("TOPLEFT", 0, -60)
-    prereq2Box:SetAutoFocus(false)
-    prereq2Box:SetText("")
-    ed._prereqBox = prereq2Box
-
-    local group2Label = questGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    group2Label:SetPoint("TOPLEFT", 210, -44)
-    group2Label:SetText("Group")
-
-    local group2Box = CreateFrame("EditBox", nil, questGroup, "InputBoxTemplate")
-    group2Box:SetSize(120, 20)
-    group2Box:SetPoint("TOPLEFT", 210, -60)
-    group2Box:SetAutoFocus(false)
-    group2Box:SetText("")
-    ed._groupBox = group2Box
-
-    local order2Label = questGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    order2Label:SetPoint("TOPLEFT", 340, -44)
-    order2Label:SetText("Order")
-
-    local order2Box = CreateFrame("EditBox", nil, questGroup, "InputBoxTemplate")
-    order2Box:SetSize(60, 20)
-    order2Box:SetPoint("TOPLEFT", 340, -60)
-    order2Box:SetAutoFocus(false)
-    order2Box:SetNumeric(true)
-    order2Box:SetText("0")
-    ed._orderBox = order2Box
-
-    local itemGroup = CreateFrame("Frame", nil, ed)
-    itemGroup:SetPoint("TOPLEFT", 12, -190)
-    itemGroup:SetPoint("TOPRIGHT", -12, -190)
-    itemGroup:SetHeight(60)
-    ed._itemGroup = itemGroup
-
-    local itemIDLabel = itemGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    itemIDLabel:SetPoint("TOPLEFT", 0, 0)
-    itemIDLabel:SetText("ItemID")
-
-    local itemIDBox = CreateFrame("EditBox", nil, itemGroup, "InputBoxTemplate")
-    itemIDBox:SetSize(90, 20)
-    itemIDBox:SetPoint("TOPLEFT", 0, -16)
-    itemIDBox:SetAutoFocus(false)
-    itemIDBox:SetNumeric(true)
-    itemIDBox:SetText("0")
-    ed._itemIDBox = itemIDBox
-
-    local hideAcq = CreateFrame("CheckButton", nil, itemGroup, "UICheckButtonTemplate")
-    hideAcq:SetPoint("TOPLEFT", 100, -18)
-    SetCheckButtonLabel(hideAcq, "Hide when acquired")
-    hideAcq:SetChecked(false)
-    ed._hideAcquired = hideAcq
-
-    local spellGroup = CreateFrame("Frame", nil, ed)
-    spellGroup:SetPoint("TOPLEFT", 12, -190)
-    spellGroup:SetPoint("TOPRIGHT", -12, -190)
-    spellGroup:SetHeight(90)
-    ed._spellGroup = spellGroup
-
-    local class2Label = spellGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    class2Label:SetPoint("TOPLEFT", 0, 0)
-    class2Label:SetText("Class")
-
-    local classDrop2 = CreateFrame("Frame", nil, spellGroup, "UIDropDownMenuTemplate")
-    classDrop2:SetPoint("TOPLEFT", -8, -20)
-    if UDDM_SetWidth then UDDM_SetWidth(classDrop2, 150) end
-    if UDDM_SetText then UDDM_SetText(classDrop2, "None") end
-    ed._classDrop = classDrop2
-    ed._class = nil
-
-    local known2Label = spellGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    known2Label:SetPoint("TOPLEFT", 160, 0)
-    known2Label:SetText("Spell Known")
-
-    local known2Box = CreateFrame("EditBox", nil, spellGroup, "InputBoxTemplate")
-    known2Box:SetSize(90, 20)
-    known2Box:SetPoint("TOPLEFT", 160, -16)
-    known2Box:SetAutoFocus(false)
-    known2Box:SetNumeric(true)
-    known2Box:SetText("0")
-    ed._spellKnownBox = known2Box
-
-    local notKnown2Label = spellGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    notKnown2Label:SetPoint("TOPLEFT", 260, 0)
-    notKnown2Label:SetText("Not Known")
-
-    local notKnown2Box = CreateFrame("EditBox", nil, spellGroup, "InputBoxTemplate")
-    notKnown2Box:SetSize(90, 20)
-    notKnown2Box:SetPoint("TOPLEFT", 260, -16)
-    notKnown2Box:SetAutoFocus(false)
-    notKnown2Box:SetNumeric(true)
-    notKnown2Box:SetText("0")
-    ed._notSpellKnownBox = notKnown2Box
-
-    local loc2Label = spellGroup:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    loc2Label:SetPoint("TOPLEFT", 360, 0)
-    loc2Label:SetText("LocationID")
-
-    local loc2Box = CreateFrame("EditBox", nil, spellGroup, "InputBoxTemplate")
-    loc2Box:SetSize(90, 20)
-    loc2Box:SetPoint("TOPLEFT", 360, -16)
-    loc2Box:SetAutoFocus(false)
-    loc2Box:SetText("0")
-    ed._locationIDBox = loc2Box
-
-    local notInGroup2 = CreateFrame("CheckButton", nil, spellGroup, "UICheckButtonTemplate")
-    notInGroup2:SetPoint("TOPLEFT", 0, -44)
-    SetCheckButtonLabel(notInGroup2, "Not in group")
-    notInGroup2:SetChecked(false)
-    ed._notInGroup = notInGroup2
-
-    local function ShowType(t)
-      ed._type = t
-      if ed._questGroup then ed._questGroup:SetShown(t == "quest") end
-      if ed._itemGroup then ed._itemGroup:SetShown(t == "item") end
-      if ed._spellGroup then ed._spellGroup:SetShown(t == "spell") end
-    end
-    ed._showType = ShowType
-
-    if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-      UDDM_Initialize(typeDrop, function(self, level)
-        local function Add(name, t)
-          local info = UDDM_CreateInfo()
-          info.text = name
-          info.checked = (ed._type == t) and true or false
-          info.func = function()
-            if UDDM_SetText then UDDM_SetText(typeDrop, name) end
-            ShowType(t)
-          end
-          UDDM_AddButton(info)
-        end
-        Add("Quest", "quest")
-        Add("Item", "item")
-        Add("Text", "text")
-        Add("Spell", "spell")
-      end)
-
-      UDDM_Initialize(factionDrop, function(self, level)
-        local function Add(name, v)
-          local info = UDDM_CreateInfo()
-          info.text = name
-          info.checked = (ed._faction == v) and true or false
-          info.func = function()
-            ed._faction = v
-            if UDDM_SetText then UDDM_SetText(factionDrop, name) end
-          end
-          UDDM_AddButton(info)
-        end
-        Add("Both (Off)", nil)
-        Add("Alliance", "Alliance")
-        Add("Horde", "Horde")
-      end)
-
-      UDDM_Initialize(colorDrop, function(self, level)
-        for _, name in ipairs({ "None", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
-          local info = UDDM_CreateInfo()
-          info.text = name
-          info.checked = (ed._colorName == name) and true or false
-          info.func = function()
-            ed._colorName = name
-            if UDDM_SetText then UDDM_SetText(colorDrop, name) end
-          end
-          UDDM_AddButton(info)
-        end
-      end)
-
-      UDDM_Initialize(repMinDrop, function(self, level)
-        local function Add(name, standing)
-          local info = UDDM_CreateInfo()
-          info.text = name
-          info.checked = (ed._repMinStanding == standing) and true or false
-          info.func = function()
-            ed._repMinStanding = standing
-            if UDDM_SetText then UDDM_SetText(repMinDrop, name) end
-          end
-          UDDM_AddButton(info)
-        end
-        Add("Off", nil)
-        Add("Friendly", 5)
-        Add("Honored", 6)
-        Add("Revered", 7)
-        Add("Exalted", 8)
-      end)
-
-      UDDM_Initialize(levelOpDrop, function(self, level)
-        local function Add(name, op)
-          local info = UDDM_CreateInfo()
-          info.text = name
-          info.checked = (ed._playerLevelOp == op) and true or false
-          info.func = function()
-            ed._playerLevelOp = op
-            if UDDM_SetText then UDDM_SetText(levelOpDrop, name) end
-          end
-          UDDM_AddButton(info)
-        end
-        Add("Off", nil)
-        Add("<", "<")
-        Add("<=", "<=")
-        Add("=", "=")
-        Add(">=", ">=")
-        Add(">", ">")
-        Add("!=", "!=")
-      end)
-
-      UDDM_Initialize(classDrop2, function(self, level)
-        do
-          local info = UDDM_CreateInfo()
-          info.text = "None"
-          info.checked = (ed._class == nil) and true or false
-          info.func = function()
-            ed._class = nil
-            if UDDM_SetText then UDDM_SetText(classDrop2, "None") end
-          end
-          UDDM_AddButton(info)
-        end
-
-        for _, tok in ipairs({
-          "DEATHKNIGHT","DEMONHUNTER","DRUID","EVOKER","HUNTER","MAGE","MONK","PALADIN","PRIEST","ROGUE","SHAMAN","WARLOCK","WARRIOR",
-        }) do
-          local info = UDDM_CreateInfo()
-          info.text = tok
-          info.checked = (ed._class == tok) and true or false
-          info.func = function()
-            ed._class = tok
-            if UDDM_SetText then UDDM_SetText(classDrop2, tok) end
-          end
-          UDDM_AddButton(info)
-        end
-      end)
-    end
-
-    local saveBtn = CreateFrame("Button", nil, ed, "UIPanelButtonTemplate")
-    saveBtn:SetSize(120, 22)
-    saveBtn:SetPoint("BOTTOMRIGHT", -12, 12)
-    saveBtn:SetText("Save")
-    ed._saveBtn = saveBtn
-
-    local cancelBtn = CreateFrame("Button", nil, ed, "UIPanelButtonTemplate")
-    cancelBtn:SetSize(120, 22)
-    cancelBtn:SetPoint("RIGHT", saveBtn, "LEFT", -8, 0)
-    cancelBtn:SetText("Cancel")
-    cancelBtn:SetScript("OnClick", function() ed:Hide() end)
-
-    ShowType("text")
-
-    optionsFrame._ruleEditorFrame = ed
-    return ed
-  end
-
-  local function OpenRuleEditor(mode, customIndex)
-    if not ENABLE_RULE_EDITOR_OVERLAY then
-      -- Overlay editor is disabled; always edit using the main tabs.
-      if mode == "edit" and customIndex then
-        OpenCustomRuleInTab(customIndex)
-      else
-        SelectTab("quest")
-      end
-      return
-    end
-    if not optionsFrame then return end
-    local ed = EnsureRuleEditor()
-    if not ed then return end
-
-    local rules = GetCustomRules()
-    local src = (mode == "edit") and rules[customIndex] or nil
-    if mode == "edit" and type(src) ~= "table" then return end
-    local r = src or {}
-
-    ed._mode = mode
-    ed._customIndex = (mode == "edit") and customIndex or nil
-    ed._existingKey = (mode == "edit" and r.key ~= nil) and tostring(r.key) or nil
-
-    local t = (mode == "edit") and DetectRuleType(r) or "text"
-    ed._showType(t)
-
-    local typeName = (t == "quest") and "Quest" or (t == "item") and "Item" or (t == "spell") and "Spell" or "Text"
-    if UDDM_SetText and ed._typeDrop then UDDM_SetText(ed._typeDrop, typeName) end
-
-    ed._frameIDBox:SetText(tostring((mode == "edit" and r.frameID) or "list1"))
-    ed._labelEdit:SetText(tostring((mode == "edit" and r.label) or ""))
-
-    ed._faction = (mode == "edit") and ((r.faction == "Alliance" or r.faction == "Horde") and r.faction or nil) or nil
-    if UDDM_SetText and ed._factionDrop then
-      UDDM_SetText(ed._factionDrop, ed._faction and tostring(ed._faction) or "Both (Off)")
-    end
-
-    ed._colorName = (mode == "edit") and ColorToName(r.color) or "None"
-    if UDDM_SetText and ed._colorDrop then UDDM_SetText(ed._colorDrop, ed._colorName) end
-
-    ed._restedOnly:SetChecked((mode == "edit" and r.restedOnly == true) and true or false)
-    ed._hideDone:SetChecked((mode == "edit" and r.hideWhenCompleted == true) and true or false)
-
-    ed._playerLevelOp = (mode == "edit") and r.playerLevelOp or nil
-    if UDDM_SetText and ed._playerLevelOpDrop then
-      UDDM_SetText(ed._playerLevelOpDrop, ed._playerLevelOp and tostring(ed._playerLevelOp) or "Off")
-    end
-    if ed._playerLevelBox then
-      ed._playerLevelBox:SetText(tostring((mode == "edit" and tonumber(r.playerLevel)) or 0))
-    end
-
-    local repFactionID = 0
-    local repMin = nil
-    local repHideEx = false
-    if mode == "edit" and type(r.rep) == "table" and r.rep.factionID then
-      local rep = r.rep
-      repFactionID = tonumber(rep.factionID) or 0
-      repMin = tonumber(rep.minStanding)
-      repHideEx = (rep.hideWhenExalted == true)
-    end
-    ed._repFactionBox:SetText(tostring(repFactionID or 0))
-    ed._repMinStanding = repMin
-    if UDDM_SetText and ed._repMinDrop then UDDM_SetText(ed._repMinDrop, RepStandingLabel(repMin)) end
-    ed._hideExalted:SetChecked(repHideEx and true or false)
-
-    if t == "quest" then
-      ed._questIDBox:SetText(tostring((mode == "edit" and tonumber(r.questID)) or 0))
-      ed._reqInLog:SetChecked((mode == "edit" and r.requireInLog == true) and true or false)
-      ed._prereqBox:SetText((mode == "edit") and PrereqListToText(r.prereq) or "")
-      ed._groupBox:SetText((mode == "edit") and tostring(r.group or "") or "")
-      ed._orderBox:SetText(tostring((mode == "edit" and tonumber(r.order)) or 0))
-      if mode ~= "edit" then
-        ed._hideDone:SetChecked(true)
-      end
-    elseif t == "item" then
-      local itemID = (mode == "edit" and type(r.item) == "table" and tonumber(r.item.itemID)) or 0
-      ed._itemIDBox:SetText(tostring(itemID or 0))
-      ed._hideAcquired:SetChecked((mode == "edit" and type(r.item) == "table" and r.item.hideWhenAcquired == true) and true or false)
-      if mode ~= "edit" then
-        ed._hideDone:SetChecked(false)
-      end
-    elseif t == "spell" then
-      ed._class = (mode == "edit") and r.class or nil
-      if UDDM_SetText and ed._classDrop then UDDM_SetText(ed._classDrop, ed._class or "None") end
-      ed._spellKnownBox:SetText(tostring((mode == "edit" and tonumber(r.spellKnown)) or 0))
-      ed._notSpellKnownBox:SetText(tostring((mode == "edit" and tonumber(r.notSpellKnown)) or 0))
-      ed._locationIDBox:SetText(tostring((mode == "edit" and r.locationID) or "0"))
-      ed._notInGroup:SetChecked((mode == "edit" and r.notInGroup == true) and true or false)
-      if mode ~= "edit" then
-        ed._hideDone:SetChecked(false)
-      end
-    else
-      if mode ~= "edit" then
-        ed._hideDone:SetChecked(false)
-      end
-    end
-
-    ed._title:SetText((mode == "edit") and "Edit Rule" or "New Rule")
-    ed:Show()
-  end
-
-  addRuleBtn:SetScript("OnClick", nil)
-
-  local function ParsePrereqList(text)
-    local prereq = nil
-    local t = tostring(text or "")
-    t = t:gsub(";", ",")
-    for token in t:gmatch("[^,%s]+") do
-      local n = tonumber(token)
-      if n and n > 0 then
-        prereq = prereq or {}
-        prereq[#prereq + 1] = n
-      end
-    end
-    return prereq
-  end
-
-  local function PrereqListToText(prereq)
-    if type(prereq) ~= "table" then return "" end
-    local out = {}
-    for _, n in ipairs(prereq) do
-      local v = tonumber(n)
-      if v and v > 0 then out[#out + 1] = tostring(v) end
-    end
-    return table.concat(out, ",")
-  end
-
-  do
-    local ed = EnsureRuleEditor()
-    if ed and ed._saveBtn then
-      ed._saveBtn:SetScript("OnClick", function()
-        local rules = GetCustomRules()
-
-        local t = tostring(ed._type or "text")
-        if t ~= "quest" and t ~= "item" and t ~= "spell" and t ~= "text" then t = "text" end
-
-        local frameID = tostring(ed._frameIDBox:GetText() or "")
-        frameID = frameID:gsub("%s+", "")
-        if frameID == "" then frameID = "list1" end
-
-        local labelText = tostring(ed._labelEdit:GetText() or "")
-        labelText = labelText:gsub("^%s+", ""):gsub("%s+$", "")
-        local label = (labelText ~= "") and labelText or nil
-
-        local repFactionID = tonumber(ed._repFactionBox:GetText() or "")
-        if repFactionID and repFactionID <= 0 then repFactionID = nil end
-        local rep = nil
-        if repFactionID and ed._repMinStanding then
-          rep = { factionID = repFactionID, minStanding = ed._repMinStanding, hideWhenExalted = ed._hideExalted:GetChecked() and true or false }
-        elseif repFactionID and ed._hideExalted:GetChecked() then
-          rep = { factionID = repFactionID, hideWhenExalted = true }
-        end
-
-        local function ApplyCommon(rule)
-          rule.frameID = frameID
-          rule.faction = (ed._faction == "Alliance" or ed._faction == "Horde") and ed._faction or nil
-          rule.color = NameToColor(ed._colorName)
-          rule.restedOnly = ed._restedOnly:GetChecked() and true or false
-          rule.hideWhenCompleted = ed._hideDone:GetChecked() and true or false
-          rule.rep = rep
-          rule.label = label
-
-          local op = ed._playerLevelOp
-          local lvl = ed._playerLevelBox and tonumber(ed._playerLevelBox:GetText() or "") or nil
-          if lvl and lvl <= 0 then lvl = nil end
-          if op and lvl then
-            rule.playerLevelOp = op
-            rule.playerLevel = lvl
-          else
-            rule.playerLevelOp = nil
-            rule.playerLevel = nil
-          end
-        end
-
-        local rule
-        if ed._mode == "edit" and ed._customIndex and type(rules[ed._customIndex]) == "table" then
-          rule = rules[ed._customIndex]
-        else
-          rule = {}
-          rules[#rules + 1] = rule
-        end
-
-        ApplyCommon(rule)
-
-        -- Clear type-specific fields first.
-        rule.questID = nil
-        rule.requireInLog = nil
-        rule.prereq = nil
-        rule.group = nil
-        rule.order = nil
-        rule.item = nil
-        rule.spellKnown = nil
-        rule.notSpellKnown = nil
-        rule.locationID = nil
-        rule.notInGroup = nil
-        rule.class = nil
-
-        if t == "quest" then
-          local questID = tonumber(ed._questIDBox:GetText() or "")
-          if not questID or questID <= 0 then
-            Print("Enter a questID > 0.")
-            return
-          end
-          rule.questID = questID
-          rule.requireInLog = ed._reqInLog:GetChecked() and true or false
-          rule.prereq = ParsePrereqList(ed._prereqBox:GetText())
-
-          local g = tostring(ed._groupBox:GetText() or ""):gsub("^%s+", ""):gsub("%s+$", "")
-          if g ~= "" then rule.group = g end
-          rule.order = tonumber(ed._orderBox:GetText() or "")
-        elseif t == "item" then
-          local itemID = tonumber(ed._itemIDBox:GetText() or "")
-          if not itemID or itemID <= 0 then
-            Print("Enter an itemID > 0.")
-            return
-          end
-          rule.item = {
-            itemID = itemID,
-            required = 1,
-            hideWhenAcquired = ed._hideAcquired:GetChecked() and true or false,
-          }
-        elseif t == "spell" then
-          local known = tonumber(ed._spellKnownBox:GetText() or "")
-          if known and known <= 0 then known = nil end
-          local notKnown = tonumber(ed._notSpellKnownBox:GetText() or "")
-          if notKnown and notKnown <= 0 then notKnown = nil end
-          if not known and not notKnown then
-            Print("Enter Spell Known and/or Not Known.")
-            return
-          end
-          if known then rule.spellKnown = known end
-          if notKnown then rule.notSpellKnown = notKnown end
-          rule.class = ed._class
-          rule.notInGroup = ed._notInGroup:GetChecked() and true or false
-
-          local locText = tostring(ed._locationIDBox:GetText() or ""):gsub("%s+", "")
-          rule.locationID = (locText ~= "" and locText ~= "0") and locText or nil
-        else
-          if not label then
-            Print("Enter some text in Label.")
-            return
-          end
-        end
-
-        local key = (ed._existingKey and tostring(ed._existingKey)) or nil
-        if not key or key == "" then
-          rule.key = MakeUniqueRuleKey("custom:" .. t)
-        else
-          rule.key = key
-        end
-        EnsureUniqueKeyForCustomRule(rule)
-
-        CreateAllFrames()
-        RefreshAll()
-        RefreshRulesList()
-        ed:Hide()
-        Print("Saved rule.")
-      end)
-    end
-  end
-
-  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(rulesViewDrop, function(self, level)
-      for _, v in ipairs({ "all", "custom", "defaults", "trash" }) do
-        local info = UDDM_CreateInfo()
-        info.text = (v == "all") and "All" or (v == "defaults") and "Defaults" or (v == "trash") and "Trash" or "Custom"
-        info.checked = (GetRulesView() == v) and true or false
-        info.func = function() SetRulesView(v) end
-        UDDM_AddButton(info)
-      end
-    end)
-  else
-    viewLabel:SetText("View (dropdown unavailable)")
-  end
-
-  local rulesScroll = CreateFrame("ScrollFrame", nil, panels.rules, "UIPanelScrollFrameTemplate")
-  rulesScroll:SetPoint("TOPLEFT", 12, -152)
-  rulesScroll:SetPoint("BOTTOMLEFT", 12, 44)
-  rulesScroll:SetWidth(530)
-  f._rulesScroll = rulesScroll
-
-  local rulesContent = CreateFrame("Frame", nil, rulesScroll)
-  rulesContent:SetSize(1, 1)
-  rulesScroll:SetScrollChild(rulesContent)
-  rulesScroll:SetScript("OnSizeChanged", function(self)
-    if not optionsFrame or not optionsFrame._rulesContent then return end
-    local w = tonumber(self:GetWidth() or 0) or 0
-    optionsFrame._rulesContent:SetWidth(math.max(1, w - 28))
-  end)
-  f._rulesContent = rulesContent
-  f._ruleRows = {}
-
-  -- FRAMES tab
-  local framesTitle = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  framesTitle:SetPoint("TOPLEFT", 12, -40)
-  framesTitle:SetText("Custom Frames")
-
-  local UDDM_SetWidth = _G and rawget(_G, "UIDropDownMenu_SetWidth")
-  local UDDM_SetText = _G and rawget(_G, "UIDropDownMenu_SetText")
-  local UDDM_Initialize = _G and rawget(_G, "UIDropDownMenu_Initialize")
-  local UDDM_CreateInfo = _G and rawget(_G, "UIDropDownMenu_CreateInfo")
-  local UDDM_AddButton = _G and rawget(_G, "UIDropDownMenu_AddButton")
-  local UDDM_Enable = _G and rawget(_G, "UIDropDownMenu_EnableDropDown")
-  local UDDM_Disable = _G and rawget(_G, "UIDropDownMenu_DisableDropDown")
-
-  local function SetDropDownEnabled(dropdown, enabled)
-    if not dropdown then return end
-    enabled = enabled and true or false
-
-    if UDDM_Enable and UDDM_Disable then
-      if enabled then
-        UDDM_Enable(dropdown)
-      else
-        UDDM_Disable(dropdown)
-      end
-      return
-    end
-
-    if dropdown.EnableMouse then dropdown:EnableMouse(enabled) end
-    if dropdown.SetAlpha then dropdown:SetAlpha(enabled and 1 or 0.5) end
-  end
-
-  -- Global List Grow control
-  local listGrowAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  listGrowAuto:SetPoint("TOPLEFT", 365, -70)
-  SetCheckButtonLabel(listGrowAuto, "List grow from anchor")
-
-  local listGrowDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
-  listGrowDrop:SetPoint("TOPLEFT", 350, -86)
-  if UDDM_SetWidth then UDDM_SetWidth(listGrowDrop, 120) end
-  if UDDM_SetText then UDDM_SetText(listGrowDrop, "anchor") end
-
-  local function SetListGrow(v)
-    v = tostring(v or "auto"):lower()
-    if v ~= "auto" and v ~= "up" and v ~= "down" then v = "auto" end
-    SetUISetting("listGrow", v)
-    if listGrowAuto then listGrowAuto:SetChecked(v == "auto") end
-    if UDDM_SetText then UDDM_SetText(listGrowDrop, (v == "auto") and "anchor" or v) end
-    SetDropDownEnabled(listGrowDrop, v ~= "auto")
-    RefreshAll()
-  end
-
-  listGrowAuto:SetScript("OnShow", function(self)
-    local v = tostring(GetUISetting("listGrow", "auto") or "auto"):lower()
-    if v ~= "auto" and v ~= "up" and v ~= "down" then v = "auto" end
-    self:SetChecked(v == "auto")
-    if UDDM_SetText then UDDM_SetText(listGrowDrop, (v == "auto") and "anchor" or v) end
-    SetDropDownEnabled(listGrowDrop, v ~= "auto")
-  end)
-
-  listGrowAuto:SetScript("OnClick", function(self)
-    if self:GetChecked() then
-      SetListGrow("auto")
-    else
-      local prev = tostring(GetUISetting("listGrow", "auto") or "auto"):lower()
-      if prev == "auto" then prev = tostring(GetUISetting("listGrowManual", "down") or "down"):lower() end
-      if prev ~= "up" and prev ~= "down" then prev = "down" end
-      SetUISetting("listGrowManual", prev)
-      SetListGrow(prev)
-    end
-  end)
-
-  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(listGrowDrop, function(self, level)
-      for _, v in ipairs({ "down", "up" }) do
-        local info = UDDM_CreateInfo()
-        info.text = v
-        info.func = function()
-          SetUISetting("listGrowManual", v)
-          SetListGrow(v)
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-  end
-
-  -- Global Bar Grow control (moved from General)
-  local barGrowAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  barGrowAuto:SetPoint("TOPLEFT", 365, -96)
-  SetCheckButtonLabel(barGrowAuto, "Bar grow from anchor")
-
-  local barGrowDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
-  barGrowDrop:SetPoint("TOPLEFT", 350, -112)
-  if UDDM_SetWidth then UDDM_SetWidth(barGrowDrop, 120) end
-  if UDDM_SetText then UDDM_SetText(barGrowDrop, "anchor") end
-
-  local function SetBarGrow(v)
-    v = tostring(v or "auto"):lower()
-    if v ~= "auto" and v ~= "left" and v ~= "right" and v ~= "center" then v = "auto" end
-    SetUISetting("barGrow", v)
-    if barGrowAuto then barGrowAuto:SetChecked(v == "auto") end
-    if UDDM_SetText then UDDM_SetText(barGrowDrop, (v == "auto") and "anchor" or v) end
-    SetDropDownEnabled(barGrowDrop, v ~= "auto")
-    RefreshAll()
-  end
-
-  barGrowAuto:SetScript("OnShow", function(self)
-    local v = tostring(GetUISetting("barGrow", "auto") or "auto"):lower()
-    if v ~= "auto" and v ~= "left" and v ~= "right" and v ~= "center" then v = "auto" end
-    self:SetChecked(v == "auto")
-    if UDDM_SetText then UDDM_SetText(barGrowDrop, (v == "auto") and "anchor" or v) end
-    SetDropDownEnabled(barGrowDrop, v ~= "auto")
-  end)
-
-  barGrowAuto:SetScript("OnClick", function(self)
-    if self:GetChecked() then
-      SetBarGrow("auto")
-    else
-      local prev = tostring(GetUISetting("barGrow", "auto") or "auto"):lower()
-      if prev == "auto" then prev = tostring(GetUISetting("barGrowManual", "center") or "center"):lower() end
-      if prev ~= "left" and prev ~= "right" and prev ~= "center" then prev = "center" end
-      SetUISetting("barGrowManual", prev)
-      SetBarGrow(prev)
-    end
-  end)
-
-  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(barGrowDrop, function(self, level)
-      for _, v in ipairs({ "left", "center", "right" }) do
-        local info = UDDM_CreateInfo()
-        info.text = v
-        info.func = function()
-          SetUISetting("barGrowManual", v)
-          SetBarGrow(v)
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-  end
-
-  -- Global List Padding control
-  local listPadLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  listPadLabel:SetPoint("TOPLEFT", 365, -132)
-  listPadLabel:SetText("List padding (px)")
-
-  local listPadBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
-  listPadBox:SetSize(40, 20)
-  listPadBox:SetPoint("TOPLEFT", 365, -148)
-  listPadBox:SetAutoFocus(false)
-  listPadBox:SetNumeric(true)
-
-  local function RefreshListPadBox(self)
-    local v = tonumber(GetUISetting("listPadding", 0) or 0) or 0
-    if v < 0 then v = 0 end
-    if v > 50 then v = 50 end
-    self:SetText(tostring(v))
-  end
-
-  listPadBox:SetScript("OnShow", function(self)
-    RefreshListPadBox(self)
-  end)
-  listPadBox:SetScript("OnEnterPressed", function(self)
-    local v = tonumber(self:GetText() or "") or 0
-    if v < 0 then v = 0 end
-    if v > 50 then v = 50 end
-    SetUISetting("listPadding", v)
-    RefreshListPadBox(self)
-    if self.ClearFocus then self:ClearFocus() end
-    RefreshAll()
-  end)
-  listPadBox:SetScript("OnEscapePressed", function(self)
-    RefreshListPadBox(self)
-    if self.ClearFocus then self:ClearFocus() end
-  end)
-
-  local function NextFrameID(prefix)
-    local used = {}
-    for _, def in ipairs(GetEffectiveFrames()) do
-      if type(def) == "table" and def.id then
-        used[tostring(def.id)] = true
-      end
-    end
-    local i = 1
-    while true do
-      local id = prefix .. tostring(i)
-      if not used[id] then return id end
-      i = i + 1
-    end
-  end
-
-  local addBarBtn = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
-  addBarBtn:SetSize(90, 22)
-  addBarBtn:SetPoint("TOPRIGHT", -110, -152)
-  addBarBtn:SetText("Add Bar")
-  addBarBtn:SetScript("OnClick", function()
-    local frames = GetCustomFrames()
-    local id = NextFrameID("bar")
-    frames[#frames + 1] = {
-      id = id,
-      type = "bar",
-      point = "TOP",
-      relPoint = "TOP",
-      x = 0,
-      y = -40,
-      width = 600,
-      height = 20,
-      maxItems = 6,
-      bgAlpha = 0,
-      hideWhenEmpty = false,
-      stretchWidth = false,
-    }
-    CreateAllFrames()
-    RefreshAll()
-    RefreshFramesList()
-    Print("Added frame " .. id)
-  end)
-
-  local addListBtn = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
-  addListBtn:SetSize(90, 22)
-  addListBtn:SetPoint("TOPRIGHT", -12, -152)
-  addListBtn:SetText("Add List")
-  f._addBarBtn = addBarBtn
-  f._addListBtn = addListBtn
-  addListBtn:SetScript("OnClick", function()
-    local frames = GetCustomFrames()
-    local id = NextFrameID("list")
-    frames[#frames + 1] = {
-      id = id,
-      type = "list",
-      point = "TOPRIGHT",
-      relPoint = "TOPRIGHT",
-      x = -10,
-      y = -160,
-      width = 300,
-      rowHeight = 16,
-      maxItems = 20,
-      autoSize = true,
-      bgAlpha = 0,
-      hideWhenEmpty = false,
-    }
-    CreateAllFrames()
-    RefreshAll()
-    RefreshFramesList()
-    Print("Added frame " .. id)
-  end)
-
-  local framesScroll = CreateFrame("ScrollFrame", nil, panels.frames, "UIPanelScrollFrameTemplate")
-  framesScroll:SetPoint("TOPLEFT", 12, -182)
-  framesScroll:SetPoint("BOTTOMLEFT", 12, 44)
-  framesScroll:SetWidth(530)
-
-  local framesContent = CreateFrame("Frame", nil, framesScroll)
-  framesContent:SetSize(1, 1)
-  framesScroll:SetScrollChild(framesContent)
-  framesScroll:SetScript("OnSizeChanged", function(self)
-    if not optionsFrame or not optionsFrame._framesContent then return end
-    local w = tonumber(self:GetWidth() or 0) or 0
-    optionsFrame._framesContent:SetWidth(math.max(1, w - 28))
-  end)
-  f._framesContent = framesContent
-  f._frameRows = {}
-  f._framesScroll = framesScroll
-  f._framesTitle = framesTitle
-
-  -- Frame editor (shown only when Show frame list is enabled)
-  local frameEditTitle = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  frameEditTitle:SetPoint("TOPLEFT", 12, -70)
-  frameEditTitle:SetText("Frame settings")
-  f._frameEditTitle = frameEditTitle
-
-  local frameEditLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  frameEditLabel:SetPoint("TOPLEFT", 12, -88)
-  frameEditLabel:SetText("Select frame:")
-  f._frameEditLabel = frameEditLabel
-
-  local frameDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
-  frameDrop:SetPoint("TOPLEFT", -8, -98)
-  -- reuse dropdown helpers if present (quest tab created its own locals above)
-
-  if UDDM_SetWidth then UDDM_SetWidth(frameDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(frameDrop, "(pick)") end
-  f._frameDrop = frameDrop
-  f._selectedFrameID = nil
-
-  local frameAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  frameAuto:SetPoint("TOPLEFT", 200, -102)
-  SetCheckButtonLabel(frameAuto, "Auto")
-  f._frameAuto = frameAuto
-
-  local nameLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  nameLabel:SetPoint("TOPLEFT", 12, -112)
-  nameLabel:SetText("Name")
-  f._frameNameLabel = nameLabel
-
-  local nameBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
-  nameBox:SetSize(180, 20)
-  nameBox:SetPoint("TOPLEFT", 55, -118)
-  nameBox:SetAutoFocus(false)
-  nameBox:SetText("")
-  f._frameNameBox = nameBox
-
-  local frameHideCombat = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  frameHideCombat:SetPoint("TOPLEFT", 260, -102)
-  SetCheckButtonLabel(frameHideCombat, "Hide in combat")
-  frameHideCombat:Hide()
-  f._frameHideCombat = frameHideCombat
-
-  local widthLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  widthLabel:SetPoint("TOPLEFT", 12, -130)
-  widthLabel:SetText("Width")
-  f._frameWidthLabel = widthLabel
-
-  local widthBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
-  widthBox:SetSize(60, 20)
-  widthBox:SetPoint("TOPLEFT", 55, -136)
-  widthBox:SetAutoFocus(false)
-  widthBox:SetNumeric(true)
-  widthBox:SetText("0")
-  f._frameWidthBox = widthBox
-
-  local heightLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  heightLabel:SetPoint("TOPLEFT", 125, -130)
-  heightLabel:SetText("Height")
-  f._frameHeightLabel = heightLabel
-
-  local heightBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
-  heightBox:SetSize(60, 20)
-  heightBox:SetPoint("TOPLEFT", 175, -136)
-  heightBox:SetAutoFocus(false)
-  heightBox:SetNumeric(true)
-  heightBox:SetText("0")
-  f._frameHeightBox = heightBox
-
-  local lengthLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  lengthLabel:SetPoint("TOPLEFT", 245, -130)
-  lengthLabel:SetText("Length")
-  f._frameLengthLabel = lengthLabel
-
-  local lengthBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
-  lengthBox:SetSize(60, 20)
-  lengthBox:SetPoint("TOPLEFT", 292, -136)
-  lengthBox:SetAutoFocus(false)
-  lengthBox:SetNumeric(true)
-  lengthBox:SetText("0")
-  f._frameLengthBox = lengthBox
-
-  local maxHLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  maxHLabel:SetPoint("TOPLEFT", 365, -130)
-  maxHLabel:SetText("Max H")
-  f._frameMaxHLabel = maxHLabel
-
-  local maxHBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
-  maxHBox:SetSize(60, 20)
-  maxHBox:SetPoint("TOPLEFT", 410, -136)
-  maxHBox:SetAutoFocus(false)
-  maxHBox:SetNumeric(true)
-  maxHBox:SetText("0")
-  f._frameMaxHBox = maxHBox
-
-  -- Background (per-frame)
-  local bgLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  bgLabel:SetPoint("TOPLEFT", 12, -160)
-  bgLabel:SetText("Background")
-  f._frameBgLabel = bgLabel
-
-  local bgSwatch = CreateFrame("Button", nil, panels.frames)
-  bgSwatch:SetSize(18, 18)
-  bgSwatch:SetPoint("TOPLEFT", 85, -164)
-  bgSwatch:EnableMouse(true)
-  local swTex = bgSwatch:CreateTexture(nil, "ARTWORK")
-  swTex:SetAllPoints()
-  if swTex.SetColorTexture then
-    swTex:SetColorTexture(0, 0, 0, 1)
-  end
-  bgSwatch._tex = swTex
-  f._frameBgSwatch = bgSwatch
-
-  local bgAlphaSlider = CreateFrame("Slider", "FR0Z3NUIFQT_BGAlphaSlider", panels.frames, "OptionsSliderTemplate")
-  bgAlphaSlider:SetPoint("TOPLEFT", 115, -168)
-  bgAlphaSlider:SetWidth(140)
-  bgAlphaSlider:SetMinMaxValues(0, 1)
-  bgAlphaSlider:SetValueStep(0.05)
-  bgAlphaSlider:SetObeyStepOnDrag(true)
-  bgAlphaSlider:SetValue(0)
-  if _G["FR0Z3NUIFQT_BGAlphaSliderText"] then _G["FR0Z3NUIFQT_BGAlphaSliderText"]:SetText("Alpha") end
-  if _G["FR0Z3NUIFQT_BGAlphaSliderLow"] then _G["FR0Z3NUIFQT_BGAlphaSliderLow"]:SetText("0") end
-  if _G["FR0Z3NUIFQT_BGAlphaSliderHigh"] then _G["FR0Z3NUIFQT_BGAlphaSliderHigh"]:SetText("1") end
-  f._frameBgAlphaSlider = bgAlphaSlider
-
-  -- Quick palette + full picker launcher
-  local palette = {
-    { 0.00, 0.00, 0.00 }, -- black
-    { 0.20, 0.20, 0.20 }, -- dark gray
-    { 0.75, 0.75, 0.75 }, -- light gray
-    { 1.00, 1.00, 1.00 }, -- white
-    { 1.00, 0.25, 0.25 }, -- red
-    { 1.00, 0.55, 0.10 }, -- orange
-    { 1.00, 0.90, 0.20 }, -- yellow
-    { 0.20, 1.00, 0.20 }, -- green
-    { 0.20, 0.60, 1.00 }, -- blue
-  }
-
-  local paletteButtons = {}
-  local paletteStartX = 10
-  for i = 1, #palette do
-    local btn = CreateFrame("Button", nil, panels.frames)
-    btn:SetSize(12, 12)
-    if i == 1 then
-      btn:SetPoint("TOPLEFT", bgAlphaSlider, "TOPRIGHT", paletteStartX, -2)
-    else
-      btn:SetPoint("LEFT", paletteButtons[i - 1], "RIGHT", 3, 0)
-    end
-    btn:EnableMouse(true)
-    local t = btn:CreateTexture(nil, "ARTWORK")
-    t:SetAllPoints()
-    if t.SetColorTexture then
-      t:SetColorTexture(palette[i][1], palette[i][2], palette[i][3], 1)
-    end
-    btn._tex = t
-    paletteButtons[i] = btn
-  end
-  f._frameBgPaletteButtons = paletteButtons
-
-  local bgMoreBtn = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
-  bgMoreBtn:SetSize(56, 18)
-  bgMoreBtn:SetPoint("LEFT", paletteButtons[#paletteButtons], "RIGHT", 6, 0)
-  bgMoreBtn:SetText("More...")
-  f._frameBgMoreBtn = bgMoreBtn
-
-  local function FindEffectiveFrameDef(id)
-    id = tostring(id or "")
-    if id == "" then return nil end
-    for _, def in ipairs(GetEffectiveFrames()) do
-      if type(def) == "table" and tostring(def.id or "") == id then
-        return def
-      end
-    end
-    return nil
-  end
-
-  local function FindOrCreateCustomFrameDef(id)
-    id = tostring(id or "")
-    if id == "" then return nil end
-    local frames = GetCustomFrames()
-    for _, def in ipairs(frames) do
-      if type(def) == "table" and tostring(def.id or "") == id then
-        return def
-      end
-    end
-    local base = FindEffectiveFrameDef(id)
-    if not base then return nil end
-    local copy = ShallowCopyTable(base) or { id = id }
-    copy.id = id
-    frames[#frames + 1] = copy
-    return copy
-  end
-
-  local function UpdateFrameEditor()
-    if not optionsFrame then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    local def = FindEffectiveFrameDef(id)
-    if not def then
-      if UDDM_SetText then UDDM_SetText(optionsFrame._frameDrop, "(pick)") end
-      optionsFrame._frameAuto:SetChecked(false)
-      if optionsFrame._frameHideCombat then
-        optionsFrame._frameHideCombat:SetChecked(false)
-        optionsFrame._frameHideCombat:Hide()
-      end
-      if optionsFrame._frameNameBox then
-        optionsFrame._frameNameBox:SetText("")
-        optionsFrame._frameNameBox:SetEnabled(false)
-      end
-      if optionsFrame._frameMaxHBox then
-        optionsFrame._frameMaxHBox:SetText("0")
-        optionsFrame._frameMaxHBox:SetEnabled(false)
-      end
-
-      if optionsFrame._frameBgSwatch and optionsFrame._frameBgSwatch._tex and optionsFrame._frameBgSwatch._tex.SetColorTexture then
-        optionsFrame._frameBgSwatch._tex:SetColorTexture(0, 0, 0, 1)
-      end
-      if optionsFrame._frameBgSwatch and optionsFrame._frameBgSwatch.Disable then
-        optionsFrame._frameBgSwatch:Disable()
-      end
-      if optionsFrame._frameBgAlphaSlider then
-        optionsFrame._skipBgAlphaChange = true
-        optionsFrame._frameBgAlphaSlider:SetValue(0)
-        optionsFrame._skipBgAlphaChange = false
-        optionsFrame._frameBgAlphaSlider:Disable()
-      end
-      if optionsFrame._frameBgMoreBtn and optionsFrame._frameBgMoreBtn.Disable then
-        optionsFrame._frameBgMoreBtn:Disable()
-      end
-      if type(optionsFrame._frameBgPaletteButtons) == "table" then
-        for _, b in ipairs(optionsFrame._frameBgPaletteButtons) do
-          if b and b.Disable then b:Disable() end
-        end
-      end
-
-      optionsFrame._frameWidthBox:SetText("0")
-      optionsFrame._frameHeightBox:SetText("0")
-      optionsFrame._frameLengthBox:SetText("0")
-      return
-    end
-
-    if UDDM_SetText then UDDM_SetText(optionsFrame._frameDrop, tostring(def.id)) end
-
-    local t = tostring(def.type or "list")
-    if t == "list" then
-      optionsFrame._frameHeightLabel:SetText("Row")
-      optionsFrame._frameLengthLabel:SetText("Rows")
-      optionsFrame._frameHeightBox:SetText(tostring(tonumber(def.rowHeight) or 16))
-      if optionsFrame._frameMaxHBox then
-        optionsFrame._frameMaxHBox:SetText(tostring(tonumber(def.maxHeight) or 0))
-        optionsFrame._frameMaxHBox:SetEnabled(true)
-      end
-    else
-      optionsFrame._frameHeightLabel:SetText("Height")
-      optionsFrame._frameLengthLabel:SetText("Segments")
-      optionsFrame._frameHeightBox:SetText(tostring(tonumber(def.height) or 20))
-      if optionsFrame._frameMaxHBox then
-        optionsFrame._frameMaxHBox:SetText("0")
-        optionsFrame._frameMaxHBox:SetEnabled(false)
-      end
-    end
-
-    if optionsFrame._frameHideCombat then
-      if t == "list" then
-        optionsFrame._frameHideCombat:SetChecked(def.hideInCombat == true)
-        optionsFrame._frameHideCombat:Show()
-      else
-        optionsFrame._frameHideCombat:SetChecked(false)
-        optionsFrame._frameHideCombat:Hide()
-      end
-    end
-
-    if optionsFrame._frameNameBox then
-      local nm = (type(def) == "table" and def.name ~= nil) and tostring(def.name) or ""
-      optionsFrame._frameNameBox:SetText(nm)
-      optionsFrame._frameNameBox:SetEnabled(true)
-    end
-
-    optionsFrame._frameWidthBox:SetText(tostring(tonumber(def.width) or 300))
-    optionsFrame._frameLengthBox:SetText(tostring(tonumber(def.maxItems) or (t == "list" and 20 or 6)))
-
-    -- Background controls
-    do
-      local c = (type(def) == "table") and def.bgColor or nil
-      local r, g, b = 0, 0, 0
-      if type(c) == "table" then
-        r = tonumber(c[1]) or 0
-        g = tonumber(c[2]) or 0
-        b = tonumber(c[3]) or 0
-      end
-      if optionsFrame._frameBgSwatch and optionsFrame._frameBgSwatch._tex and optionsFrame._frameBgSwatch._tex.SetColorTexture then
-        optionsFrame._frameBgSwatch._tex:SetColorTexture(r, g, b, 1)
-      end
-      if optionsFrame._frameBgSwatch and optionsFrame._frameBgSwatch.Enable then
-        optionsFrame._frameBgSwatch:Enable()
-      end
-
-      local a = (type(def) == "table") and tonumber(def.bgAlpha)
-      if a == nil then a = 0 end
-      if a < 0 then a = 0 end
-      if a > 1 then a = 1 end
-      if optionsFrame._frameBgAlphaSlider then
-        optionsFrame._skipBgAlphaChange = true
-        optionsFrame._frameBgAlphaSlider:SetValue(a)
-        optionsFrame._skipBgAlphaChange = false
-        optionsFrame._frameBgAlphaSlider:Enable()
-      end
-      if optionsFrame._frameBgMoreBtn and optionsFrame._frameBgMoreBtn.Enable then
-        optionsFrame._frameBgMoreBtn:Enable()
-      end
-      if type(optionsFrame._frameBgPaletteButtons) == "table" then
-        for _, b in ipairs(optionsFrame._frameBgPaletteButtons) do
-          if b and b.Enable then b:Enable() end
-        end
-      end
-    end
-
-    -- Auto means: use defaults/fallback sizing (clear overrides)
-    local isAuto = false
-    local custom = nil
-    for _, c in ipairs(GetCustomFrames()) do
-      if type(c) == "table" and tostring(c.id or "") == tostring(def.id or "") then
-        custom = c
-        break
-      end
-    end
-    if custom then
-      local hasSize = (custom.width ~= nil) or (custom.height ~= nil) or (custom.rowHeight ~= nil) or (custom.maxItems ~= nil)
-      isAuto = not hasSize
-    else
-      isAuto = true
-    end
-    optionsFrame._frameAuto:SetChecked(isAuto)
-
-    local enableInputs = not isAuto
-    optionsFrame._frameWidthBox:SetEnabled(enableInputs)
-    optionsFrame._frameHeightBox:SetEnabled(enableInputs)
-    optionsFrame._frameLengthBox:SetEnabled(enableInputs)
-    if optionsFrame._frameMaxHBox then
-      optionsFrame._frameMaxHBox:SetEnabled(enableInputs and (t == "list"))
-    end
-  end
-
-  local function ShowFrameBGColorPicker(initialR, initialG, initialB, initialA, onChanged)
-    local CPF = _G and rawget(_G, "ColorPickerFrame")
-    if not CPF then
-      local CAO = _G and rawget(_G, "C_AddOns")
-      if CAO and CAO.LoadAddOn then pcall(CAO.LoadAddOn, "Blizzard_ColorPicker") end
-      local LoadAddOn = _G and rawget(_G, "LoadAddOn")
-      if LoadAddOn then pcall(LoadAddOn, "Blizzard_ColorPicker") end
-      CPF = _G and rawget(_G, "ColorPickerFrame")
-    end
-    if not (CPF and (CPF.SetupColorPickerAndShow or (CPF.Show and CPF.SetColorRGB and CPF.GetColorRGB))) then
-      Print("Color picker unavailable.")
-      return
-    end
-
-    local function Clamp01Local(v)
-      v = tonumber(v)
-      if not v then return 0 end
-      if v < 0 then return 0 end
-      if v > 1 then return 1 end
-      return v
-    end
-
-    -- Make it feel like a "pop-out" attached to our options window.
-    if CPF.ClearAllPoints and CPF.SetPoint and optionsFrame and optionsFrame.IsShown and optionsFrame:IsShown() then
-      CPF:ClearAllPoints()
-      -- Prefer opening to the left of the options frame; clamp will keep it on-screen.
-      CPF:SetPoint("TOPRIGHT", optionsFrame, "TOPLEFT", -8, -40)
-      if CPF.SetFrameStrata then CPF:SetFrameStrata("DIALOG") end
-      if CPF.SetClampedToScreen then CPF:SetClampedToScreen(true) end
-    end
-
-    local r0 = Clamp01Local(initialR)
-    local g0 = Clamp01Local(initialG)
-    local b0 = Clamp01Local(initialB)
-    local a0 = Clamp01Local(initialA)
-    local prev = { r0, g0, b0, a0 }
-
-    local function CurrentOpacity()
-      if OpacitySliderFrame and OpacitySliderFrame.GetValue then
-        return 1 - (tonumber(OpacitySliderFrame:GetValue()) or 0)
-      end
-      if CPF.opacity ~= nil then
-        return 1 - (tonumber(CPF.opacity) or 0)
-      end
-      return a0
-    end
-
-    if CPF.SetupColorPickerAndShow then
-      local info = {
-        r = r0,
-        g = g0,
-        b = b0,
-        opacity = 1 - a0,
-        hasOpacity = true,
-        swatchFunc = function()
-          local r, g, b = CPF:GetColorRGB()
-          local a = Clamp01Local(CurrentOpacity())
-          if onChanged then onChanged(r, g, b, a) end
-        end,
-        opacityFunc = function()
-          local r, g, b = CPF:GetColorRGB()
-          local a = Clamp01Local(CurrentOpacity())
-          if onChanged then onChanged(r, g, b, a) end
-        end,
-        cancelFunc = function(restored)
-          local rv = restored or prev
-          local r = rv.r or rv[1]
-          local g = rv.g or rv[2]
-          local b = rv.b or rv[3]
-          local a = rv.a or rv[4]
-          if rv.opacity ~= nil and a == nil then a = 1 - (tonumber(rv.opacity) or 0) end
-          if onChanged then onChanged(r, g, b, a) end
-        end,
-        previousValues = prev,
-      }
-      CPF:SetupColorPickerAndShow(info)
-    else
-      CPF.hasOpacity = true
-      CPF.opacity = 1 - a0
-      CPF.previousValues = prev
-
-      CPF.func = function()
-        local r, g, b = CPF:GetColorRGB()
-        local a = Clamp01Local(CurrentOpacity())
-        if onChanged then onChanged(r, g, b, a) end
-      end
-
-      CPF.opacityFunc = function()
-        local r, g, b = CPF:GetColorRGB()
-        local a = Clamp01Local(CurrentOpacity())
-        if onChanged then onChanged(r, g, b, a) end
-      end
-
-      CPF.cancelFunc = function(restored)
-        local rv = restored or prev
-        if onChanged then onChanged(rv[1], rv[2], rv[3], rv[4]) end
-      end
-
-      CPF:SetColorRGB(r0, g0, b0)
-      CPF:Show()
-    end
-  end
-
-  local function ApplyBGToSelectedFrame(r, g, b, a)
-    if not optionsFrame then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    if id == "" then return end
-    local eff = FindEffectiveFrameDef(id)
-    if not eff then return end
-    local def = FindOrCreateCustomFrameDef(id)
-    if not def then return end
-
-    def.bgColor = { tonumber(r) or 0, tonumber(g) or 0, tonumber(b) or 0 }
-    if a ~= nil then
-      def.bgAlpha = tonumber(a) or 0
-    end
-    UpdateFrameEditor()
-    RefreshAll()
-    RefreshFramesList()
-  end
-
-  bgSwatch:SetScript("OnClick", function()
-    if not optionsFrame then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    if id == "" then return end
-    local eff = FindEffectiveFrameDef(id)
-    if not eff then return end
-    local def = FindOrCreateCustomFrameDef(id)
-    if not def then return end
-
-    local c = (type(eff) == "table") and eff.bgColor or nil
-    local r, g, b = 0, 0, 0
-    if type(c) == "table" then
-      r = tonumber(c[1]) or 0
-      g = tonumber(c[2]) or 0
-      b = tonumber(c[3]) or 0
-    end
-    local a = (type(eff) == "table") and tonumber(eff.bgAlpha)
-    if a == nil then a = 0 end
-    if a < 0 then a = 0 end
-    if a > 1 then a = 1 end
-
-    ShowFrameBGColorPicker(r, g, b, a, function(nr, ng, nb, na)
-      ApplyBGToSelectedFrame(nr, ng, nb, na)
-    end)
-  end)
-
-  for i, btn in ipairs(paletteButtons) do
-    btn:SetScript("OnClick", function()
-      local c = palette[i]
-      if not c then return end
-      local a = nil
-      if optionsFrame and optionsFrame._frameBgAlphaSlider and optionsFrame._frameBgAlphaSlider.GetValue then
-        a = tonumber(optionsFrame._frameBgAlphaSlider:GetValue())
-      end
-      if a == nil then a = 0 end
-      -- If the background is currently hidden, picking a color should make it visible.
-      if a <= 0 then
-        a = 0.25
-        if optionsFrame and optionsFrame._frameBgAlphaSlider and optionsFrame._frameBgAlphaSlider.SetValue then
-          optionsFrame._skipBgAlphaChange = true
-          optionsFrame._frameBgAlphaSlider:SetValue(a)
-          optionsFrame._skipBgAlphaChange = false
-        end
-      end
-      ApplyBGToSelectedFrame(c[1], c[2], c[3], a)
-    end)
-  end
-
-  bgMoreBtn:SetScript("OnClick", function()
-    if not optionsFrame then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    if id == "" then return end
-    local eff = FindEffectiveFrameDef(id)
-    if not eff then return end
-
-    local c = (type(eff) == "table") and eff.bgColor or nil
-    local r, g, b = 0, 0, 0
-    if type(c) == "table" then
-      r = tonumber(c[1]) or 0
-      g = tonumber(c[2]) or 0
-      b = tonumber(c[3]) or 0
-    end
-    local a = (type(eff) == "table") and tonumber(eff.bgAlpha)
-    if a == nil then a = 0 end
-    if a < 0 then a = 0 end
-    if a > 1 then a = 1 end
-
-    ShowFrameBGColorPicker(r, g, b, a, function(nr, ng, nb, na)
-      ApplyBGToSelectedFrame(nr, ng, nb, na)
-    end)
-  end)
-
-  bgAlphaSlider:SetScript("OnValueChanged", function(self, value)
-    if not optionsFrame or optionsFrame._skipBgAlphaChange then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    if id == "" then return end
-    local eff = FindEffectiveFrameDef(id)
-    if not eff then return end
-    local def = FindOrCreateCustomFrameDef(id)
-    if not def then return end
-    def.bgAlpha = tonumber(value) or 0
-    RefreshAll()
-    RefreshFramesList()
-  end)
-
-  frameHideCombat:SetScript("OnClick", function(self)
-    if not optionsFrame then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    if id == "" then return end
-    local eff = FindEffectiveFrameDef(id)
-    if not eff then return end
-    if tostring(eff.type or "list") ~= "list" then
-      self:SetChecked(false)
-      self:Hide()
-      return
-    end
-
-    local def = FindOrCreateCustomFrameDef(id)
-    if not def then return end
-    def.hideInCombat = self:GetChecked() and true or nil
-    RefreshAll()
-    RefreshFramesList()
-  end)
-
-  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(frameDrop, function(self, level)
-      local info = UDDM_CreateInfo()
-      for _, def in ipairs(GetEffectiveFrames()) do
-        if type(def) == "table" and def.id then
-          local id = tostring(def.id)
-          info.text = id .. " (" .. tostring(def.type or "list") .. ")"
-          info.checked = (optionsFrame and optionsFrame._selectedFrameID == id) and true or false
-          info.func = function()
-            optionsFrame._selectedFrameID = id
-            UpdateFrameEditor()
-          end
-          UDDM_AddButton(info)
-        end
-      end
-    end)
-  else
-    frameEditLabel:SetText("Select frame: (dropdown unavailable)")
-  end
-
-  frameAuto:SetScript("OnClick", function(self)
-    if not optionsFrame then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    if id == "" then return end
-    local def = FindOrCreateCustomFrameDef(id)
-    if not def then return end
-    if self:GetChecked() then
-      def.width = nil
-      def.height = nil
-      def.rowHeight = nil
-      def.maxItems = nil
-      def.maxHeight = nil
-    end
-    CreateAllFrames()
-    RefreshAll()
-    RefreshFramesList()
-  end)
-
-  local function ApplyFrameSizeFromInputs()
-    if not optionsFrame then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    if id == "" then return end
-    local eff = FindEffectiveFrameDef(id)
-    local def = FindOrCreateCustomFrameDef(id)
-    if not (eff and def) then return end
-
-    if optionsFrame._frameAuto:GetChecked() then
-      def.width = nil
-      def.height = nil
-      def.rowHeight = nil
-      def.maxItems = nil
-      def.maxHeight = nil
-    else
-      def.width = tonumber(optionsFrame._frameWidthBox:GetText() or "")
-      def.maxItems = tonumber(optionsFrame._frameLengthBox:GetText() or "")
-      if tostring(eff.type or "list") == "list" then
-        def.rowHeight = tonumber(optionsFrame._frameHeightBox:GetText() or "")
-        if optionsFrame._frameMaxHBox then
-          local mh = tonumber(optionsFrame._frameMaxHBox:GetText() or "")
-          def.maxHeight = (mh and mh > 0) and mh or nil
-        end
-      else
-        def.height = tonumber(optionsFrame._frameHeightBox:GetText() or "")
-      end
-    end
-
-    CreateAllFrames()
-    RefreshAll()
-    RefreshFramesList()
-  end
-
-  widthBox:SetScript("OnEnterPressed", function(self) self:ClearFocus(); ApplyFrameSizeFromInputs() end)
-  heightBox:SetScript("OnEnterPressed", function(self) self:ClearFocus(); ApplyFrameSizeFromInputs() end)
-  lengthBox:SetScript("OnEnterPressed", function(self) self:ClearFocus(); ApplyFrameSizeFromInputs() end)
-  maxHBox:SetScript("OnEnterPressed", function(self) self:ClearFocus(); ApplyFrameSizeFromInputs() end)
-
-  nameBox:SetScript("OnEnterPressed", function(self)
-    self:ClearFocus()
-    if not optionsFrame then return end
-    local id = tostring(optionsFrame._selectedFrameID or "")
-    if id == "" then return end
-    local def = FindOrCreateCustomFrameDef(id)
-    if not def then return end
-
-    local nm = tostring(self:GetText() or "")
-    nm = nm:gsub("^%s+", ""):gsub("%s+$", "")
-    def.name = (nm ~= "") and nm or nil
-    RefreshFramesList()
-    RefreshAll()
-  end)
-
-  RefreshFramesList = function()
-    if not optionsFrame then return end
-    UpdateFrameEditor()
-
-    local frames = GetCustomFrames()
-    local rowH = 18
-    local fcontent = optionsFrame._framesContent
-    local frows = optionsFrame._frameRows
-    if optionsFrame._framesScroll and fcontent then
-      local w = tonumber(optionsFrame._framesScroll:GetWidth() or 0) or 0
-      fcontent:SetWidth(math.max(1, w - 28))
-    end
-    fcontent:SetHeight(math.max(1, #frames * rowH))
-
-    for i = 1, #frames do
-      local def = frames[i]
-      local row = frows[i]
-      if not row then
-        row = CreateFrame("Frame", nil, fcontent)
-        row:SetHeight(rowH)
-        row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        row.text:SetPoint("LEFT", 2, 0)
-
-        row.up = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        row.up:SetSize(18, 18)
-        row.up:SetText("^")
-        row.up:SetScript("OnEnter", function(self)
-          if GameTooltip then
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText("Move up")
-            GameTooltip:Show()
-          end
-        end)
-        row.up:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
-
-        row.down = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        row.down:SetSize(18, 18)
-        row.down:SetText("v")
-        row.down:SetScript("OnEnter", function(self)
-          if GameTooltip then
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText("Move down")
-            GameTooltip:Show()
-          end
-        end)
-        row.down:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
-
-        row.del = CreateFrame("Button", nil, row, "UIPanelCloseButton")
-        row.del:SetSize(20, 20)
-        row.del:SetPoint("RIGHT", 6, 0)
-
-        row.down:SetPoint("RIGHT", row.del, "LEFT", -2, 0)
-        row.up:SetPoint("RIGHT", row.down, "LEFT", -2, 0)
-        row.text:SetPoint("RIGHT", row.up, "LEFT", -4, 0)
-        frows[i] = row
-      end
-
-      row:SetPoint("TOPLEFT", 0, -(i - 1) * rowH)
-      row:SetPoint("TOPRIGHT", 0, -(i - 1) * rowH)
-      local nm = (type(def) == "table" and def.name ~= nil) and tostring(def.name) or ""
-      if nm ~= "" then
-        row.text:SetText(string.format("%s  (%s)  %s", tostring(def and def.id or ""), tostring(def and def.type or "list"), nm))
-      else
-        row.text:SetText(string.format("%s  (%s)", tostring(def and def.id or ""), tostring(def and def.type or "list")))
-      end
-
-      local idx = i
-      row.up:SetEnabled(idx > 1)
-      row.down:SetEnabled(idx < #frames)
-      row.up:SetScript("OnClick", function()
-        if idx <= 1 then return end
-        frames[idx], frames[idx - 1] = frames[idx - 1], frames[idx]
-        RefreshAll()
-        RefreshFramesList()
-      end)
-
-      row.down:SetScript("OnClick", function()
-        if idx >= #frames then return end
-        frames[idx], frames[idx + 1] = frames[idx + 1], frames[idx]
-        RefreshAll()
-        RefreshFramesList()
-      end)
-
-      row.del:SetScript("OnClick", function()
-        if not (IsShiftKeyDown and IsShiftKeyDown()) then
-          Print("Hold SHIFT and click X to delete a frame.")
-          return
-        end
-        local id = tostring(frames[idx] and frames[idx].id or "")
-        table.remove(frames, idx)
-        if id ~= "" then DestroyFrameByID(id) end
-        RefreshAll()
-        RefreshFramesList()
-        Print("Removed frame " .. (id ~= "" and id or "(unknown)") .. ".")
-      end)
-
-      row:Show()
-    end
-    for i = #frames + 1, #frows do
-      if frows[i] then frows[i]:Hide() end
-    end
-  end
-
-  RefreshRulesList = function()
-    if not optionsFrame then return end
-
-    local function GetRulesView()
-      local v = tostring(optionsFrame._rulesView or GetUISetting("rulesView", "all") or "all")
-      if v ~= "all" and v ~= "custom" and v ~= "defaults" and v ~= "trash" then v = "all" end
-      optionsFrame._rulesView = v
-      return v
-    end
-
-    local view = GetRulesView()
-
-    local list
-    local sourceOf = nil
-    if view == "defaults" then
-      list = ns.rules or {}
-      if optionsFrame._rulesTitle then optionsFrame._rulesTitle:SetText("Default Rules") end
-    elseif view == "trash" then
-      list = GetCustomRulesTrash()
-      if optionsFrame._rulesTitle then optionsFrame._rulesTitle:SetText("Trash (Custom Rules)") end
-    elseif view == "custom" then
-      list = GetCustomRules()
-      if optionsFrame._rulesTitle then optionsFrame._rulesTitle:SetText("Custom Rules") end
-    else
-      -- all: defaults + custom + auto
-      list = {}
-      sourceOf = {}
-      for _, r in ipairs(ns.rules or {}) do
-        list[#list + 1] = r
-        sourceOf[r] = "default"
-      end
-      for _, r in ipairs(GetCustomRules()) do
-        list[#list + 1] = r
-        sourceOf[r] = "custom"
-      end
-      for _, r in ipairs(GetEffectiveRules()) do
-        -- GetEffectiveRules already includes defaults+custom, but also adds auto rules.
-        -- We only need the autos here.
-        if sourceOf[r] == nil then
-          list[#list + 1] = r
-          sourceOf[r] = "auto"
-        end
-      end
-      if optionsFrame._rulesTitle then optionsFrame._rulesTitle:SetText("All Rules") end
-    end
-
-    local rowH = 18
-    local content = optionsFrame._rulesContent
-    local rows = optionsFrame._ruleRows
-    if optionsFrame._rulesScroll and content then
-      local w = tonumber(optionsFrame._rulesScroll:GetWidth() or 0) or 0
-      content:SetWidth(math.max(1, w - 28))
-    end
-    content:SetHeight(math.max(1, #list * rowH))
-
-    local function FormatRuleText(r)
-      local label = (type(r) == "table" and r.label ~= nil) and tostring(r.label) or ""
-      label = label:gsub("\n", " "):gsub("^%s+", ""):gsub("%s+$", "")
-
-      local function LevelSuffix(rr)
-        if type(rr) ~= "table" then return "" end
-        local op = rr.playerLevelOp
-        local lvl = tonumber(rr.playerLevel)
-        if op and lvl and lvl > 0 then
-          return string.format(" [Lvl %s %d]", tostring(op), lvl)
-        end
-        return ""
-      end
-
-      if type(r) == "table" and type(r.item) == "table" and r.item.itemID then
-        local itemID = tonumber(r.item.itemID) or 0
-        local base = (label ~= "") and label or (GetItemNameSafe(itemID) or ("Item " .. tostring(itemID)))
-        return string.format("I: %s%s", base, LevelSuffix(r))
-      elseif tonumber(r and r.questID) and tonumber(r.questID) > 0 then
-        local q = tonumber(r.questID) or 0
-        local base = (label ~= "") and label or (GetQuestTitle(q) or ("Quest " .. tostring(q)))
-        if label == "" then
-          local hay = tostring(base or ""):lower()
-          local aura = (type(r) == "table") and r.aura or nil
-          if (type(aura) == "table" and aura.eventKind == "timewalking") or hay:find("timewalking", 1, true) or hay:find("turbulent timeways", 1, true) then
-            base = tostring(base) .. " [TW]"
-          end
-        end
-        return string.format("Q: %s%s", tostring(base), LevelSuffix(r))
-      elseif type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup) then
-        local function PickSpellID(v)
-          if type(v) == "table" then
-            for _, x in ipairs(v) do
-              local n = tonumber(x)
-              if n and n > 0 then return n end
-            end
-            return nil
-          end
-          local n = tonumber(v)
-          return (n and n > 0) and n or nil
-        end
-
-        local spellID = PickSpellID(r.spellKnown) or PickSpellID(r.notSpellKnown)
-        local name = nil
-        if label == "" and spellID then
-          local CS = _G and rawget(_G, "C_Spell")
-          if CS and CS.GetSpellName then
-            local ok, n = pcall(CS.GetSpellName, spellID)
-            if ok and type(n) == "string" and n ~= "" then name = n end
-          end
-          local GSI = _G and rawget(_G, "GetSpellInfo")
-          if not name and GSI then
-            local ok, n = pcall(GSI, spellID)
-            if ok and type(n) == "string" and n ~= "" then name = n end
-          end
-        end
-
-        local base = (label ~= "") and label or (name or (spellID and ("Spell " .. tostring(spellID)) or "Spell"))
-        return string.format("S: %s%s", base, LevelSuffix(r))
-      else
-        local base = (label ~= "") and label or "Text"
-        return string.format("T: %s%s", base, LevelSuffix(r))
-      end
-    end
-
-    for i = 1, #list do
-      local r = list[i]
-      local row = rows[i]
-      if not row then
-        row = CreateFrame("Frame", nil, content)
-        row:SetHeight(rowH)
-        row:EnableMouse(true)
-
-        row.toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
-        row.toggle:SetSize(18, 18)
-        row.toggle:SetPoint("LEFT", 0, 0)
-
-        row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        row.text:SetPoint("LEFT", row.toggle, "RIGHT", 4, 0)
-
-        row.action = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        row.action:SetSize(70, 18)
-
-        row.up = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        row.up:SetSize(18, 18)
-        row.up:SetText("^")
-        row.up:SetScript("OnEnter", function(self)
-          if GameTooltip then
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText("Move up")
-            GameTooltip:Show()
-          end
-        end)
-        row.up:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
-
-        row.down = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        row.down:SetSize(18, 18)
-        row.down:SetText("v")
-        row.down:SetScript("OnEnter", function(self)
-          if GameTooltip then
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText("Move down")
-            GameTooltip:Show()
-          end
-        end)
-        row.down:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
-
-        row.action:SetPoint("RIGHT", -62, 0)
-
-        row.del = CreateFrame("Button", nil, row, "UIPanelCloseButton")
-        row.del:SetSize(20, 20)
-        row.del:SetPoint("RIGHT", 6, 0)
-
-        row.down:SetPoint("RIGHT", row.del, "LEFT", -2, 0)
-        row.up:SetPoint("RIGHT", row.down, "LEFT", -2, 0)
-        row.text:SetPoint("RIGHT", row.action, "LEFT", -6, 0)
-
-        rows[i] = row
-      end
-
-      row:SetPoint("TOPLEFT", 0, -(i - 1) * rowH)
-      row:SetPoint("TOPRIGHT", 0, -(i - 1) * rowH)
-
-      local disabled = IsRuleDisabled(r)
-      row.toggle:SetChecked(not disabled)
-      if disabled then
-        row.text:SetFontObject("GameFontDisableSmall")
-      else
-        row.text:SetFontObject("GameFontHighlightSmall")
-      end
-
-      local src = (view == "defaults") and "default" or (view == "trash") and "trash" or (view == "custom") and "custom" or (sourceOf and sourceOf[r])
-      local c = (src == "default" or src == "auto") and "|cff00ccff" or (src == "trash") and "|cffff8800" or "|cffffffff"
-      row.text:SetText(c .. FormatRuleText(r) .. "|r")
-
-      local idx = i
-      if view == "trash" then
-        row.toggle:Hide()
-      else
-        row.toggle:Show()
-        row.toggle:SetScript("OnClick", function()
-          ToggleRuleDisabled(r)
-          RefreshAll()
-          RefreshRulesList()
-        end)
-      end
-
-      local function FindCustomIndex(rule)
-        local custom = GetCustomRules()
-        for ci, cr in ipairs(custom) do
-          if cr == rule then return ci end
-        end
-        return nil
-      end
-
-      local function MoveCustomByIndex(ci, delta)
-        local custom = GetCustomRules()
-        if type(ci) ~= "number" then return end
-        local ni = ci + delta
-        if ni < 1 or ni > #custom then return end
-        custom[ci], custom[ni] = custom[ni], custom[ci]
-
-        if optionsFrame and optionsFrame._editingCustomRuleIndex then
-          if optionsFrame._editingCustomRuleIndex == ci then
-            optionsFrame._editingCustomRuleIndex = ni
-          elseif optionsFrame._editingCustomRuleIndex == ni then
-            optionsFrame._editingCustomRuleIndex = ci
-          end
-        end
-
-        RefreshAll()
-        RefreshRulesList()
-      end
-
-      local function SetMoveButtonsVisible(isVisible)
-        if isVisible then
-          row.up:Show()
-          row.down:Show()
-        else
-          row.up:Hide()
-          row.down:Hide()
-        end
-      end
-
-      if view == "custom" then
-        SetMoveButtonsVisible(true)
-        row.action:SetText("Edit")
-        row.action:Show()
-        row.action:SetScript("OnClick", function()
-          local ci = FindCustomIndex(list[idx])
-          if not ci then return end
-          OpenCustomRuleInTab(ci)
-        end)
-
-        do
-          local ci = FindCustomIndex(list[idx])
-          local n = #(GetCustomRules() or {})
-          row.up:SetEnabled(ci ~= nil and ci > 1)
-          row.down:SetEnabled(ci ~= nil and ci < n)
-        end
-
-        row.up:SetScript("OnClick", function()
-          local ci = FindCustomIndex(list[idx])
-          if not ci then return end
-          MoveCustomByIndex(ci, -1)
-        end)
-        row.down:SetScript("OnClick", function()
-          local ci = FindCustomIndex(list[idx])
-          if not ci then return end
-          MoveCustomByIndex(ci, 1)
-        end)
-
-        row:SetScript("OnMouseUp", nil)
-
-        row.del:Show()
-        row.del:SetScript("OnClick", function()
-          if not (IsShiftKeyDown and IsShiftKeyDown()) then
-            Print("Hold SHIFT and click X to move a rule to Trash.")
-            return
-          end
-          local trash = GetCustomRulesTrash()
-          trash[#trash + 1] = list[idx]
-          table.remove(list, idx)
-          if optionsFrame then optionsFrame._editingCustomRuleIndex = nil end
-          RefreshAll()
-          RefreshRulesList()
-          Print("Moved custom rule to Trash.")
-        end)
-      elseif view == "defaults" then
-        SetMoveButtonsVisible(false)
-        row:SetScript("OnMouseUp", nil)
-        row.action:SetText("Override")
-        row.action:Show()
-        row.action:SetScript("OnClick", function()
-          local base = list[idx]
-          if type(base) ~= "table" then return end
-
-          local copy = DeepCopyValue(base)
-          copy.key = MakeUniqueRuleKey("custom:override")
-          EnsureUniqueKeyForCustomRule(copy)
-
-          local custom = GetCustomRules()
-          custom[#custom + 1] = copy
-          ToggleRuleDisabled(base)
-
-          CreateAllFrames()
-          RefreshAll()
-          RefreshRulesList()
-          Print("Created custom override and disabled the default rule.")
-        end)
-
-        row.del:Hide()
-      elseif view == "trash" then
-        SetMoveButtonsVisible(false)
-        row:SetScript("OnMouseUp", nil)
-        row.action:SetText("Restore")
-        row.action:Show()
-        row.action:SetScript("OnClick", function()
-          local trash = GetCustomRulesTrash()
-          local r2 = trash[idx]
-          if type(r2) ~= "table" then return end
-          local restored = DeepCopyValue(r2)
-          EnsureUniqueKeyForCustomRule(restored)
-          local custom = GetCustomRules()
-          custom[#custom + 1] = restored
-          table.remove(trash, idx)
-          RefreshAll()
-          RefreshRulesList()
-          Print("Restored custom rule.")
-        end)
-
-        row.del:Show()
-        row.del:SetScript("OnClick", function()
-          if not (IsShiftKeyDown and IsShiftKeyDown()) then
-            Print("Hold SHIFT and click X to delete permanently.")
-            return
-          end
-          table.remove(list, idx)
-          RefreshRulesList()
-          Print("Deleted trashed rule permanently.")
-        end)
-      else
-        -- all: choose actions per-row
-        row:SetScript("OnMouseUp", nil)
-
-        local src2 = (sourceOf and sourceOf[r]) or "custom"
-        if src2 == "default" then
-          SetMoveButtonsVisible(false)
-          row.action:SetText("Override")
-          row.action:Show()
-          row.action:SetScript("OnClick", function()
-            local base = r
-            if type(base) ~= "table" then return end
-
-            local copy = DeepCopyValue(base)
-            copy.key = MakeUniqueRuleKey("custom:override")
-            EnsureUniqueKeyForCustomRule(copy)
-
-            local custom = GetCustomRules()
-            custom[#custom + 1] = copy
-            ToggleRuleDisabled(base)
-
-            CreateAllFrames()
-            RefreshAll()
-            RefreshRulesList()
-            Print("Created custom override and disabled the default rule.")
-          end)
-          row.del:Hide()
-        elseif src2 == "custom" then
-          SetMoveButtonsVisible(true)
-          row.action:SetText("Edit")
-          row.action:Show()
-          row.action:SetScript("OnClick", function()
-            local ci = FindCustomIndex(r)
-            if not ci then return end
-            OpenCustomRuleInTab(ci)
-          end)
-
-          do
-            local ci = FindCustomIndex(r)
-            local n = #(GetCustomRules() or {})
-            row.up:SetEnabled(ci ~= nil and ci > 1)
-            row.down:SetEnabled(ci ~= nil and ci < n)
-          end
-
-          row.up:SetScript("OnClick", function()
-            local ci = FindCustomIndex(r)
-            if not ci then return end
-            MoveCustomByIndex(ci, -1)
-          end)
-          row.down:SetScript("OnClick", function()
-            local ci = FindCustomIndex(r)
-            if not ci then return end
-            MoveCustomByIndex(ci, 1)
-          end)
-
-          row.del:Show()
-          row.del:SetScript("OnClick", function()
-            if not (IsShiftKeyDown and IsShiftKeyDown()) then
-              Print("Hold SHIFT and click X to move a rule to Trash.")
-              return
-            end
-            local ci = FindCustomIndex(r)
-            if not ci then return end
-            local custom = GetCustomRules()
-            local trash = GetCustomRulesTrash()
-            trash[#trash + 1] = custom[ci]
-            table.remove(custom, ci)
-            if optionsFrame then optionsFrame._editingCustomRuleIndex = nil end
-            RefreshAll()
-            RefreshRulesList()
-            Print("Moved custom rule to Trash.")
-          end)
-        else
-          -- auto: no edit/delete
-          SetMoveButtonsVisible(false)
-          row.action:Hide()
-          row.del:Hide()
-        end
-      end
-
-      row:Show()
-    end
-    for i = #list + 1, #rows do
-      if rows[i] then rows[i]:Hide() end
-    end
-  end
-
-  RefreshActiveTab = function()
-    if not optionsFrame then return end
-    local t = optionsFrame._activeTab
-    if t == "frames" then
-      RefreshFramesList()
-    elseif t == "rules" then
-      RefreshRulesList()
-    end
-  end
-
-  local resetBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-  resetBtn:SetSize(160, 22)
-  resetBtn:SetPoint("BOTTOMLEFT", 12, 12)
-  resetBtn:SetText("Reset frame positions")
-  resetBtn:SetScript("OnClick", function()
-    ResetFramePositionsToDefaults()
-    RefreshAll()
-    RefreshActiveTab()
-    Print("Frame positions reset to defaults.")
-  end)
-
-  local reloadBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-  reloadBtn:SetSize(160, 22)
-  reloadBtn:SetPoint("BOTTOMRIGHT", -12, 12)
-  reloadBtn:SetText("/reload")
-  reloadBtn:SetScript("OnClick", function()
-    local r = _G and _G["ReloadUI"]
-    if r then r() end
-  end)
-
-  optionsFrame = f
-  -- default tab (persisted)
-  local initial = tostring(GetUISetting("optionsTab", "frames") or "frames")
-  if not panels[initial] then initial = "frames" end
-  SelectTab(initial)
-  return f
-end
-
-local function ShowOptions()
-  editMode = true
-  RefreshAll()
-  local f = EnsureOptionsFrame()
-  RefreshActiveTab()
-  f:Show()
-end
-
--- WeakAuras tooling is implemented in fr0z3nUI_QuestTracker_WeakAuras.lua.
--- Keep a small shim here so the slash command can still open the importer if the module loaded.
+-- Options UI was split out to fr0z3nUI_QuestTracker_Options.lua
+-- (kept separate to reduce compile-time locals/upvalues in core)
 local function EnsureWeakAuraImportFrame()
   local ensure = _G and rawget(_G, "EnsureWeakAuraImportFrame")
   if type(ensure) == "function" then
@@ -7462,6 +3248,124 @@ local function RenderList(frameDef, frame, entries)
   end
 end
 
+-- Bar contents inspector (instead of transforming bars into lists in edit mode)
+local function GetFrameDisplayNameForInspector(frameID)
+  frameID = tostring(frameID or "")
+  if frameID == "" then return "" end
+  local defs = GetEffectiveFrames and GetEffectiveFrames() or nil
+  if type(defs) == "table" then
+    for _, def in ipairs(defs) do
+      if tostring(def and def.id or "") == frameID then
+        local n = tostring(def and def.name or "")
+        if n ~= "" then return n end
+        break
+      end
+    end
+  end
+  return frameID
+end
+
+local function EnsureBarContentsFrame()
+  if barContentsFrame then return barContentsFrame end
+
+  local f = CreateFrame("Frame", "FR0Z3NUIFQTBarContents", UIParent, "BackdropTemplate")
+  f:SetSize(420, 520)
+  f:SetPoint("CENTER")
+  f:SetFrameStrata("DIALOG")
+  f:SetClampedToScreen(true)
+  f:SetMovable(true)
+  f:EnableMouse(true)
+  RestoreWindowPosition("barContents", f, "CENTER", "CENTER", 0, 0)
+  f:RegisterForDrag("LeftButton")
+  f:SetScript("OnDragStart", f.StartMoving)
+  f:SetScript("OnDragStop", function(self)
+    if self.StopMovingOrSizing then self:StopMovingOrSizing() end
+    SaveWindowPosition("barContents", self)
+  end)
+  ApplyFAOBackdrop(f, 0.90)
+
+  local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  title:SetPoint("TOPLEFT", 12, -10)
+  title:SetText("|cff00ccff[FQT]|r Bar Contents")
+  f._title = title
+
+  local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+  close:SetPoint("TOPRIGHT", f, "TOPRIGHT", 2, 2)
+
+  local host = CreateFrame("Frame", nil, f)
+  host:SetPoint("TOPLEFT", 12, -34)
+  host:SetPoint("BOTTOMRIGHT", -12, 12)
+  host._isTrackerFrame = true
+  f._host = host
+
+  f:HookScript("OnShow", function(self)
+    RestoreWindowPosition("barContents", self, "CENTER", "CENTER", 0, 0)
+  end)
+
+  barContentsFrame = f
+  return f
+end
+
+local function RefreshBarContentsFrame()
+  if not (barContentsFrame and barContentsFrame.IsShown and barContentsFrame:IsShown()) then return end
+  local targetID = tostring(barContentsFrame._targetFrameID or "")
+  if targetID == "" then return end
+
+  local target = framesByID and framesByID[targetID]
+  local entries = (target and target._lastEntries) or {}
+
+  local host = barContentsFrame._host
+  if not host then return end
+  host._targetID = targetID
+  host._id = "inspect:" .. targetID
+
+  if barContentsFrame._title and barContentsFrame._title.SetText then
+    barContentsFrame._title:SetText("|cff00ccff[FQT]|r Contents: " .. tostring(GetFrameDisplayNameForInspector(targetID)))
+  end
+
+  local tmp = {
+    id = host._id,
+    type = "list",
+    rowHeight = 16,
+    maxItems = 24,
+  }
+
+  RenderList(tmp, host, entries)
+end
+
+local function ShowBarContentsForFrameID(frameID)
+  frameID = tostring(frameID or "")
+  if frameID == "" then return end
+  local f = EnsureBarContentsFrame()
+  f._targetFrameID = frameID
+  RefreshBarContentsFrame()
+  f:Show()
+end
+
+local function EnsureBarInspectButton(frame)
+  if frame._barInspectBtn then return frame._barInspectBtn end
+  local b = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  b:SetSize(44, 16)
+  b:SetText("List")
+  b:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -6, -6)
+  b:SetFrameLevel((frame.GetFrameLevel and frame:GetFrameLevel() or 1) + 40)
+  b:SetScript("OnClick", function()
+    if not editMode then return end
+    local id = tostring(frame and frame._id or "")
+    if id == "" then return end
+    if barContentsFrame and barContentsFrame.IsShown and barContentsFrame:IsShown() then
+      local cur = tostring(barContentsFrame._targetFrameID or "")
+      if cur == id then
+        barContentsFrame:Hide()
+        return
+      end
+    end
+    ShowBarContentsForFrameID(id)
+  end)
+  frame._barInspectBtn = b
+  return b
+end
+
 RefreshAll = function()
   NormalizeSV()
 
@@ -7587,16 +3491,9 @@ RefreshAll = function()
       end
 
       if t == "bar" then
-        if editMode then
-          local tmp = ShallowCopyTable(def) or {}
-          tmp.type = "list"
-          tmp.rowHeight = tonumber(tmp.rowHeight) or 16
-          tmp.maxItems = tonumber(tmp.maxItems) or 20
-          tmp.maxHeight = tonumber(tmp.maxHeight) or tmp.height or nil
-          RenderList(tmp, f, entries)
-        else
-          RenderBar(def, f, entries)
-        end
+        RenderBar(def, f, entries)
+        local btn = EnsureBarInspectButton(f)
+        btn:SetShown(editMode and true or false)
       else
         RenderList(def, f, entries)
       end
@@ -7604,6 +3501,8 @@ RefreshAll = function()
       UpdateAnchorLabel(f, def)
     end
   end
+
+  RefreshBarContentsFrame()
 end
 
 CreateAllFrames = function()
@@ -7630,6 +3529,8 @@ DestroyFrameByID = function(id)
   framesByID[id] = nil
 end
 
+ns.DestroyFrameByID = DestroyFrameByID
+
 -- Events
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
@@ -7639,6 +3540,7 @@ frame:RegisterEvent("QUEST_ACCEPTED")
 frame:RegisterEvent("QUEST_TURNED_IN")
 frame:RegisterEvent("BAG_UPDATE_DELAYED")
 frame:RegisterEvent("UNIT_AURA")
+frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
 frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("CALENDAR_UPDATE_EVENT_LIST")
@@ -7674,7 +3576,11 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
   cmd = tostring(cmd or ""):lower()
   rest = tostring(rest or "")
   if cmd == "" then
-    ShowOptions()
+    if ns and ns.ShowOptions then
+      ns.ShowOptions()
+    else
+      Print("Options UI module not loaded.")
+    end
     return
   end
   if cmd == "weakaura" then
