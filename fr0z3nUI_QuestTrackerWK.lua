@@ -554,7 +554,7 @@ ns.rules = {
     showXWhenComplete = true,
   },
   {
-    questID = 92647, -- TODO: replace with the leveling variant questID if different
+    questID = 92647,
     frameID = "bar1",
     label = "Timewalking Shadowlands Level",
     questInfo = "Shadowlands",

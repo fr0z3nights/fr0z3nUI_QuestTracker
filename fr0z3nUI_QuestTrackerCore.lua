@@ -74,28 +74,6 @@ end
 
 ns.PrereqListKey = PrereqListKey
 
-local function GetWAExportDB()
-  local db = _G and _G["fr0z3nUI_QuestTracker_WAExportDB"]
-  if type(db) ~= "table" then
-    db = { version = 1, exports = {} }
-    if _G then _G["fr0z3nUI_QuestTracker_WAExportDB"] = db end
-  end
-  if type(db.exports) ~= "table" then db.exports = {} end
-  if type(db.version) ~= "number" then db.version = 1 end
-  return db
-end
-
-ns.GetWAExportDB = GetWAExportDB
-
-local function SaveWAExportSnapshot(snapshot)
-  if type(snapshot) ~= "table" then return false end
-  local db = GetWAExportDB()
-  db.exports[#db.exports + 1] = snapshot
-  return true
-end
-
-ns.SaveWAExportSnapshot = SaveWAExportSnapshot
-
 local _rulesNormalized = false
 
 local function NormalizePlayerLevelOp(op)
@@ -3219,7 +3197,6 @@ end
 
 ns.FindCustomRuleIndex = FindCustomRuleIndex
 
--- WeakAuras tooling moved to fr0z3nUI_QuestTracker_WeakAuras.lua
 UnassignRuleFromFrame = function(rule, frameID)
   if type(rule) ~= "table" then return false end
   local idx = FindCustomRuleIndex(rule)
@@ -3438,10 +3415,6 @@ local function RenderBar(frameDef, frame, entries)
           Print("Hold SHIFT and click X to remove from this frame.")
           return
         end
-        if not (IsShiftKeyDown and IsShiftKeyDown()) then
-          Print("Hold SHIFT and click X to remove from this frame.")
-          return
-        end
         local e = entries[i + offset]
         if not (e and e.rule) then return end
         local ok = UnassignRuleFromFrame(e.rule, frame and frame._id)
@@ -3515,14 +3488,6 @@ ns.ResetFramePositionsToDefaults = ResetFramePositionsToDefaults
 
 -- Options UI was split out to fr0z3nUI_QuestTracker_Options.lua
 -- (kept separate to reduce compile-time locals/upvalues in core)
-local function EnsureWeakAuraImportFrame()
-  local ensure = _G and rawget(_G, "EnsureWeakAuraImportFrame")
-  if type(ensure) == "function" then
-    return ensure()
-  end
-  Print("WeakAuras import module not loaded.")
-  return nil
-end
 
 local function RenderList(frameDef, frame, entries)
   local maxItems = tonumber(frameDef.maxItems) or 20
@@ -4148,7 +4113,23 @@ frame:SetScript("OnEvent", function(_, event, ...)
     NormalizeSV()
     CreateAllFrames()
     C_Timer.After(1.0, RefreshAll)
+    frame._didPostWorldWarm = false
     Print("Loaded. Type /fqt to configure.")
+    return
+  end
+
+  if event == "PLAYER_ENTERING_WORLD" and not frame._didPostWorldWarm then
+    frame._didPostWorldWarm = true
+    -- Calendar data can arrive slightly after login; do one delayed refresh.
+    C_Timer.After(5.0, RefreshAll)
+  end
+
+  if event == "CALENDAR_UPDATE_EVENT_LIST" or event == "CALENDAR_UPDATE_EVENT" then
+    -- Calendar can fire a burst of events; avoid constant timer churn.
+    if frame._refreshTimer then
+      return
+    end
+    frame._refreshTimer = C_Timer.NewTimer(1.5, RefreshAll)
     return
   end
 
@@ -4173,22 +4154,6 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     else
       Print("Options UI module not loaded.")
     end
-    return
-  end
-  if cmd == "weakaura" then
-    local arg = rest ~= "" and rest or nil
-    local ensure = _G and rawget(_G, "EnsureWeakAuraImportFrame")
-    local f
-    if type(ensure) == "function" then
-      f = ensure()
-    else
-      f = EnsureWeakAuraImportFrame()
-    end
-    if not f then return end
-    if arg and f and f._auraBox then
-      f._auraBox:SetText(tostring(arg))
-    end
-    f:Show()
     return
   end
   if cmd == "on" then
@@ -4271,6 +4236,6 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     return
   end
 
-  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt weakaura, /fqt twdebug, /fqt twclear")
+  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt twdebug, /fqt twclear")
   end)
 end
