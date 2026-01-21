@@ -7,8 +7,20 @@
 ## SavedVariables: fr0z3nUI_QuestTracker_Acc, fr0z3nUI_QuestTracker_WAExportDB
 ## SavedVariablesPerCharacter: fr0z3nUI_QuestTracker_Char
 
-fr0z3nUI_QuestTracker_DB.lua
-fr0z3nUI_QuestTracker_DB2.lua
-fr0z3nUI_QuestTracker_Core.lua
-fr0z3nUI_QuestTracker_Options.lua
-fr0z3nUI_QuestTracker_WeakAuras.lua
+fr0z3nUI_QuestTrackerWK.lua
+fr0z3nUI_QuestTrackerXP00.lua
+fr0z3nUI_QuestTrackerXP01.lua
+fr0z3nUI_QuestTrackerXP02.lua
+fr0z3nUI_QuestTrackerXP03.lua
+fr0z3nUI_QuestTrackerXP04.lua
+fr0z3nUI_QuestTrackerXP05.lua
+fr0z3nUI_QuestTrackerXP06.lua
+fr0z3nUI_QuestTrackerXP07.lua
+fr0z3nUI_QuestTrackerXP08.lua
+fr0z3nUI_QuestTrackerXP09.lua
+fr0z3nUI_QuestTrackerXP10.lua
+fr0z3nUI_QuestTrackerXP11.lua
+fr0z3nUI_QuestTrackerXP12.lua
+fr0z3nUI_QuestTrackerCore.lua
+fr0z3nUI_QuestTrackerOptions.lua
+fr0z3nUI_QuestTrackerWeakAuras.lua

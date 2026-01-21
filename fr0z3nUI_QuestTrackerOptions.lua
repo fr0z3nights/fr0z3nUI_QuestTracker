@@ -11,8 +11,12 @@ local RestoreWindowPosition = ns.RestoreWindowPosition
 local ApplyFAOBackdrop = ns.ApplyFAOBackdrop
 local RefreshAll = ns.RefreshAll or function() end
 local CreateAllFrames = ns.CreateAllFrames or function() end
+local SaveFramePosition = ns.SaveFramePosition
+local GetTrackerFrameByID = ns.GetTrackerFrameByID
 local DestroyFrameByID = ns.DestroyFrameByID
 local ResetFramePositionsToDefaults = ns.ResetFramePositionsToDefaults
+local GetUseCharacterWindowPos = ns.GetUseCharacterWindowPos
+local SetUseCharacterWindowPos = ns.SetUseCharacterWindowPos
 
 local GetEffectiveRules = ns.GetEffectiveRules
 local GetEffectiveFrames = ns.GetEffectiveFrames
@@ -31,6 +35,7 @@ local GetItemNameSafe = ns.GetItemNameSafe
 local AssignRuleToFrame = ns.AssignRuleToFrame
 local FindCustomRuleIndex = ns.FindCustomRuleIndex
 local UnassignRuleFromFrame = ns.UnassignRuleFromFrame
+local GetCalendarDebugEvents = ns.GetCalendarDebugEvents
 
 local function UseModernMenuDropDown(dropdown, build)
   local mu = _G and rawget(_G, "MenuUtil")
@@ -133,13 +138,18 @@ local function EnsureOptionsFrame()
 
   f:HookScript("OnShow", function(self)
     RestoreWindowPosition("options", self, "CENTER", "CENTER", 0, 0)
+    if self._useCharPosBtn then
+      local v = (type(GetUseCharacterWindowPos) == "function" and GetUseCharacterWindowPos()) and true or false
+      if self._useCharPosBtn.SetChecked then self._useCharPosBtn:SetChecked(v) end
+    end
     editMode = true
     SetCoreEditMode(true)
   end)
 
   local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   title:SetPoint("TOPLEFT", 12, -10)
-  title:SetText("|cff00ccff[FQT]|r QuestTracker")
+  title:SetText("")
+  title:Hide()
 
   local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
   close:SetPoint("TOPRIGHT", f, "TOPRIGHT", 2, 2)
@@ -159,6 +169,30 @@ local function EnsureOptionsFrame()
     rules = MakePanel(),
     frames = MakePanel(),
   }
+
+  local function IsSelectedFrameBar()
+    local id = tostring((f and f._selectedFrameID) or (optionsFrame and optionsFrame._selectedFrameID) or "")
+    if id == "" then return false end
+    local list = (type(GetEffectiveFrames) == "function" and GetEffectiveFrames()) or {}
+    if type(list) ~= "table" then return false end
+    for _, def in ipairs(list) do
+      if type(def) == "table" and tostring(def.id or "") == id then
+        return tostring(def.type or "list") == "bar"
+      end
+    end
+    return false
+  end
+
+  local function UpdateReverseOrderVisibility(activeTabName)
+    local btn = f and f._reverseOrderBtn
+    if not (btn and btn.SetShown) then return end
+    local tab = tostring(activeTabName or (optionsFrame and optionsFrame._activeTab) or "")
+    local show = (tab == "frames") and IsSelectedFrameBar()
+    btn:SetShown(show)
+    if show and btn.SetChecked then
+      btn:SetChecked((GetUISetting("reverseOrder", false) and true or false))
+    end
+  end
 
   -- If enabled, Save/Cancel will NOT clear the current form or auto-switch back to the Rules tab.
   local function ReadKeepEditFormOpenSetting()
@@ -234,6 +268,13 @@ local function EnsureOptionsFrame()
     if f._resetBtn and f._resetBtn.SetShown then f._resetBtn:SetShown(showFooter) end
     if f._reloadBtn and f._reloadBtn.SetShown then f._reloadBtn:SetShown(showFooter) end
 
+    if name == "frames" and f._useCharPosBtn and f._useCharPosBtn.SetChecked then
+      local v = (type(GetUseCharacterWindowPos) == "function" and GetUseCharacterWindowPos()) and true or false
+      f._useCharPosBtn:SetChecked(v)
+    end
+
+    UpdateReverseOrderVisibility(name)
+
     if optionsFrame then
       optionsFrame._activeTab = name
       SetUISetting("optionsTab", name)
@@ -245,10 +286,10 @@ local function EnsureOptionsFrame()
     end
   end
 
-  local tabOrder = { "frames", "rules", "items", "quest", "spells", "text" }
+  local tabOrder = { "rules", "items", "quest", "spells", "text", "frames" }
   local tabText = {
-    frames = "Frames",
-    rules = "Rules",
+    frames = "UI",
+    rules = "[FQT] Quest Tracker",
     items = "Items",
     quest = "Quest",
     spells = "Spell",
@@ -265,11 +306,11 @@ local function EnsureOptionsFrame()
 
   for i, name in ipairs(tabOrder) do
     local btn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    btn:SetSize(70, 18)
+    btn:SetSize((name == "rules") and 140 or 70, 18)
     btn:SetText(tabText[name] or name)
     btn._tabName = name
     if i == 1 then
-      btn:SetPoint("TOPLEFT", title, "TOPRIGHT", 10, 2)
+      btn:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -10)
     else
       btn:SetPoint("LEFT", tabs[i - 1], "RIGHT", 4, 0)
     end
@@ -1150,7 +1191,7 @@ local function EnsureOptionsFrame()
 
   local itemIDBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
   itemIDBox:SetSize(70, 20)
-  itemIDBox:SetPoint("TOPLEFT", 12, -86)
+  itemIDBox:SetPoint("TOPLEFT", 12, -62)
   itemIDBox:SetAutoFocus(false)
   itemIDBox:SetNumeric(true)
   itemIDBox:SetText("")
@@ -1159,39 +1200,49 @@ local function EnsureOptionsFrame()
   AddPlaceholder(itemIDBox, "ItemID")
   HideInputBoxTemplateArt(itemIDBox)
 
-  local itemLabelScroll = CreateFrame("ScrollFrame", nil, pItems, "UIPanelScrollFrameTemplate")
-  itemLabelScroll:SetPoint("TOPLEFT", 90, -86)
-  itemLabelScroll:SetSize(170, 44)
+  local itemNameBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
+  itemNameBox:SetSize(170, 20)
+  itemNameBox:SetPoint("TOPLEFT", 90, -62)
+  itemNameBox:SetAutoFocus(false)
+  itemNameBox:SetText("")
+  itemNameBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  itemNameBox:SetTextInsets(6, 6, 0, 0)
+  AddPlaceholder(itemNameBox, "Item Name")
+  HideInputBoxTemplateArt(itemNameBox)
 
-  local itemLabelBox = CreateFrame("EditBox", nil, itemLabelScroll)
-  itemLabelBox:SetMultiLine(true)
-  itemLabelBox:SetAutoFocus(false)
-  itemLabelBox:SetFontObject("ChatFontNormal")
-  itemLabelBox:SetWidth(150)
-  itemLabelBox:SetTextInsets(6, 6, 6, 6)
-  itemLabelBox:SetText("")
-  itemLabelBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  itemLabelBox:SetScript("OnCursorChanged", function(self, x, y, w, h)
-    if not itemLabelScroll then return end
-    itemLabelScroll:UpdateScrollChildRect()
-    local offset = itemLabelScroll:GetVerticalScroll() or 0
-    local height = itemLabelScroll:GetHeight() or 0
+  local itemInfoScroll = CreateFrame("ScrollFrame", nil, pItems, "UIPanelScrollFrameTemplate")
+  itemInfoScroll:SetPoint("TOPLEFT", 90, -86)
+  itemInfoScroll:SetSize(170, 44)
+
+  local itemInfoBox = CreateFrame("EditBox", nil, itemInfoScroll)
+  itemInfoBox:SetMultiLine(true)
+  itemInfoBox:SetAutoFocus(false)
+  itemInfoBox:SetFontObject("ChatFontNormal")
+  itemInfoBox:SetWidth(150)
+  itemInfoBox:SetTextInsets(6, 6, 6, 6)
+  itemInfoBox:SetText("")
+  itemInfoBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  itemInfoBox:SetScript("OnCursorChanged", function(self, x, y, w, h)
+    if not itemInfoScroll then return end
+    itemInfoScroll:UpdateScrollChildRect()
+    local offset = itemInfoScroll:GetVerticalScroll() or 0
+    local height = itemInfoScroll:GetHeight() or 0
     local top = -y
     if top < offset then
-      itemLabelScroll:SetVerticalScroll(top)
+      itemInfoScroll:SetVerticalScroll(top)
     elseif top > offset + height - 20 then
-      itemLabelScroll:SetVerticalScroll(top - height + 20)
+      itemInfoScroll:SetVerticalScroll(top - height + 20)
     end
   end)
 
-  itemLabelScroll:SetScrollChild(itemLabelBox)
-  AddPlaceholder(itemLabelBox, "Item name (editable)")
+  itemInfoScroll:SetScrollChild(itemInfoBox)
+  AddPlaceholder(itemInfoBox, "Item Info")
 
-  pItems._itemLabelScroll = itemLabelScroll
+  pItems._itemInfoScroll = itemInfoScroll
 
   local itemQuestIDBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
   itemQuestIDBox:SetSize(70, 20)
-  itemQuestIDBox:SetPoint("TOPLEFT", 270, -86)
+  itemQuestIDBox:SetPoint("TOPLEFT", 270, -62)
   itemQuestIDBox:SetAutoFocus(false)
   itemQuestIDBox:SetNumeric(true)
   itemQuestIDBox:SetText("")
@@ -1202,7 +1253,7 @@ local function EnsureOptionsFrame()
 
   local itemAfterQuestIDBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
   itemAfterQuestIDBox:SetSize(80, 20)
-  itemAfterQuestIDBox:SetPoint("TOPLEFT", 350, -86)
+  itemAfterQuestIDBox:SetPoint("TOPLEFT", 350, -62)
   itemAfterQuestIDBox:SetAutoFocus(false)
   itemAfterQuestIDBox:SetNumeric(true)
   itemAfterQuestIDBox:SetText("")
@@ -1213,7 +1264,7 @@ local function EnsureOptionsFrame()
 
   local itemCurrencyIDBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
   itemCurrencyIDBox:SetSize(70, 20)
-  itemCurrencyIDBox:SetPoint("TOPLEFT", 440, -86)
+  itemCurrencyIDBox:SetPoint("TOPLEFT", 440, -62)
   itemCurrencyIDBox:SetAutoFocus(false)
   itemCurrencyIDBox:SetNumeric(true)
   itemCurrencyIDBox:SetText("")
@@ -1224,7 +1275,7 @@ local function EnsureOptionsFrame()
 
   local itemCurrencyReqBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
   itemCurrencyReqBox:SetSize(70, 20)
-  itemCurrencyReqBox:SetPoint("TOPLEFT", 520, -86)
+  itemCurrencyReqBox:SetPoint("TOPLEFT", 520, -62)
   itemCurrencyReqBox:SetAutoFocus(false)
   itemCurrencyReqBox:SetNumeric(true)
   itemCurrencyReqBox:SetText("")
@@ -1245,14 +1296,15 @@ local function EnsureOptionsFrame()
   HideInputBoxTemplateArt(itemShowBelowBox)
 
   pItems._itemIDBox = itemIDBox
-  pItems._itemLabelBox = itemLabelBox
+  pItems._itemNameBox = itemNameBox
+  pItems._itemInfoBox = itemInfoBox
   pItems._itemQuestIDBox = itemQuestIDBox
   pItems._itemAfterQuestIDBox = itemAfterQuestIDBox
   pItems._itemCurrencyIDBox = itemCurrencyIDBox
   pItems._itemCurrencyReqBox = itemCurrencyReqBox
   pItems._itemShowBelowBox = itemShowBelowBox
 
-  local function UpdateItemLabelFromID(force)
+  local function UpdateItemFieldsFromID(force)
     local id = tonumber(pItems._itemIDBox and pItems._itemIDBox:GetText() or "")
     if not id or id <= 0 then
       pItems._pendingItemLabelID = nil
@@ -1270,19 +1322,32 @@ local function EnsureOptionsFrame()
       return
     end
 
-    local lb = pItems._itemLabelBox
-    if not lb then return end
-
-    if force then
-      lb._autoName = name
-      lb:SetText(name)
-      return
+    local nb = pItems._itemNameBox
+    if nb then
+      if force then
+        nb._autoName = name
+        nb:SetText(name)
+      else
+        local cur = tostring(nb:GetText() or "")
+        if cur == "" or (nb._autoName ~= nil and cur == tostring(nb._autoName)) then
+          nb._autoName = name
+          nb:SetText(name)
+        end
+      end
     end
 
-    local cur = tostring(lb:GetText() or "")
-    if cur == "" or (lb._autoName ~= nil and cur == tostring(lb._autoName)) then
-      lb._autoName = name
-      lb:SetText(name)
+    local ib = pItems._itemInfoBox
+    if ib then
+      if force then
+        ib._autoInfo = name
+        ib:SetText(name)
+      else
+        local cur = tostring(ib:GetText() or "")
+        if cur == "" or (ib._autoInfo ~= nil and cur == tostring(ib._autoInfo)) then
+          ib._autoInfo = name
+          ib:SetText(name)
+        end
+      end
     end
   end
 
@@ -1295,7 +1360,7 @@ local function EnsureOptionsFrame()
       if not itemID or success == false then return end
       if pItems._pendingItemLabelID and itemID == tonumber(pItems._pendingItemLabelID) then
         local force = pItems._pendingItemLabelForce and true or false
-        UpdateItemLabelFromID(force)
+        UpdateItemFieldsFromID(force)
         if type(GetItemNameSafe(itemID)) == "string" then
           pItems._pendingItemLabelID = nil
           pItems._pendingItemLabelForce = nil
@@ -1304,16 +1369,25 @@ local function EnsureOptionsFrame()
     end)
   end
 
-  itemLabelBox:HookScript("OnTextChanged", function(self, userInput)
+  itemNameBox:HookScript("OnTextChanged", function(self, userInput)
     if not userInput then return end
     local cur = tostring(self:GetText() or "")
     if self._autoName ~= nil and cur ~= tostring(self._autoName) then
       self._autoName = nil
     end
   end)
+
+  itemInfoBox:HookScript("OnTextChanged", function(self, userInput)
+    if not userInput then return end
+    local cur = tostring(self:GetText() or "")
+    if self._autoInfo ~= nil and cur ~= tostring(self._autoInfo) then
+      self._autoInfo = nil
+    end
+  end)
+
   itemIDBox:HookScript("OnTextChanged", function(self, userInput)
     if not userInput then return end
-    UpdateItemLabelFromID(GetKeepEditFormOpen())
+    UpdateItemFieldsFromID(GetKeepEditFormOpen())
   end)
 
   local itemsFrameLabel = pItems:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -1740,11 +1814,15 @@ local function EnsureOptionsFrame()
     pItems._pendingItemLabelID = nil
     pItems._pendingItemLabelForce = nil
     if itemIDBox then itemIDBox:SetText("") end
-    if itemLabelBox then
-      itemLabelBox._autoName = nil
-      itemLabelBox:SetText("")
+    if itemNameBox then
+      itemNameBox._autoName = nil
+      itemNameBox:SetText("")
     end
-    if itemLabelScroll and itemLabelScroll.SetVerticalScroll then itemLabelScroll:SetVerticalScroll(0) end
+    if itemInfoBox then
+      itemInfoBox._autoInfo = nil
+      itemInfoBox:SetText("")
+    end
+    if itemInfoScroll and itemInfoScroll.SetVerticalScroll then itemInfoScroll:SetVerticalScroll(0) end
     if itemQuestIDBox then itemQuestIDBox:SetText("") end
     if itemAfterQuestIDBox then itemAfterQuestIDBox:SetText("") end
     if itemCurrencyIDBox then itemCurrencyIDBox:SetText("") end
@@ -1814,13 +1892,17 @@ local function EnsureOptionsFrame()
     local repFactionID = tonumber(repFactionBox:GetText() or "")
     if repFactionID and repFactionID <= 0 then repFactionID = nil end
 
-    local labelText = tostring(itemLabelBox:GetText() or "")
+    local labelText = tostring(itemNameBox:GetText() or "")
     labelText = labelText:gsub("^%s+", ""):gsub("%s+$", "")
     local itemName = GetItemNameSafe(itemID)
     local label = nil
     if labelText ~= "" and not (type(itemName) == "string" and itemName ~= "" and labelText == itemName) then
       label = labelText
     end
+
+    local infoText = tostring(itemInfoBox:GetText() or "")
+    infoText = infoText:gsub("^%s+", ""):gsub("%s+$", "")
+    local itemInfo = (infoText ~= "") and infoText or nil
 
     local rep = nil
     if repFactionID then
@@ -1848,6 +1930,7 @@ local function EnsureOptionsFrame()
       rule.color = panels.items._color
       rule.restedOnly = restedOnly:GetChecked() and true or false
       rule.label = label
+      rule.itemInfo = itemInfo
       rule.rep = rep
       rule.locationID = locationID
 
@@ -1891,6 +1974,7 @@ local function EnsureOptionsFrame()
       rule.color = panels.items._color
       rule.restedOnly = restedOnly:GetChecked() and true or false
       rule.label = label
+      rule.itemInfo = itemInfo
       rule.rep = rep
       rule.locationID = locationID
 
@@ -1938,6 +2022,7 @@ local function EnsureOptionsFrame()
         color = panels.items._color,
         restedOnly = restedOnly:GetChecked() and true or false,
         label = label,
+        itemInfo = itemInfo,
         rep = rep,
         locationID = locationID,
         playerLevelOp = op,
@@ -1983,39 +2068,266 @@ local function EnsureOptionsFrame()
   end
 
   -- TEXT tab
+  do
   local textTitle = panels.text:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   textTitle:SetPoint("TOPLEFT", 12, -40)
   textTitle:SetText("Text")
 
-  local textScroll = CreateFrame("ScrollFrame", nil, panels.text, "UIPanelScrollFrameTemplate")
-  textScroll:SetPoint("TOPLEFT", 12, -70)
-  textScroll:SetSize(530, 70)
+  local function EnsureCalendarPopout()
+    if not f then return nil end
+    if f._calendarPopout then return f._calendarPopout end
 
-  local textBox = CreateFrame("EditBox", nil, textScroll)
-  textBox:SetMultiLine(true)
-  textBox:SetAutoFocus(false)
-  textBox:SetFontObject("ChatFontNormal")
-  textBox:SetWidth(500)
-  textBox:SetTextInsets(6, 6, 6, 6)
-  textBox:SetText("")
-  textBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  textBox:SetScript("OnCursorChanged", function(self, x, y, w, h)
-    if not textScroll then return end
-    textScroll:UpdateScrollChildRect()
-    local offset = textScroll:GetVerticalScroll() or 0
-    local height = textScroll:GetHeight() or 0
+    local pop = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    pop:SetSize(540, 360)
+    pop:SetPoint("CENTER", f, "CENTER", 0, 0)
+    pop:SetFrameStrata("DIALOG")
+    pop:SetClampedToScreen(true)
+    ApplyFAOBackdrop(pop, 0.92)
+    pop:Hide()
+
+    local title = pop:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", 12, -10)
+    title:SetText("Calendar")
+    pop._title = title
+
+    local close = CreateFrame("Button", nil, pop, "UIPanelCloseButton")
+    close:SetPoint("TOPRIGHT", pop, "TOPRIGHT", 2, 2)
+    close:SetScript("OnClick", function() pop:Hide() end)
+
+    local hint = pop:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    hint:SetPoint("TOPLEFT", 12, -34)
+    hint:SetText("Click Copy then Ctrl+C. Shift+Copy includes holiday text.")
+
+    local refreshBtn = CreateFrame("Button", nil, pop, "UIPanelButtonTemplate")
+    refreshBtn:SetSize(70, 20)
+    refreshBtn:SetPoint("TOPRIGHT", pop, "TOPRIGHT", -34, -34)
+    refreshBtn:SetText("Refresh")
+
+    local scroll = CreateFrame("ScrollFrame", nil, pop, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 12, -58)
+    scroll:SetSize(516, 210)
+
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(1, 1)
+    scroll:SetScrollChild(content)
+    pop._scroll = scroll
+    pop._content = content
+
+    local rowH = 18
+    local rows = {}
+    pop._rows = rows
+    pop._events = {}
+
+    local function SetCopyText(text)
+      if not pop._copyBox then return end
+      pop._copyBox:SetText(tostring(text or ""))
+      if pop._copyBox.HighlightText then pop._copyBox:HighlightText() end
+      if pop._copyBox.SetFocus then pop._copyBox:SetFocus() end
+    end
+
+    local function GetRelLabel(relDay)
+      relDay = tonumber(relDay) or 0
+      if relDay == 0 then return "Today" end
+      if relDay == 1 then return "+1" end
+      if relDay == -1 then return "-1" end
+      return (relDay > 0) and ("+" .. tostring(relDay)) or tostring(relDay)
+    end
+
+    local function EnsureRow(i)
+      if rows[i] then return rows[i] end
+      local r = CreateFrame("Button", nil, content)
+      r:SetHeight(rowH)
+      r:SetPoint("TOPLEFT", 0, -((i - 1) * rowH))
+      r:SetPoint("TOPRIGHT", 0, -((i - 1) * rowH))
+
+      local rel = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+      rel:SetPoint("LEFT", 2, 0)
+      rel:SetWidth(36)
+      rel:SetJustifyH("LEFT")
+      r._rel = rel
+
+      local txt = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+      txt:SetPoint("LEFT", rel, "RIGHT", 6, 0)
+      txt:SetPoint("RIGHT", r, "RIGHT", -70, 0)
+      txt:SetJustifyH("LEFT")
+      txt:SetWordWrap(false)
+      r._text = txt
+
+      local copyBtn = CreateFrame("Button", nil, r, "UIPanelButtonTemplate")
+      copyBtn:SetSize(56, 18)
+      copyBtn:SetPoint("RIGHT", -6, 0)
+      copyBtn:SetText("Copy")
+      r._copy = copyBtn
+
+      local function DoCopy()
+        local ev = r._event
+        if type(ev) ~= "table" then return end
+        local titleText = tostring(ev.title or "")
+        local holidayText = tostring(ev.holidayText or "")
+        if IsShiftKeyDown and IsShiftKeyDown() and holidayText ~= "" then
+          SetCopyText(titleText .. "\n" .. holidayText)
+        else
+          SetCopyText(titleText)
+        end
+      end
+
+      r:SetScript("OnClick", DoCopy)
+      copyBtn:SetScript("OnClick", DoCopy)
+
+      r:SetScript("OnEnter", function()
+        local ev = r._event
+        if type(ev) ~= "table" then return end
+        if not GameTooltip then return end
+        GameTooltip:SetOwner(r, "ANCHOR_RIGHT")
+        local t = tostring(ev.title or "")
+        local h = tostring(ev.holidayText or "")
+        if t ~= "" then GameTooltip:AddLine(t, 1, 1, 1, true) end
+        if h ~= "" then GameTooltip:AddLine(h, 0.8, 0.8, 0.8, true) end
+        GameTooltip:Show()
+      end)
+      r:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
+      rows[i] = r
+      return r
+    end
+
+    local function Render()
+      local events = {}
+      local meta = nil
+      if type(GetCalendarDebugEvents) == "function" then
+        events, meta = GetCalendarDebugEvents(1, 14)
+      end
+      if type(events) ~= "table" then events = {} end
+      pop._events = events
+
+      if pop._title and pop._title.SetText then
+        if type(meta) == "table" and meta.ok and meta.today then
+          pop._title:SetText(string.format("Calendar (Day %d)", tonumber(meta.today) or 0))
+        else
+          pop._title:SetText("Calendar")
+        end
+      end
+
+      local n = #events
+      content:SetHeight(math.max(1, n * rowH))
+      for i = 1, n do
+        local ev = events[i]
+        local r = EnsureRow(i)
+        r._event = ev
+        if r._rel and r._rel.SetText then r._rel:SetText(GetRelLabel(ev.relDay)) end
+        if r._text and r._text.SetText then
+          local t = tostring(ev.title or "")
+          if t == "" then t = "(no title)" end
+          r._text:SetText(t)
+        end
+        r:Show()
+      end
+      for i = n + 1, #rows do
+        if rows[i] then rows[i]:Hide() end
+      end
+    end
+
+    refreshBtn:SetScript("OnClick", Render)
+    pop._render = Render
+
+    local copyAllBtn = CreateFrame("Button", nil, pop, "UIPanelButtonTemplate")
+    copyAllBtn:SetSize(90, 20)
+    copyAllBtn:SetPoint("TOPLEFT", 12, -272)
+    copyAllBtn:SetText("Copy All")
+    copyAllBtn:SetScript("OnClick", function()
+      local out = {}
+      for _, ev in ipairs(pop._events or {}) do
+        local t = tostring(ev.title or "")
+        local h = tostring(ev.holidayText or "")
+        if IsShiftKeyDown and IsShiftKeyDown() and h ~= "" then
+          out[#out + 1] = t .. "\n" .. h
+        else
+          out[#out + 1] = t
+        end
+      end
+      SetCopyText(table.concat(out, "\n\n"))
+    end)
+
+    local copyScroll = CreateFrame("ScrollFrame", nil, pop, "UIPanelScrollFrameTemplate")
+    copyScroll:SetPoint("TOPLEFT", 12, -296)
+    copyScroll:SetSize(516, 52)
+
+    local copyBox = CreateFrame("EditBox", nil, copyScroll)
+    copyBox:SetMultiLine(true)
+    copyBox:SetAutoFocus(false)
+    copyBox:SetFontObject("ChatFontNormal")
+    copyBox:SetWidth(480)
+    copyBox:SetTextInsets(6, 6, 6, 6)
+    copyBox:SetText("")
+    copyBox:SetScript("OnEscapePressed", function(self)
+      self:ClearFocus()
+      pop:Hide()
+    end)
+    copyBox:SetScript("OnEditFocusGained", function(self)
+      if self.HighlightText then self:HighlightText() end
+    end)
+    copyScroll:SetScrollChild(copyBox)
+
+    pop._copyBox = copyBox
+
+    f._calendarPopout = pop
+    return pop
+  end
+
+  local calendarBtn = CreateFrame("Button", nil, panels.text, "UIPanelButtonTemplate")
+  calendarBtn:SetSize(90, 20)
+  calendarBtn:SetPoint("TOPRIGHT", panels.text, "TOPRIGHT", -12, -38)
+  calendarBtn:SetText("Calendar")
+  calendarBtn:SetScript("OnClick", function()
+    local pop = EnsureCalendarPopout()
+    if not pop then return end
+    if pop.IsShown and pop:IsShown() then
+      pop:Hide()
+      return
+    end
+    pop:Show()
+    if pop._render then pop._render() end
+  end)
+
+  local textNameBox = CreateFrame("EditBox", nil, panels.text, "InputBoxTemplate")
+  textNameBox:SetSize(530, 20)
+  textNameBox:SetPoint("TOPLEFT", 12, -70)
+  textNameBox:SetAutoFocus(false)
+  textNameBox:SetText("")
+  textNameBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  textNameBox:SetTextInsets(6, 6, 0, 0)
+  AddPlaceholder(textNameBox, "Text Name")
+  HideInputBoxTemplateArt(textNameBox)
+
+  local textInfoScroll = CreateFrame("ScrollFrame", nil, panels.text, "UIPanelScrollFrameTemplate")
+  textInfoScroll:SetPoint("TOPLEFT", 12, -94)
+  textInfoScroll:SetSize(530, 46)
+
+  local textInfoBox = CreateFrame("EditBox", nil, textInfoScroll)
+  textInfoBox:SetMultiLine(true)
+  textInfoBox:SetAutoFocus(false)
+  textInfoBox:SetFontObject("ChatFontNormal")
+  textInfoBox:SetWidth(500)
+  textInfoBox:SetTextInsets(6, 6, 6, 6)
+  textInfoBox:SetText("")
+  textInfoBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  textInfoBox:SetScript("OnCursorChanged", function(self, x, y, w, h)
+    if not textInfoScroll then return end
+    textInfoScroll:UpdateScrollChildRect()
+    local offset = textInfoScroll:GetVerticalScroll() or 0
+    local height = textInfoScroll:GetHeight() or 0
     local top = -y
     if top < offset then
-      textScroll:SetVerticalScroll(top)
+      textInfoScroll:SetVerticalScroll(top)
     elseif top > offset + height - 20 then
-      textScroll:SetVerticalScroll(top - height + 20)
+      textInfoScroll:SetVerticalScroll(top - height + 20)
     end
   end)
 
-  textScroll:SetScrollChild(textBox)
-  AddPlaceholder(textBox, "Text")
+  textInfoScroll:SetScrollChild(textInfoBox)
+  AddPlaceholder(textInfoBox, "Text Info")
 
-  panels.text._textScroll = textScroll
+  panels.text._textInfoScroll = textInfoScroll
 
   local textFrameDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
   textFrameDrop:SetPoint("TOPLEFT", -8, -164)
@@ -2354,7 +2666,8 @@ local function EnsureOptionsFrame()
   addTextBtn:SetPoint("TOPLEFT", 12, -286)
   addTextBtn:SetText("Add Text Entry")
 
-  panels.text._textBox = textBox
+  panels.text._textNameBox = textNameBox
+  panels.text._textInfoBox = textInfoBox
   panels.text._textFrameDrop = textFrameDrop
   panels.text._textFactionDrop = textFactionDrop
   panels.text._textColorDrop = textColorDrop
@@ -2362,6 +2675,8 @@ local function EnsureOptionsFrame()
   panels.text._repMinDrop = textRepMinDrop
   panels.text._restedOnly = textRestedOnly
   panels.text._locBox = textLocBox
+  panels.text._textLevelOpDrop = textLevelOpDrop
+  panels.text._textLevelBox = textLevelBox
   panels.text._addTextBtn = addTextBtn
 
   local cancelTextEditBtn = CreateFrame("Button", nil, panels.text, "UIPanelButtonTemplate")
@@ -2372,8 +2687,9 @@ local function EnsureOptionsFrame()
   panels.text._cancelEditBtn = cancelTextEditBtn
 
   local function ClearTextInputs()
-    if textBox then textBox:SetText("") end
-    if textScroll and textScroll.SetVerticalScroll then textScroll:SetVerticalScroll(0) end
+    if textNameBox then textNameBox:SetText("") end
+    if textInfoBox then textInfoBox:SetText("") end
+    if textInfoScroll and textInfoScroll.SetVerticalScroll then textInfoScroll:SetVerticalScroll(0) end
 
     panels.text._targetFrameID = "list1"
     if UDDM_SetText and textFrameDrop then UDDM_SetText(textFrameDrop, GetFrameDisplayNameByID("list1")) end
@@ -2403,12 +2719,16 @@ local function EnsureOptionsFrame()
   end
 
   addTextBtn:SetScript("OnClick", function()
-    local t = tostring(textBox:GetText() or "")
-    t = t:gsub("^%s+", ""):gsub("%s+$", "")
-    if t == "" then
-      Print("Enter some text.")
+    local nameText = tostring(textNameBox:GetText() or "")
+    nameText = nameText:gsub("^%s+", ""):gsub("%s+$", "")
+    if nameText == "" then
+      Print("Enter a Text Name.")
       return
     end
+
+    local infoText = tostring(textInfoBox:GetText() or "")
+    infoText = infoText:gsub("^%s+", ""):gsub("%s+$", "")
+    local textInfo = (infoText ~= "" and infoText ~= nameText) and infoText or nil
 
     local targetFrame = tostring(panels.text._targetFrameID or ""):gsub("%s+", "")
     if targetFrame == "" then targetFrame = "list1" end
@@ -2427,7 +2747,8 @@ local function EnsureOptionsFrame()
     if panels.text._editingCustomIndex and type(rules[panels.text._editingCustomIndex]) == "table" then
       local rule = rules[panels.text._editingCustomIndex]
       rule.frameID = targetFrame
-      rule.label = t
+      rule.label = nameText
+      rule.textInfo = textInfo
       rule.faction = panels.text._faction
       rule.color = panels.text._color
       rule.rep = rep
@@ -2461,7 +2782,8 @@ local function EnsureOptionsFrame()
       local rule = DeepCopyValue(effective)
 
       rule.frameID = targetFrame
-      rule.label = t
+      rule.label = nameText
+      rule.textInfo = textInfo
       rule.faction = panels.text._faction
       rule.color = panels.text._color
       rule.rep = rep
@@ -2490,7 +2812,7 @@ local function EnsureOptionsFrame()
       cancelTextEditBtn:Hide()
       Print("Saved default text rule edit.")
     else
-      local key = string.format("custom:text:%s:%s:%d", tostring(targetFrame), tostring(t), (#rules + 1))
+      local key = string.format("custom:text:%s:%s:%d", tostring(targetFrame), tostring(nameText), (#rules + 1))
       local op = panels.text._playerLevelOp
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
@@ -2498,7 +2820,8 @@ local function EnsureOptionsFrame()
       rules[#rules + 1] = {
         key = key,
         frameID = targetFrame,
-        label = t,
+        label = nameText,
+        textInfo = textInfo,
         faction = panels.text._faction,
         color = panels.text._color,
         rep = rep,
@@ -2534,25 +2857,50 @@ local function EnsureOptionsFrame()
     end
   end)
 
+  end
+
   -- SPELLS tab
+  do
   local spellsTitle = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   spellsTitle:SetPoint("TOPLEFT", 12, -40)
   spellsTitle:SetText("Spells")
 
-  local spellsDetailsScroll = CreateFrame("ScrollFrame", nil, panels.spells, "UIPanelScrollFrameTemplate")
-  spellsDetailsScroll:SetPoint("TOPLEFT", 12, -70)
-  spellsDetailsScroll:SetSize(530, 70)
+  local spellsNameBox = CreateFrame("EditBox", nil, panels.spells, "InputBoxTemplate")
+  spellsNameBox:SetSize(530, 20)
+  spellsNameBox:SetPoint("TOPLEFT", 12, -70)
+  spellsNameBox:SetAutoFocus(false)
+  spellsNameBox:SetText("")
+  spellsNameBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  spellsNameBox:SetTextInsets(6, 6, 0, 0)
+  AddPlaceholder(spellsNameBox, "Spell Name")
+  HideInputBoxTemplateArt(spellsNameBox)
 
-  local spellsDetailsBox = CreateFrame("EditBox", nil, spellsDetailsScroll)
-  spellsDetailsBox:SetMultiLine(true)
-  spellsDetailsBox:SetAutoFocus(false)
-  spellsDetailsBox:SetFontObject("ChatFontNormal")
-  spellsDetailsBox:SetWidth(500)
-  spellsDetailsBox:SetTextInsets(6, 6, 6, 6)
-  spellsDetailsBox:SetText("")
-  spellsDetailsBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-  spellsDetailsScroll:SetScrollChild(spellsDetailsBox)
-  AddPlaceholder(spellsDetailsBox, "Details")
+  local spellsInfoScroll = CreateFrame("ScrollFrame", nil, panels.spells, "UIPanelScrollFrameTemplate")
+  spellsInfoScroll:SetPoint("TOPLEFT", 12, -94)
+  spellsInfoScroll:SetSize(530, 46)
+
+  local spellsInfoBox = CreateFrame("EditBox", nil, spellsInfoScroll)
+  spellsInfoBox:SetMultiLine(true)
+  spellsInfoBox:SetAutoFocus(false)
+  spellsInfoBox:SetFontObject("ChatFontNormal")
+  spellsInfoBox:SetWidth(500)
+  spellsInfoBox:SetTextInsets(6, 6, 6, 6)
+  spellsInfoBox:SetText("")
+  spellsInfoBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  spellsInfoBox:SetScript("OnCursorChanged", function(self, x, y, w, h)
+    if not spellsInfoScroll then return end
+    spellsInfoScroll:UpdateScrollChildRect()
+    local offset = spellsInfoScroll:GetVerticalScroll() or 0
+    local height = spellsInfoScroll:GetHeight() or 0
+    local top = -y
+    if top < offset then
+      spellsInfoScroll:SetVerticalScroll(top)
+    elseif top > offset + height - 20 then
+      spellsInfoScroll:SetVerticalScroll(top - height + 20)
+    end
+  end)
+  spellsInfoScroll:SetScrollChild(spellsInfoBox)
+  AddPlaceholder(spellsInfoBox, "Spell Info")
 
   local classLabel = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   classLabel:SetPoint("TOPLEFT", 12, -146)
@@ -3016,8 +3364,11 @@ local function EnsureOptionsFrame()
   addSpellBtn:SetPoint("TOPLEFT", 12, -280)
   addSpellBtn:SetText("Add Spell Rule")
 
-  panels.spells._detailsBox = spellsDetailsBox
+  panels.spells._spellNameBox = spellsNameBox
+  panels.spells._spellInfoBox = spellsInfoBox
+  panels.spells._spellInfoScroll = spellsInfoScroll
   panels.spells._classDrop = classDrop
+  panels.spells._setClassesFromRule = SetSelectedSpellClassesFromRule
   panels.spells._knownBox = knownBox
   panels.spells._notKnownBox = notKnownBox
   panels.spells._locBox = locBox
@@ -3027,6 +3378,8 @@ local function EnsureOptionsFrame()
   panels.spells._spellsFrameDrop = spellsFrameDrop
   panels.spells._spellsFactionDrop = spellsFactionDrop
   panels.spells._spellsColorDrop = spellsColorDrop
+  panels.spells._spellsLevelOpDrop = spellsLevelOpDrop
+  panels.spells._spellsLevelBox = spellsLevelBox
   panels.spells._addSpellBtn = addSpellBtn
 
   local cancelSpellEditBtn = CreateFrame("Button", nil, panels.spells, "UIPanelButtonTemplate")
@@ -3037,7 +3390,15 @@ local function EnsureOptionsFrame()
   panels.spells._cancelEditBtn = cancelSpellEditBtn
 
   local function ClearSpellsInputs()
-    if spellsDetailsBox then spellsDetailsBox:SetText("") end
+    if spellsNameBox then
+      spellsNameBox._autoName = nil
+      spellsNameBox:SetText("")
+    end
+    if spellsInfoBox then
+      spellsInfoBox._autoInfo = nil
+      spellsInfoBox:SetText("")
+    end
+    if spellsInfoScroll and spellsInfoScroll.SetVerticalScroll then spellsInfoScroll:SetVerticalScroll(0) end
     if knownBox then knownBox:SetText("0") end
     if notKnownBox then notKnownBox:SetText("0") end
     if locBox then locBox:SetText("0") end
@@ -3070,6 +3431,98 @@ local function EnsureOptionsFrame()
     if cancelSpellEditBtn then cancelSpellEditBtn:Hide() end
   end
 
+  local function GetSpellNameSafeLocal(spellID)
+    spellID = tonumber(spellID)
+    if not spellID or spellID <= 0 then return nil end
+    local CS = _G and rawget(_G, "C_Spell")
+    if CS and CS.GetSpellName then
+      local ok, n = pcall(CS.GetSpellName, spellID)
+      if ok and type(n) == "string" and n ~= "" then return n end
+    end
+    local GSI = _G and rawget(_G, "GetSpellInfo")
+    if GSI then
+      local ok, n = pcall(GSI, spellID)
+      if ok and type(n) == "string" and n ~= "" then return n end
+    end
+    return nil
+  end
+
+  panels.spells._getSpellNameSafe = GetSpellNameSafeLocal
+
+  local function PickSpellIDFromInputs()
+    local known = tonumber(knownBox and knownBox:GetText() or "")
+    if known and known > 0 then return known end
+    local notKnown = tonumber(notKnownBox and notKnownBox:GetText() or "")
+    if notKnown and notKnown > 0 then return notKnown end
+    return nil
+  end
+
+  local function UpdateSpellFieldsFromID(force)
+    local spellID = PickSpellIDFromInputs()
+    if not spellID then return end
+    local name = GetSpellNameSafeLocal(spellID)
+    if type(name) ~= "string" or name == "" then return end
+
+    if spellsNameBox then
+      if force then
+        spellsNameBox._autoName = name
+        spellsNameBox:SetText(name)
+      else
+        local cur = tostring(spellsNameBox:GetText() or "")
+        if cur == "" or (spellsNameBox._autoName ~= nil and cur == tostring(spellsNameBox._autoName)) then
+          spellsNameBox._autoName = name
+          spellsNameBox:SetText(name)
+        end
+      end
+    end
+
+    if spellsInfoBox then
+      if force then
+        spellsInfoBox._autoInfo = name
+        spellsInfoBox:SetText(name)
+      else
+        local cur = tostring(spellsInfoBox:GetText() or "")
+        if cur == "" or (spellsInfoBox._autoInfo ~= nil and cur == tostring(spellsInfoBox._autoInfo)) then
+          spellsInfoBox._autoInfo = name
+          spellsInfoBox:SetText(name)
+        end
+      end
+    end
+  end
+
+  if spellsNameBox then
+    spellsNameBox:HookScript("OnTextChanged", function(self, userInput)
+      if not userInput then return end
+      local cur = tostring(self:GetText() or "")
+      if self._autoName ~= nil and cur ~= tostring(self._autoName) then
+        self._autoName = nil
+      end
+    end)
+  end
+
+  if spellsInfoBox then
+    spellsInfoBox:HookScript("OnTextChanged", function(self, userInput)
+      if not userInput then return end
+      local cur = tostring(self:GetText() or "")
+      if self._autoInfo ~= nil and cur ~= tostring(self._autoInfo) then
+        self._autoInfo = nil
+      end
+    end)
+  end
+
+  if knownBox then
+    knownBox:HookScript("OnTextChanged", function(_, userInput)
+      if not userInput then return end
+      UpdateSpellFieldsFromID(GetKeepEditFormOpen())
+    end)
+  end
+  if notKnownBox then
+    notKnownBox:HookScript("OnTextChanged", function(_, userInput)
+      if not userInput then return end
+      UpdateSpellFieldsFromID(GetKeepEditFormOpen())
+    end)
+  end
+
   addSpellBtn:SetScript("OnClick", function()
     local targetFrame = tostring(panels.spells._targetFrameID or ""):gsub("%s+", "")
     if targetFrame == "" then targetFrame = "list1" end
@@ -3086,15 +3539,26 @@ local function EnsureOptionsFrame()
     local locText = tostring(locBox:GetText() or ""):gsub("%s+", "")
     local locationID = (locText ~= "" and locText ~= "0") and locText or nil
 
-    local details = tostring(spellsDetailsBox:GetText() or "")
-    details = details:gsub("^%s+", ""):gsub("%s+$", "")
-    local label = (details ~= "") and details or nil
+    local pickedSpellID = (known and known > 0) and known or ((notKnown and notKnown > 0) and notKnown or nil)
+    local resolvedName = pickedSpellID and GetSpellNameSafeLocal(pickedSpellID) or nil
+
+    local nameText = tostring(spellsNameBox and spellsNameBox:GetText() or "")
+    nameText = nameText:gsub("^%s+", ""):gsub("%s+$", "")
+    local label = nil
+    if nameText ~= "" and not (type(resolvedName) == "string" and resolvedName ~= "" and nameText == resolvedName) then
+      label = nameText
+    end
+
+    local infoText = tostring(spellsInfoBox and spellsInfoBox:GetText() or "")
+    infoText = infoText:gsub("^%s+", ""):gsub("%s+$", "")
+    local spellInfo = (infoText ~= "") and infoText or nil
 
     local rules = GetCustomRules()
     if panels.spells._editingCustomIndex and type(rules[panels.spells._editingCustomIndex]) == "table" then
       local rule = rules[panels.spells._editingCustomIndex]
       rule.frameID = targetFrame
       rule.label = label
+      rule.spellInfo = spellInfo
       do
         local sel = GetSelectedSpellClasses()
         if #sel == 0 then
@@ -3142,6 +3606,7 @@ local function EnsureOptionsFrame()
 
       rule.frameID = targetFrame
       rule.label = label
+      rule.spellInfo = spellInfo
       do
         local sel = GetSelectedSpellClasses()
         if #sel == 0 then
@@ -3194,6 +3659,7 @@ local function EnsureOptionsFrame()
         key = key,
         frameID = targetFrame,
         label = label,
+        spellInfo = spellInfo,
         class = nil,
         faction = panels.spells._faction,
         color = panels.spells._color,
@@ -3240,6 +3706,8 @@ local function EnsureOptionsFrame()
       SelectTab("rules")
     end
   end)
+
+  end
 
   local function ClearTabEdits()
     if panels.quest then
@@ -3368,17 +3836,37 @@ local function EnsureOptionsFrame()
         end
       end
 
-      if panels.items._itemLabelBox then
+      do
         local itemName = (itemID and itemID > 0) and GetItemNameSafe(itemID) or nil
-        if rule.label ~= nil and tostring(rule.label or "") ~= "" then
-          panels.items._itemLabelBox._autoName = nil
-          panels.items._itemLabelBox:SetText(tostring(rule.label or ""))
-        elseif type(itemName) == "string" and itemName ~= "" then
-          panels.items._itemLabelBox._autoName = itemName
-          panels.items._itemLabelBox:SetText(itemName)
-        else
-          panels.items._itemLabelBox._autoName = nil
-          panels.items._itemLabelBox:SetText("")
+
+        if panels.items._itemNameBox then
+          if rule.label ~= nil and tostring(rule.label or "") ~= "" then
+            panels.items._itemNameBox._autoName = nil
+            panels.items._itemNameBox:SetText(tostring(rule.label or ""))
+          elseif type(itemName) == "string" and itemName ~= "" then
+            panels.items._itemNameBox._autoName = itemName
+            panels.items._itemNameBox:SetText(itemName)
+          else
+            panels.items._itemNameBox._autoName = nil
+            panels.items._itemNameBox:SetText("")
+          end
+        end
+
+        if panels.items._itemInfoBox then
+          if rule.itemInfo ~= nil and tostring(rule.itemInfo or "") ~= "" then
+            panels.items._itemInfoBox._autoInfo = nil
+            panels.items._itemInfoBox:SetText(tostring(rule.itemInfo or ""))
+          elseif type(itemName) == "string" and itemName ~= "" then
+            panels.items._itemInfoBox._autoInfo = itemName
+            panels.items._itemInfoBox:SetText(itemName)
+          else
+            panels.items._itemInfoBox._autoInfo = nil
+            panels.items._itemInfoBox:SetText("")
+          end
+        end
+
+        if panels.items._itemInfoScroll and panels.items._itemInfoScroll.SetVerticalScroll then
+          panels.items._itemInfoScroll:SetVerticalScroll(0)
         end
       end
 
@@ -3456,13 +3944,49 @@ local function EnsureOptionsFrame()
       if panels.spells._addSpellBtn then panels.spells._addSpellBtn:SetText("Save Spell Rule") end
       if panels.spells._cancelEditBtn then panels.spells._cancelEditBtn:Show() end
 
-      if panels.spells._detailsBox then panels.spells._detailsBox:SetText(tostring(rule.label or "")) end
+      do
+        local knownID = tonumber(rule.spellKnown) or 0
+        local notKnownID = tonumber(rule.notSpellKnown) or 0
+        local pick = (knownID and knownID > 0) and knownID or ((notKnownID and notKnownID > 0) and notKnownID or nil)
+        local resolver = panels.spells and panels.spells._getSpellNameSafe
+        local resolved = (pick and resolver) and resolver(pick) or nil
+
+        if panels.spells._spellNameBox then
+          if rule.label ~= nil and tostring(rule.label or "") ~= "" then
+            panels.spells._spellNameBox._autoName = nil
+            panels.spells._spellNameBox:SetText(tostring(rule.label or ""))
+          elseif type(resolved) == "string" and resolved ~= "" then
+            panels.spells._spellNameBox._autoName = resolved
+            panels.spells._spellNameBox:SetText(resolved)
+          else
+            panels.spells._spellNameBox._autoName = nil
+            panels.spells._spellNameBox:SetText("")
+          end
+        end
+
+        if panels.spells._spellInfoBox then
+          if rule.spellInfo ~= nil and tostring(rule.spellInfo or "") ~= "" then
+            panels.spells._spellInfoBox._autoInfo = nil
+            panels.spells._spellInfoBox:SetText(tostring(rule.spellInfo or ""))
+          elseif type(resolved) == "string" and resolved ~= "" then
+            panels.spells._spellInfoBox._autoInfo = resolved
+            panels.spells._spellInfoBox:SetText(resolved)
+          else
+            panels.spells._spellInfoBox._autoInfo = nil
+            panels.spells._spellInfoBox:SetText("")
+          end
+        end
+
+        if panels.spells._spellInfoScroll and panels.spells._spellInfoScroll.SetVerticalScroll then
+          panels.spells._spellInfoScroll:SetVerticalScroll(0)
+        end
+      end
       if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown) or 0)) end
       if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown) or 0)) end
       if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.locationID or "0")) end
       if panels.spells._notInGroup then panels.spells._notInGroup:SetChecked(rule.notInGroup and true or false) end
 
-      SetSelectedSpellClassesFromRule(rule.class)
+      if panels.spells._setClassesFromRule then panels.spells._setClassesFromRule(rule.class) end
 
       local frameID = tostring(rule.frameID or "list1")
       panels.spells._targetFrameID = frameID
@@ -3479,8 +4003,8 @@ local function EnsureOptionsFrame()
       end
 
       panels.spells._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and spellsLevelOpDrop then UDDM_SetText(spellsLevelOpDrop, panels.spells._playerLevelOp or "Off") end
-      if spellsLevelBox then spellsLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+      if UDDM_SetText and panels.spells._spellsLevelOpDrop then UDDM_SetText(panels.spells._spellsLevelOpDrop, panels.spells._playerLevelOp or "Off") end
+      if panels.spells._spellsLevelBox then panels.spells._spellsLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
 
       if panels.spells._restedOnly then panels.spells._restedOnly:SetChecked(rule.restedOnly and true or false) end
       if panels.spells._missingPrimaryProf then panels.spells._missingPrimaryProf:SetChecked(rule.missingPrimaryProfessions and true or false) end
@@ -3493,7 +4017,14 @@ local function EnsureOptionsFrame()
     if panels.text._addTextBtn then panels.text._addTextBtn:SetText("Save Text Entry") end
     if panels.text._cancelEditBtn then panels.text._cancelEditBtn:Show() end
 
-    if panels.text._textBox then panels.text._textBox:SetText(tostring(rule.label or "")) end
+    if panels.text._textNameBox then panels.text._textNameBox:SetText(tostring(rule.label or "")) end
+    if panels.text._textInfoBox then
+      local info = (rule.textInfo ~= nil and tostring(rule.textInfo or "") ~= "") and tostring(rule.textInfo or "") or tostring(rule.label or "")
+      panels.text._textInfoBox:SetText(info)
+    end
+    if panels.text._textInfoScroll and panels.text._textInfoScroll.SetVerticalScroll then
+      panels.text._textInfoScroll:SetVerticalScroll(0)
+    end
 
     local frameID = tostring(rule.frameID or "list1")
     panels.text._targetFrameID = frameID
@@ -3522,8 +4053,8 @@ local function EnsureOptionsFrame()
     if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.locationID or "0")) end
 
     panels.text._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-    if UDDM_SetText and textLevelOpDrop then UDDM_SetText(textLevelOpDrop, panels.text._playerLevelOp or "Off") end
-    if textLevelBox then textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+    if UDDM_SetText and panels.text._textLevelOpDrop then UDDM_SetText(panels.text._textLevelOpDrop, panels.text._playerLevelOp or "Off") end
+    if panels.text._textLevelBox then panels.text._textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
   end
 
   local function OpenDefaultRuleInTab(baseRule)
@@ -3600,17 +4131,37 @@ local function EnsureOptionsFrame()
         end
       end
 
-      if panels.items._itemLabelBox then
+      do
         local itemName = (itemID and itemID > 0) and GetItemNameSafe(itemID) or nil
-        if rule.label ~= nil and tostring(rule.label or "") ~= "" then
-          panels.items._itemLabelBox._autoName = nil
-          panels.items._itemLabelBox:SetText(tostring(rule.label or ""))
-        elseif type(itemName) == "string" and itemName ~= "" then
-          panels.items._itemLabelBox._autoName = itemName
-          panels.items._itemLabelBox:SetText(itemName)
-        else
-          panels.items._itemLabelBox._autoName = nil
-          panels.items._itemLabelBox:SetText("")
+
+        if panels.items._itemNameBox then
+          if rule.label ~= nil and tostring(rule.label or "") ~= "" then
+            panels.items._itemNameBox._autoName = nil
+            panels.items._itemNameBox:SetText(tostring(rule.label or ""))
+          elseif type(itemName) == "string" and itemName ~= "" then
+            panels.items._itemNameBox._autoName = itemName
+            panels.items._itemNameBox:SetText(itemName)
+          else
+            panels.items._itemNameBox._autoName = nil
+            panels.items._itemNameBox:SetText("")
+          end
+        end
+
+        if panels.items._itemInfoBox then
+          if rule.itemInfo ~= nil and tostring(rule.itemInfo or "") ~= "" then
+            panels.items._itemInfoBox._autoInfo = nil
+            panels.items._itemInfoBox:SetText(tostring(rule.itemInfo or ""))
+          elseif type(itemName) == "string" and itemName ~= "" then
+            panels.items._itemInfoBox._autoInfo = itemName
+            panels.items._itemInfoBox:SetText(itemName)
+          else
+            panels.items._itemInfoBox._autoInfo = nil
+            panels.items._itemInfoBox:SetText("")
+          end
+        end
+
+        if panels.items._itemInfoScroll and panels.items._itemInfoScroll.SetVerticalScroll then
+          panels.items._itemInfoScroll:SetVerticalScroll(0)
         end
       end
 
@@ -3689,13 +4240,49 @@ local function EnsureOptionsFrame()
       if panels.spells._addSpellBtn then panels.spells._addSpellBtn:SetText("Save Spell Rule") end
       if panels.spells._cancelEditBtn then panels.spells._cancelEditBtn:Show() end
 
-      if panels.spells._detailsBox then panels.spells._detailsBox:SetText(tostring(rule.label or "")) end
+      do
+        local knownID = tonumber(rule.spellKnown) or 0
+        local notKnownID = tonumber(rule.notSpellKnown) or 0
+        local pick = (knownID and knownID > 0) and knownID or ((notKnownID and notKnownID > 0) and notKnownID or nil)
+        local resolver = panels.spells and panels.spells._getSpellNameSafe
+        local resolved = (pick and resolver) and resolver(pick) or nil
+
+        if panels.spells._spellNameBox then
+          if rule.label ~= nil and tostring(rule.label or "") ~= "" then
+            panels.spells._spellNameBox._autoName = nil
+            panels.spells._spellNameBox:SetText(tostring(rule.label or ""))
+          elseif type(resolved) == "string" and resolved ~= "" then
+            panels.spells._spellNameBox._autoName = resolved
+            panels.spells._spellNameBox:SetText(resolved)
+          else
+            panels.spells._spellNameBox._autoName = nil
+            panels.spells._spellNameBox:SetText("")
+          end
+        end
+
+        if panels.spells._spellInfoBox then
+          if rule.spellInfo ~= nil and tostring(rule.spellInfo or "") ~= "" then
+            panels.spells._spellInfoBox._autoInfo = nil
+            panels.spells._spellInfoBox:SetText(tostring(rule.spellInfo or ""))
+          elseif type(resolved) == "string" and resolved ~= "" then
+            panels.spells._spellInfoBox._autoInfo = resolved
+            panels.spells._spellInfoBox:SetText(resolved)
+          else
+            panels.spells._spellInfoBox._autoInfo = nil
+            panels.spells._spellInfoBox:SetText("")
+          end
+        end
+
+        if panels.spells._spellInfoScroll and panels.spells._spellInfoScroll.SetVerticalScroll then
+          panels.spells._spellInfoScroll:SetVerticalScroll(0)
+        end
+      end
       if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown) or 0)) end
       if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown) or 0)) end
       if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.locationID or "0")) end
       if panels.spells._notInGroup then panels.spells._notInGroup:SetChecked(rule.notInGroup and true or false) end
 
-      SetSelectedSpellClassesFromRule(rule.class)
+      if panels.spells._setClassesFromRule then panels.spells._setClassesFromRule(rule.class) end
 
       local frameID = tostring(rule.frameID or "list1")
       panels.spells._targetFrameID = frameID
@@ -3712,8 +4299,8 @@ local function EnsureOptionsFrame()
       end
 
       panels.spells._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and spellsLevelOpDrop then UDDM_SetText(spellsLevelOpDrop, panels.spells._playerLevelOp or "Off") end
-      if spellsLevelBox then spellsLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+      if UDDM_SetText and panels.spells._spellsLevelOpDrop then UDDM_SetText(panels.spells._spellsLevelOpDrop, panels.spells._playerLevelOp or "Off") end
+      if panels.spells._spellsLevelBox then panels.spells._spellsLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
 
       if panels.spells._restedOnly then panels.spells._restedOnly:SetChecked(rule.restedOnly and true or false) end
       if panels.spells._missingPrimaryProf then panels.spells._missingPrimaryProf:SetChecked(rule.missingPrimaryProfessions and true or false) end
@@ -3727,7 +4314,14 @@ local function EnsureOptionsFrame()
     if panels.text._addTextBtn then panels.text._addTextBtn:SetText("Save Text Entry") end
     if panels.text._cancelEditBtn then panels.text._cancelEditBtn:Show() end
 
-    if panels.text._textBox then panels.text._textBox:SetText(tostring(rule.label or "")) end
+    if panels.text._textNameBox then panels.text._textNameBox:SetText(tostring(rule.label or "")) end
+    if panels.text._textInfoBox then
+      local info = (rule.textInfo ~= nil and tostring(rule.textInfo or "") ~= "") and tostring(rule.textInfo or "") or tostring(rule.label or "")
+      panels.text._textInfoBox:SetText(info)
+    end
+    if panels.text._textInfoScroll and panels.text._textInfoScroll.SetVerticalScroll then
+      panels.text._textInfoScroll:SetVerticalScroll(0)
+    end
 
     local frameID = tostring(rule.frameID or "list1")
     panels.text._targetFrameID = frameID
@@ -3756,14 +4350,14 @@ local function EnsureOptionsFrame()
     if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.locationID or "0")) end
 
     panels.text._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-    if UDDM_SetText and textLevelOpDrop then UDDM_SetText(textLevelOpDrop, panels.text._playerLevelOp or "Off") end
-    if textLevelBox then textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+    if UDDM_SetText and panels.text._textLevelOpDrop then UDDM_SetText(panels.text._textLevelOpDrop, panels.text._playerLevelOp or "Off") end
+    if panels.text._textLevelBox then panels.text._textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
   end
 
   -- RULES tab (existing custom rules UI)
   local rulesTitle = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   rulesTitle:SetPoint("TOPLEFT", 12, -40)
-  rulesTitle:SetText("Custom Rules")
+  rulesTitle:SetText("Rules")
   f._rulesTitle = rulesTitle
 
   local qBox = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
@@ -3825,15 +4419,19 @@ local function EnsureOptionsFrame()
   orderBox:SetNumeric(true)
   orderBox:SetText("0")
 
-  local viewLabel = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  viewLabel:SetPoint("TOPLEFT", 410, -46)
-  viewLabel:SetText("View")
-
   local rulesViewDrop = CreateFrame("Frame", nil, panels.rules, "UIDropDownMenuTemplate")
-  rulesViewDrop:SetPoint("TOPLEFT", 440, -60)
+  rulesViewDrop:SetPoint("TOPRIGHT", panels.rules, "TOPRIGHT", -6, -54)
   if UDDM_SetWidth then UDDM_SetWidth(rulesViewDrop, 120) end
   if UDDM_SetText then UDDM_SetText(rulesViewDrop, "All") end
   f._rulesViewDrop = rulesViewDrop
+
+  -- Make the filter easy to click (dropdown templates often have tiny hit areas).
+  local rulesViewDropHit = CreateFrame("Button", nil, panels.rules)
+  rulesViewDropHit:EnableMouse(true)
+  rulesViewDropHit:SetAlpha(0.01)
+  rulesViewDropHit:SetPoint("TOPLEFT", rulesViewDrop, "TOPLEFT", 18, -2)
+  rulesViewDropHit:SetPoint("BOTTOMRIGHT", rulesViewDrop, "BOTTOMRIGHT", -18, 2)
+  f._rulesViewDropHit = rulesViewDropHit
 
   local function GetRulesView()
     if not optionsFrame then return "all" end
@@ -4231,7 +4829,7 @@ local function EnsureOptionsFrame()
     loc2Box:SetPoint("TOPLEFT", 360, -16)
     loc2Box:SetAutoFocus(false)
     loc2Box:SetText("0")
-    AttachLocationIDTooltip(locBox)
+    AttachLocationIDTooltip(loc2Box)
     ed._locationIDBox = loc2Box
 
     local notInGroup2 = CreateFrame("CheckButton", nil, spellGroup, "UICheckButtonTemplate")
@@ -4785,7 +5383,7 @@ local function EnsureOptionsFrame()
   end
 
   if UseModernMenuDropDown(rulesViewDrop, function(root)
-    if root and root.CreateTitle then root:CreateTitle("View") end
+    if root and root.CreateTitle then root:CreateTitle("Filter") end
     for _, v in ipairs({ "all", "custom", "defaults", "trash" }) do
       local label = (v == "all") and "All" or (v == "defaults") and "Defaults" or (v == "trash") and "Trash" or "Custom"
       if root and root.CreateRadio then
@@ -4807,11 +5405,20 @@ local function EnsureOptionsFrame()
       end
     end)
   else
-    viewLabel:SetText("View (dropdown unavailable)")
+    -- (dropdown unavailable) nothing else to do
+  end
+
+  if rulesViewDropHit then
+    rulesViewDropHit:SetScript("OnClick", function()
+      local toggle = _G and rawget(_G, "ToggleDropDownMenu")
+      if toggle then
+        toggle(1, nil, rulesViewDrop, rulesViewDrop, 0, 0)
+      end
+    end)
   end
 
   local rulesScroll = CreateFrame("ScrollFrame", nil, panels.rules, "UIPanelScrollFrameTemplate")
-  rulesScroll:SetPoint("TOPLEFT", 12, -152)
+  rulesScroll:SetPoint("TOPLEFT", 12, -86)
   rulesScroll:SetPoint("BOTTOMLEFT", 12, 44)
   rulesScroll:SetWidth(530)
   f._rulesScroll = rulesScroll
@@ -4864,7 +5471,8 @@ local function EnsureOptionsFrame()
   -- FRAMES tab
   local framesTitle = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   framesTitle:SetPoint("TOPLEFT", 12, -40)
-  framesTitle:SetText("Custom Frames")
+  framesTitle:SetText("")
+  framesTitle:Hide()
 
   local UDDM_SetWidth = _G and rawget(_G, "UIDropDownMenu_SetWidth")
   local UDDM_SetText = _G and rawget(_G, "UIDropDownMenu_SetText")
@@ -4891,166 +5499,17 @@ local function EnsureOptionsFrame()
     if dropdown.SetAlpha then dropdown:SetAlpha(enabled and 1 or 0.5) end
   end
 
-  -- Global List Grow control
-  local listGrowAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  listGrowAuto:SetPoint("TOPLEFT", 365, -70)
-  SetCheckButtonLabel(listGrowAuto, "List grow from anchor")
-
-  local listGrowDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
-  listGrowDrop:SetPoint("TOPLEFT", 350, -86)
-  if UDDM_SetWidth then UDDM_SetWidth(listGrowDrop, 120) end
-  if UDDM_SetText then UDDM_SetText(listGrowDrop, "anchor") end
-
-  local function SetListGrow(v)
-    v = tostring(v or "auto"):lower()
-    if v ~= "auto" and v ~= "up" and v ~= "down" then v = "auto" end
-    SetUISetting("listGrow", v)
-    if listGrowAuto then listGrowAuto:SetChecked(v == "auto") end
-    if UDDM_SetText then UDDM_SetText(listGrowDrop, (v == "auto") and "anchor" or v) end
-    SetDropDownEnabled(listGrowDrop, v ~= "auto")
-    RefreshAll()
-  end
-
-  listGrowAuto:SetScript("OnShow", function(self)
-    local v = tostring(GetUISetting("listGrow", "auto") or "auto"):lower()
-    if v ~= "auto" and v ~= "up" and v ~= "down" then v = "auto" end
-    self:SetChecked(v == "auto")
-    if UDDM_SetText then UDDM_SetText(listGrowDrop, (v == "auto") and "anchor" or v) end
-    SetDropDownEnabled(listGrowDrop, v ~= "auto")
-  end)
-
-  listGrowAuto:SetScript("OnClick", function(self)
-    if self:GetChecked() then
-      SetListGrow("auto")
-    else
-      local prev = tostring(GetUISetting("listGrow", "auto") or "auto"):lower()
-      if prev == "auto" then prev = tostring(GetUISetting("listGrowManual", "down") or "down"):lower() end
-      if prev ~= "up" and prev ~= "down" then prev = "down" end
-      SetUISetting("listGrowManual", prev)
-      SetListGrow(prev)
-    end
-  end)
-
-  if UseModernMenuDropDown(listGrowDrop, function(root)
-    if root and root.CreateTitle then root:CreateTitle("List grow") end
-    local cur = tostring(GetUISetting("listGrow", "auto") or "auto"):lower()
-    if cur == "auto" then
-      cur = tostring(GetUISetting("listGrowManual", "down") or "down"):lower()
-    end
-    for _, v in ipairs({ "down", "up" }) do
-      if root and root.CreateRadio then
-        root:CreateRadio(v, function() return cur == v end, function()
-          SetUISetting("listGrowManual", v)
-          SetListGrow(v)
-        end)
-      elseif root and root.CreateButton then
-        root:CreateButton(v, function()
-          SetUISetting("listGrowManual", v)
-          SetListGrow(v)
-        end)
-      end
-    end
-  end) then
-    -- modern menu wired
-  elseif UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(listGrowDrop, function(self, level)
-      for _, v in ipairs({ "down", "up" }) do
-        local info = UDDM_CreateInfo()
-        info.text = v
-        info.func = function()
-          SetUISetting("listGrowManual", v)
-          SetListGrow(v)
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-  end
-
-  -- Global Bar Grow control (moved from General)
-  local barGrowAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  barGrowAuto:SetPoint("TOPLEFT", 365, -96)
-  SetCheckButtonLabel(barGrowAuto, "Bar grow from anchor")
-
-  local barGrowDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
-  barGrowDrop:SetPoint("TOPLEFT", 350, -112)
-  if UDDM_SetWidth then UDDM_SetWidth(barGrowDrop, 120) end
-  if UDDM_SetText then UDDM_SetText(barGrowDrop, "anchor") end
-
-  local function SetBarGrow(v)
-    v = tostring(v or "auto"):lower()
-    if v ~= "auto" and v ~= "left" and v ~= "right" and v ~= "center" then v = "auto" end
-    SetUISetting("barGrow", v)
-    if barGrowAuto then barGrowAuto:SetChecked(v == "auto") end
-    if UDDM_SetText then UDDM_SetText(barGrowDrop, (v == "auto") and "anchor" or v) end
-    SetDropDownEnabled(barGrowDrop, v ~= "auto")
-    RefreshAll()
-  end
-
-  barGrowAuto:SetScript("OnShow", function(self)
-    local v = tostring(GetUISetting("barGrow", "auto") or "auto"):lower()
-    if v ~= "auto" and v ~= "left" and v ~= "right" and v ~= "center" then v = "auto" end
-    self:SetChecked(v == "auto")
-    if UDDM_SetText then UDDM_SetText(barGrowDrop, (v == "auto") and "anchor" or v) end
-    SetDropDownEnabled(barGrowDrop, v ~= "auto")
-  end)
-
-  barGrowAuto:SetScript("OnClick", function(self)
-    if self:GetChecked() then
-      SetBarGrow("auto")
-    else
-      local prev = tostring(GetUISetting("barGrow", "auto") or "auto"):lower()
-      if prev == "auto" then prev = tostring(GetUISetting("barGrowManual", "center") or "center"):lower() end
-      if prev ~= "left" and prev ~= "right" and prev ~= "center" then prev = "center" end
-      SetUISetting("barGrowManual", prev)
-      SetBarGrow(prev)
-    end
-  end)
-
-  if UseModernMenuDropDown(barGrowDrop, function(root)
-    if root and root.CreateTitle then root:CreateTitle("Bar grow") end
-    local cur = tostring(GetUISetting("barGrow", "auto") or "auto"):lower()
-    if cur == "auto" then
-      cur = tostring(GetUISetting("barGrowManual", "right") or "right"):lower()
-    end
-    for _, v in ipairs({ "left", "center", "right" }) do
-      if root and root.CreateRadio then
-        root:CreateRadio(v, function() return cur == v end, function()
-          SetUISetting("barGrowManual", v)
-          SetBarGrow(v)
-        end)
-      elseif root and root.CreateButton then
-        root:CreateButton(v, function()
-          SetUISetting("barGrowManual", v)
-          SetBarGrow(v)
-        end)
-      end
-    end
-  end) then
-    -- modern menu wired
-  elseif UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
-    UDDM_Initialize(barGrowDrop, function(self, level)
-      for _, v in ipairs({ "left", "center", "right" }) do
-        local info = UDDM_CreateInfo()
-        info.text = v
-        info.func = function()
-          SetUISetting("barGrowManual", v)
-          SetBarGrow(v)
-        end
-        UDDM_AddButton(info)
-      end
-    end)
-  end
-
   -- Global List Padding control
   local listPadLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  listPadLabel:SetPoint("TOPLEFT", 365, -132)
+  listPadLabel:SetPoint("TOPLEFT", 365, -160)
   listPadLabel:SetText("List padding (px)")
 
   local listPadBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
   listPadBox:SetSize(40, 20)
-  listPadBox:SetPoint("TOPLEFT", 365, -148)
+  listPadBox:SetPoint("TOPLEFT", 365, -176)
   listPadBox:SetAutoFocus(false)
   listPadBox:SetNumeric(true)
+  if listPadBox.SetJustifyH then listPadBox:SetJustifyH("RIGHT") end
 
   local function RefreshListPadBox(self)
     local v = tonumber(GetUISetting("listPadding", 0) or 0) or 0
@@ -5093,7 +5552,7 @@ local function EnsureOptionsFrame()
 
   local addBarBtn = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
   addBarBtn:SetSize(90, 22)
-  addBarBtn:SetPoint("TOPRIGHT", -110, -152)
+  addBarBtn:SetPoint("TOPRIGHT", -110, -40)
   addBarBtn:SetText("Add Bar")
   addBarBtn:SetScript("OnClick", function()
     local frames = GetCustomFrames()
@@ -5120,7 +5579,7 @@ local function EnsureOptionsFrame()
 
   local addListBtn = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
   addListBtn:SetSize(90, 22)
-  addListBtn:SetPoint("TOPRIGHT", -12, -152)
+  addListBtn:SetPoint("TOPRIGHT", -12, -40)
   addListBtn:SetText("Add List")
   f._addBarBtn = addBarBtn
   f._addListBtn = addListBtn
@@ -5201,17 +5660,17 @@ local function EnsureOptionsFrame()
 
   -- Frame editor (shown only when Show frame list is enabled)
   local frameEditTitle = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  frameEditTitle:SetPoint("TOPLEFT", 12, -70)
-  frameEditTitle:SetText("Frame settings")
+  frameEditTitle:SetPoint("TOPLEFT", 12, -40)
+  frameEditTitle:SetText("Settings")
   f._frameEditTitle = frameEditTitle
 
   local frameEditLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  frameEditLabel:SetPoint("TOPLEFT", 12, -88)
-  frameEditLabel:SetText("Select frame:")
+  frameEditLabel:SetPoint("TOPLEFT", 12, -58)
+  frameEditLabel:SetText("Select:")
   f._frameEditLabel = frameEditLabel
 
   local frameDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
-  frameDrop:SetPoint("TOPLEFT", -8, -98)
+  frameDrop:SetPoint("TOPLEFT", -8, -68)
   -- reuse dropdown helpers if present (quest tab created its own locals above)
 
   if UDDM_SetWidth then UDDM_SetWidth(frameDrop, 160) end
@@ -5220,89 +5679,221 @@ local function EnsureOptionsFrame()
   f._selectedFrameID = nil
 
   local frameAuto = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  frameAuto:SetPoint("TOPLEFT", 200, -102)
+  frameAuto:SetPoint("TOPLEFT", 200, -72)
   SetCheckButtonLabel(frameAuto, "Auto")
   f._frameAuto = frameAuto
 
   local nameLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  nameLabel:SetPoint("TOPLEFT", 12, -112)
+  nameLabel:SetPoint("TOPLEFT", 12, -82)
   nameLabel:SetText("Name")
   f._frameNameLabel = nameLabel
 
   local nameBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
   nameBox:SetSize(180, 20)
-  nameBox:SetPoint("TOPLEFT", 55, -118)
+  nameBox:SetPoint("TOPLEFT", 55, -88)
   nameBox:SetAutoFocus(false)
   nameBox:SetText("")
   f._frameNameBox = nameBox
 
   local frameHideCombat = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
-  frameHideCombat:SetPoint("TOPLEFT", 260, -102)
+  frameHideCombat:SetPoint("TOPLEFT", 260, -72)
   SetCheckButtonLabel(frameHideCombat, "Hide in combat")
   frameHideCombat:Hide()
   f._frameHideCombat = frameHideCombat
 
+  local function NormalizeAnchorCornerLocal(v)
+    v = tostring(v or ""):lower():gsub("%s+", "")
+    if v == "tl" or v == "topleft" then return "tl" end
+    if v == "tr" or v == "topright" then return "tr" end
+    if v == "bl" or v == "bottomleft" then return "bl" end
+    if v == "br" or v == "bottomright" then return "br" end
+    return nil
+  end
+
+  local function DeriveAnchorCornerFromPoint(point)
+    point = tostring(point or ""):upper()
+    local vert = point:find("BOTTOM", 1, true) and "b" or "t"
+    local horiz = point:find("RIGHT", 1, true) and "r" or "l"
+    return vert .. horiz
+  end
+
+  local function NormalizeGrowDirLocal(v)
+    v = tostring(v or ""):lower():gsub("%s+", "")
+    v = v:gsub("_", "-")
+    if v == "upleft" then v = "up-left" end
+    if v == "upright" then v = "up-right" end
+    if v == "downleft" then v = "down-left" end
+    if v == "downright" then v = "down-right" end
+    if v == "up-left" or v == "up-right" or v == "down-left" or v == "down-right" then
+      return v
+    end
+    return nil
+  end
+
+  local function DeriveGrowDirFromPoint(point)
+    point = tostring(point or ""):upper()
+    local y = point:find("BOTTOM", 1, true) and "up" or "down"
+    local x = point:find("RIGHT", 1, true) and "left" or "right"
+    return y .. "-" .. x
+  end
+
+  -- Unified corner -> grow mapping (keeps Anchor/Grow consistent).
+  local function DeriveGrowDirFromCorner(corner)
+    corner = NormalizeAnchorCornerLocal(corner) or "tl"
+    if corner == "tl" then return "down-right" end
+    if corner == "tr" then return "down-left" end
+    if corner == "bl" then return "up-right" end
+    if corner == "br" then return "up-left" end
+    return "down-right"
+  end
+
+  local function DeriveCornerFromGrowDir(dir)
+    dir = NormalizeGrowDirLocal(dir) or "down-right"
+    if dir == "down-right" then return "tl" end
+    if dir == "down-left" then return "tr" end
+    if dir == "up-right" then return "bl" end
+    if dir == "up-left" then return "br" end
+    return "tl"
+  end
+
+  local function AnchorCornerLabel(corner)
+    corner = NormalizeAnchorCornerLocal(corner) or "tl"
+    if corner == "tl" then return "Top Left" end
+    if corner == "tr" then return "Top Right" end
+    if corner == "bl" then return "Bottom Left" end
+    if corner == "br" then return "Bottom Right" end
+    return "Top Left"
+  end
+
+  local function GrowDirLabel(dir)
+    dir = NormalizeGrowDirLocal(dir) or "down-right"
+    if dir == "up-left" then return "Up-Left" end
+    if dir == "up-right" then return "Up-Right" end
+    if dir == "down-left" then return "Down-Left" end
+    if dir == "down-right" then return "Down-Right" end
+    return "Down-Right"
+  end
+
+  local function AnchorGrowLabel(corner)
+    corner = NormalizeAnchorCornerLocal(corner) or "tl"
+    local dir = DeriveGrowDirFromCorner(corner)
+    return string.format("%s (%s)", AnchorCornerLabel(corner), GrowDirLabel(dir))
+  end
+
+  local anchorPosLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  anchorPosLabel:SetPoint("TOPLEFT", 365, -82)
+  anchorPosLabel:SetText("Anchor/Grow")
+  f._frameAnchorPosLabel = anchorPosLabel
+
+  local anchorPosDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
+  anchorPosDrop:SetPoint("TOPLEFT", 340, -68)
+  if UDDM_SetWidth then UDDM_SetWidth(anchorPosDrop, 170) end
+  if UDDM_SetText then UDDM_SetText(anchorPosDrop, "(auto)") end
+  f._frameAnchorPosDrop = anchorPosDrop
+
+  local growDirLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  growDirLabel:SetPoint("TOPLEFT", 365, -112)
+  growDirLabel:SetText("Grow")
+  f._frameGrowDirLabel = growDirLabel
+
+  local growDirDrop = CreateFrame("Frame", nil, panels.frames, "UIDropDownMenuTemplate")
+  growDirDrop:SetPoint("TOPLEFT", 340, -98)
+  if UDDM_SetWidth then UDDM_SetWidth(growDirDrop, 130) end
+  if UDDM_SetText then UDDM_SetText(growDirDrop, "(auto)") end
+  f._frameGrowDirDrop = growDirDrop
+
+  -- Grow is now implied by Anchor/Grow; keep the legacy control hidden.
+  growDirLabel:Hide()
+  growDirDrop:Hide()
+
   local widthLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  widthLabel:SetPoint("TOPLEFT", 12, -130)
+  widthLabel:SetPoint("TOPLEFT", 12, -100)
   widthLabel:SetText("Width")
   f._frameWidthLabel = widthLabel
 
   local widthBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
   widthBox:SetSize(60, 20)
-  widthBox:SetPoint("TOPLEFT", 55, -136)
+  widthBox:SetPoint("TOPLEFT", 55, -106)
   widthBox:SetAutoFocus(false)
   widthBox:SetNumeric(true)
   widthBox:SetText("0")
+  if widthBox.SetJustifyH then widthBox:SetJustifyH("RIGHT") end
   f._frameWidthBox = widthBox
 
+  local function AddGhostLabel(box, text)
+    if not (box and box.CreateFontString) then return nil end
+    if box.SetTextInsets then box:SetTextInsets(22, 6, 0, 0) end
+    local fs = box:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    fs:SetPoint("LEFT", box, "LEFT", 6, 0)
+    fs:SetJustifyH("LEFT")
+    fs:SetText(tostring(text or ""))
+    box._ghostLabel = fs
+    return fs
+  end
+
+  AddGhostLabel(widthBox, "W")
+  if widthLabel and widthLabel.Hide then widthLabel:Hide() end
+
   local heightLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  heightLabel:SetPoint("TOPLEFT", 125, -130)
+  heightLabel:SetPoint("TOPLEFT", 125, -100)
   heightLabel:SetText("Height")
   f._frameHeightLabel = heightLabel
 
   local heightBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
   heightBox:SetSize(60, 20)
-  heightBox:SetPoint("TOPLEFT", 175, -136)
+  heightBox:SetPoint("TOPLEFT", 175, -106)
   heightBox:SetAutoFocus(false)
   heightBox:SetNumeric(true)
   heightBox:SetText("0")
+  if heightBox.SetJustifyH then heightBox:SetJustifyH("RIGHT") end
   f._frameHeightBox = heightBox
 
+  AddGhostLabel(heightBox, "H")
+  if heightLabel and heightLabel.Hide then heightLabel:Hide() end
+
   local lengthLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  lengthLabel:SetPoint("TOPLEFT", 245, -130)
+  lengthLabel:SetPoint("TOPLEFT", 245, -100)
   lengthLabel:SetText("Length")
   f._frameLengthLabel = lengthLabel
 
   local lengthBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
   lengthBox:SetSize(60, 20)
-  lengthBox:SetPoint("TOPLEFT", 292, -136)
+  lengthBox:SetPoint("TOPLEFT", 292, -106)
   lengthBox:SetAutoFocus(false)
   lengthBox:SetNumeric(true)
   lengthBox:SetText("0")
+  if lengthBox.SetJustifyH then lengthBox:SetJustifyH("RIGHT") end
   f._frameLengthBox = lengthBox
 
+  AddGhostLabel(lengthBox, "Len")
+  if lengthLabel and lengthLabel.Hide then lengthLabel:Hide() end
+
   local maxHLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  maxHLabel:SetPoint("TOPLEFT", 365, -130)
+  maxHLabel:SetPoint("TOPLEFT", 365, -100)
   maxHLabel:SetText("Max H")
   f._frameMaxHLabel = maxHLabel
 
   local maxHBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
   maxHBox:SetSize(60, 20)
-  maxHBox:SetPoint("TOPLEFT", 410, -136)
+  maxHBox:SetPoint("TOPLEFT", 410, -106)
   maxHBox:SetAutoFocus(false)
   maxHBox:SetNumeric(true)
   maxHBox:SetText("0")
+  if maxHBox.SetJustifyH then maxHBox:SetJustifyH("RIGHT") end
   f._frameMaxHBox = maxHBox
+
+  AddGhostLabel(maxHBox, "Max")
+  if maxHLabel and maxHLabel.Hide then maxHLabel:Hide() end
 
   -- Background (per-frame)
   local bgLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  bgLabel:SetPoint("TOPLEFT", 12, -160)
+  bgLabel:SetPoint("TOPLEFT", 12, -130)
   bgLabel:SetText("Background")
   f._frameBgLabel = bgLabel
 
   local bgSwatch = CreateFrame("Button", nil, panels.frames)
   bgSwatch:SetSize(18, 18)
-  bgSwatch:SetPoint("TOPLEFT", 85, -164)
+  bgSwatch:SetPoint("TOPLEFT", 85, -134)
   bgSwatch:EnableMouse(true)
   local swTex = bgSwatch:CreateTexture(nil, "ARTWORK")
   swTex:SetAllPoints()
@@ -5313,7 +5904,7 @@ local function EnsureOptionsFrame()
   f._frameBgSwatch = bgSwatch
 
   local bgAlphaSlider = CreateFrame("Slider", "FR0Z3NUIFQT_BGAlphaSlider", panels.frames, "OptionsSliderTemplate")
-  bgAlphaSlider:SetPoint("TOPLEFT", 115, -168)
+  bgAlphaSlider:SetPoint("TOPLEFT", 115, -138)
   bgAlphaSlider:SetWidth(140)
   bgAlphaSlider:SetMinMaxValues(0, 1)
   bgAlphaSlider:SetValueStep(0.05)
@@ -5397,6 +5988,7 @@ local function EnsureOptionsFrame()
     local id = tostring(optionsFrame._selectedFrameID or "")
     local def = FindEffectiveFrameDef(id)
     if not def then
+      UpdateReverseOrderVisibility("frames")
       if UDDM_SetText then UDDM_SetText(optionsFrame._frameDrop, "(pick)") end
       optionsFrame._frameAuto:SetChecked(false)
       if optionsFrame._frameHideCombat then
@@ -5436,15 +6028,31 @@ local function EnsureOptionsFrame()
       optionsFrame._frameWidthBox:SetText("0")
       optionsFrame._frameHeightBox:SetText("0")
       optionsFrame._frameLengthBox:SetText("0")
+
+      if optionsFrame._frameAnchorPosDrop then
+        if UDDM_SetText then UDDM_SetText(optionsFrame._frameAnchorPosDrop, "(pick)") end
+        SetDropDownEnabled(optionsFrame._frameAnchorPosDrop, false)
+      end
+      if optionsFrame._frameGrowDirDrop then
+        if UDDM_SetText then UDDM_SetText(optionsFrame._frameGrowDirDrop, "(pick)") end
+        SetDropDownEnabled(optionsFrame._frameGrowDirDrop, false)
+      end
       return
     end
 
     if UDDM_SetText then UDDM_SetText(optionsFrame._frameDrop, GetFrameDisplayNameByID(def.id)) end
 
     local t = tostring(def.type or "list")
+    UpdateReverseOrderVisibility("frames")
     if t == "list" then
       optionsFrame._frameHeightLabel:SetText("Row")
       optionsFrame._frameLengthLabel:SetText("Rows")
+      if optionsFrame._frameHeightBox and optionsFrame._frameHeightBox._ghostLabel then
+        optionsFrame._frameHeightBox._ghostLabel:SetText("Row")
+      end
+      if optionsFrame._frameLengthBox and optionsFrame._frameLengthBox._ghostLabel then
+        optionsFrame._frameLengthBox._ghostLabel:SetText("Rows")
+      end
       optionsFrame._frameHeightBox:SetText(tostring(tonumber(def.rowHeight) or 16))
       if optionsFrame._frameMaxHBox then
         optionsFrame._frameMaxHBox:SetText(tostring(tonumber(def.maxHeight) or 0))
@@ -5453,6 +6061,12 @@ local function EnsureOptionsFrame()
     else
       optionsFrame._frameHeightLabel:SetText("Height")
       optionsFrame._frameLengthLabel:SetText("Segments")
+      if optionsFrame._frameHeightBox and optionsFrame._frameHeightBox._ghostLabel then
+        optionsFrame._frameHeightBox._ghostLabel:SetText("H")
+      end
+      if optionsFrame._frameLengthBox and optionsFrame._frameLengthBox._ghostLabel then
+        optionsFrame._frameLengthBox._ghostLabel:SetText("Seg")
+      end
       optionsFrame._frameHeightBox:SetText(tostring(tonumber(def.height) or 20))
       if optionsFrame._frameMaxHBox then
         optionsFrame._frameMaxHBox:SetText("0")
@@ -5478,6 +6092,21 @@ local function EnsureOptionsFrame()
 
     optionsFrame._frameWidthBox:SetText(tostring(tonumber(def.width) or 300))
     optionsFrame._frameLengthBox:SetText(tostring(tonumber(def.maxItems) or (t == "list" and 20 or 6)))
+
+    if optionsFrame._frameAnchorPosDrop then
+      local corner = NormalizeAnchorCornerLocal(def.anchorCorner) or "tl"
+      if UDDM_SetText then UDDM_SetText(optionsFrame._frameAnchorPosDrop, AnchorGrowLabel(corner)) end
+      SetDropDownEnabled(optionsFrame._frameAnchorPosDrop, true)
+    end
+
+    if optionsFrame._frameGrowDirDrop then
+      local corner = NormalizeAnchorCornerLocal(def.anchorCorner) or "tl"
+      local dir = DeriveGrowDirFromCorner(corner)
+      if UDDM_SetText then UDDM_SetText(optionsFrame._frameGrowDirDrop, GrowDirLabel(dir)) end
+      SetDropDownEnabled(optionsFrame._frameGrowDirDrop, false)
+      if optionsFrame._frameGrowDirLabel then optionsFrame._frameGrowDirLabel:Hide() end
+      optionsFrame._frameGrowDirDrop:Hide()
+    end
 
     -- Background controls
     do
@@ -5772,13 +6401,14 @@ local function EnsureOptionsFrame()
       for _, def in ipairs(GetEffectiveFrames()) do
         if type(def) == "table" and def.id and root then
           local id = tostring(def.id)
-          local label = id .. " (" .. tostring(def.type or "list") .. ")"
+          local label = GetFrameDisplayNameByID(id)
           local function IsSelected()
             return (optionsFrame and optionsFrame._selectedFrameID == id) and true or false
           end
           local function SetSelected()
             optionsFrame._selectedFrameID = id
             UpdateFrameEditor()
+            UpdateReverseOrderVisibility("frames")
           end
           if root.CreateRadio then
             root:CreateRadio(label, IsSelected, SetSelected)
@@ -5795,11 +6425,12 @@ local function EnsureOptionsFrame()
         for _, def in ipairs(GetEffectiveFrames()) do
           if type(def) == "table" and def.id then
             local id = tostring(def.id)
-            info.text = id .. " (" .. tostring(def.type or "list") .. ")"
+            info.text = GetFrameDisplayNameByID(id)
             info.checked = (optionsFrame and optionsFrame._selectedFrameID == id) and true or false
             info.func = function()
               optionsFrame._selectedFrameID = id
               UpdateFrameEditor()
+              UpdateReverseOrderVisibility("frames")
             end
             UDDM_AddButton(info)
           end
@@ -5808,6 +6439,98 @@ local function EnsureOptionsFrame()
     end
   else
     frameEditLabel:SetText("Select frame: (dropdown unavailable)")
+  end
+
+  local function ApplySelectedFrameAnchorCorner(corner)
+    if not optionsFrame then return end
+    local id = tostring(optionsFrame._selectedFrameID or "")
+    if id == "" then return end
+    local eff = FindEffectiveFrameDef(id)
+    if not eff then return end
+    local def = FindOrCreateCustomFrameDef(id)
+    if not def then return end
+
+    corner = NormalizeAnchorCornerLocal(corner)
+    def.anchorCorner = corner
+
+    -- Unify grow direction with the chosen corner.
+    def.growDir = DeriveGrowDirFromCorner(corner)
+
+    RefreshAll()
+    RefreshFramesList()
+  end
+
+  local function ApplySelectedFrameGrowDir(dir)
+    if not optionsFrame then return end
+    local id = tostring(optionsFrame._selectedFrameID or "")
+    if id == "" then return end
+    local eff = FindEffectiveFrameDef(id)
+    if not eff then return end
+    local def = FindOrCreateCustomFrameDef(id)
+    if not def then return end
+    dir = NormalizeGrowDirLocal(dir)
+    def.growDir = dir
+    def.anchorCorner = DeriveCornerFromGrowDir(dir)
+    RefreshAll()
+    RefreshFramesList()
+  end
+
+  if UseModernMenuDropDown(anchorPosDrop, function(root)
+    if root and root.CreateTitle then root:CreateTitle("Anchor") end
+    local cur = nil
+    do
+      local id = tostring(optionsFrame and optionsFrame._selectedFrameID or "")
+      local eff = (id ~= "") and FindEffectiveFrameDef(id) or nil
+      cur = (type(eff) == "table") and NormalizeAnchorCornerLocal(eff.anchorCorner) or nil
+      if not cur then cur = "tl" end
+    end
+    for _, v in ipairs({ "tl", "tr", "bl", "br" }) do
+      if root and root.CreateRadio then
+        root:CreateRadio(AnchorGrowLabel(v), function() return cur == v end, function() ApplySelectedFrameAnchorCorner(v) end)
+      elseif root and root.CreateButton then
+        root:CreateButton(AnchorGrowLabel(v), function() ApplySelectedFrameAnchorCorner(v) end)
+      end
+    end
+  end) then
+    -- modern menu wired
+  elseif UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
+    UDDM_Initialize(anchorPosDrop, function(self, level)
+      for _, v in ipairs({ "tl", "tr", "bl", "br" }) do
+        local info = UDDM_CreateInfo()
+        info.text = AnchorGrowLabel(v)
+        info.func = function() ApplySelectedFrameAnchorCorner(v) end
+        UDDM_AddButton(info)
+      end
+    end)
+  end
+
+  if UseModernMenuDropDown(growDirDrop, function(root)
+    if root and root.CreateTitle then root:CreateTitle("Grow") end
+    local cur = nil
+    do
+      local id = tostring(optionsFrame and optionsFrame._selectedFrameID or "")
+      local eff = (id ~= "") and FindEffectiveFrameDef(id) or nil
+      cur = (type(eff) == "table") and NormalizeGrowDirLocal(eff.growDir) or nil
+      if not cur then cur = "down-right" end
+    end
+    for _, v in ipairs({ "up-left", "up-right", "down-left", "down-right" }) do
+      if root and root.CreateRadio then
+        root:CreateRadio(GrowDirLabel(v), function() return cur == v end, function() ApplySelectedFrameGrowDir(v) end)
+      elseif root and root.CreateButton then
+        root:CreateButton(GrowDirLabel(v), function() ApplySelectedFrameGrowDir(v) end)
+      end
+    end
+  end) then
+    -- modern menu wired
+  elseif UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
+    UDDM_Initialize(growDirDrop, function(self, level)
+      for _, v in ipairs({ "up-left", "up-right", "down-left", "down-right" }) do
+        local info = UDDM_CreateInfo()
+        info.text = GrowDirLabel(v)
+        info.func = function() ApplySelectedFrameGrowDir(v) end
+        UDDM_AddButton(info)
+      end
+    end)
   end
 
   frameAuto:SetScript("OnClick", function(self)
@@ -6055,13 +6778,10 @@ local function EnsureOptionsFrame()
     local sourceOf = nil
     if view == "defaults" then
       list = ns.rules or {}
-      if optionsFrame._rulesTitle then optionsFrame._rulesTitle:SetText("Default Rules") end
     elseif view == "trash" then
       list = GetCustomRulesTrash()
-      if optionsFrame._rulesTitle then optionsFrame._rulesTitle:SetText("Trash (Custom Rules)") end
     elseif view == "custom" then
       list = GetCustomRules()
-      if optionsFrame._rulesTitle then optionsFrame._rulesTitle:SetText("Custom Rules") end
     else
       -- all: defaults + custom
       list = {}
@@ -6074,7 +6794,10 @@ local function EnsureOptionsFrame()
         list[#list + 1] = r
         sourceOf[r] = "custom"
       end
-      if optionsFrame._rulesTitle then optionsFrame._rulesTitle:SetText("All Rules") end
+    end
+
+    if optionsFrame._rulesTitle then
+      optionsFrame._rulesTitle:SetText("Rules")
     end
 
     local rowH = 18
@@ -6095,6 +6818,53 @@ local function EnsureOptionsFrame()
         local id = tostring(def.id)
         displayByID[id] = GetFrameDisplayNameByID(id)
       end
+    end
+
+    local function GetSortedFrameIDs()
+      local ids = {}
+      for _, def in ipairs(GetEffectiveFrames() or {}) do
+        if type(def) == "table" and def.id then
+          local id = tostring(def.id)
+          if id ~= "" then
+            ids[#ids + 1] = id
+          end
+        end
+      end
+      table.sort(ids, function(a, b)
+        local da = displayByID[a] or a
+        local db = displayByID[b] or b
+        return tostring(da) < tostring(db)
+      end)
+      return ids
+    end
+
+    local function GetPrimaryFrameID(rule)
+      if type(rule) ~= "table" then return nil end
+      if rule.frameID ~= nil then return tostring(rule.frameID) end
+      if type(rule.targets) == "table" and rule.targets[1] ~= nil then
+        return tostring(rule.targets[1])
+      end
+      return nil
+    end
+
+    local function SetRulePrimaryFrame(baseRule, displayRule, newID, src)
+      newID = tostring(newID or "")
+      if newID == "" then return end
+
+      if src == "default" then
+        local key = RuleKey(baseRule)
+        if not key or key == "" then return end
+        local edits = GetDefaultRuleEdits()
+        local edited = DeepCopyValue(displayRule)
+        edited.frameID = newID
+        edited.targets = nil
+        edits[key] = edited
+        return
+      end
+
+      if type(baseRule) ~= "table" then return end
+      baseRule.frameID = newID
+      baseRule.targets = nil
     end
 
     local function GetRuleFramesLabel(rule)
@@ -6188,6 +6958,36 @@ local function EnsureOptionsFrame()
       end
     end
 
+    local function SetRowRuleText(row, prefix, baseText, suffix, maxW)
+      if not (row and row.text and row.text.SetText) then return end
+      maxW = tonumber(maxW) or 0
+      if maxW <= 0 or not row.text.GetStringWidth then
+        row.text:SetText(tostring(prefix or "") .. tostring(baseText or "") .. tostring(suffix or ""))
+        return
+      end
+
+      local full = tostring(prefix or "") .. tostring(baseText or "") .. tostring(suffix or "")
+      row.text:SetText(full)
+      if (row.text:GetStringWidth() or 0) <= maxW then return end
+
+      local b = tostring(baseText or "")
+      local ell = "..."
+      local lo, hi = 0, #b
+      local best = ""
+      while lo <= hi do
+        local mid = math.floor((lo + hi) / 2)
+        local candidate = tostring(prefix or "") .. b:sub(1, mid) .. ell .. tostring(suffix or "")
+        row.text:SetText(candidate)
+        if (row.text:GetStringWidth() or 0) <= maxW then
+          best = b:sub(1, mid)
+          lo = mid + 1
+        else
+          hi = mid - 1
+        end
+      end
+      row.text:SetText(tostring(prefix or "") .. best .. ell .. tostring(suffix or ""))
+    end
+
     for i = 1, #list do
       local r = list[i]
       local row = rows[i]
@@ -6195,6 +6995,7 @@ local function EnsureOptionsFrame()
         row = CreateFrame("Frame", nil, content)
         row:SetHeight(rowH)
         row:EnableMouse(true)
+        if row.SetClipsChildren then row:SetClipsChildren(true) end
 
         row.bg = row:CreateTexture(nil, "BACKGROUND")
         row.bg:SetAllPoints()
@@ -6210,9 +7011,17 @@ local function EnsureOptionsFrame()
         row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         row.text:SetPoint("LEFT", row.toggle, "RIGHT", 4, 0)
         row.text:SetJustifyH("LEFT")
+        if row.text.SetMaxLines then row.text:SetMaxLines(1) end
+        if row.text.SetWordWrap then row.text:SetWordWrap(false) end
+        if row.text.SetNonSpaceWrap then row.text:SetNonSpaceWrap(false) end
 
-        row.frameText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        row.frameText:SetJustifyH("RIGHT")
+        row.frameDrop = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+        if HideDropDownMenuArt then HideDropDownMenuArt(row.frameDrop) end
+        row.frameDrop:SetAlpha(0.85)
+
+        row.frameDropHit = CreateFrame("Button", nil, row)
+        row.frameDropHit:EnableMouse(true)
+        row.frameDropHit:SetAlpha(0.01)
 
         row.action = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
         row.action:SetSize(70, 18)
@@ -6249,8 +7058,14 @@ local function EnsureOptionsFrame()
 
         row.down:SetPoint("RIGHT", row.del, "LEFT", -2, 0)
         row.up:SetPoint("RIGHT", row.down, "LEFT", -2, 0)
-        row.frameText:SetPoint("RIGHT", row.action, "LEFT", -6, 0)
-        row.text:SetPoint("RIGHT", row.frameText, "LEFT", -6, 0)
+
+        row.frameDrop:SetPoint("RIGHT", row.action, "LEFT", 0, -2)
+        local UDDM_SetWidth = _G and rawget(_G, "UIDropDownMenu_SetWidth")
+        if UDDM_SetWidth then UDDM_SetWidth(row.frameDrop, 150) end
+        row.frameDropHit:SetPoint("TOPLEFT", row.frameDrop, "TOPLEFT", 18, -2)
+        row.frameDropHit:SetPoint("BOTTOMRIGHT", row.frameDrop, "BOTTOMRIGHT", -18, 2)
+
+        row.text:SetPoint("RIGHT", row.frameDrop, "LEFT", -6, 0)
 
         rows[i] = row
       end
@@ -6274,14 +7089,49 @@ local function EnsureOptionsFrame()
       local src = (view == "defaults") and "default" or (view == "trash") and "trash" or (view == "custom") and "custom" or (sourceOf and sourceOf[r])
       local displayRule = (src == "default") and GetEffectiveDefaultRule(r) or r
 
-      local fl = GetRuleFramesLabel(displayRule)
-      if row.frameText then
-        if fl ~= "" then
-          row.frameText:SetText(fl)
-          row.frameText:Show()
+      if row.frameDrop then
+        if src == "trash" then
+          row.frameDrop:Hide()
+          if row.frameDropHit then row.frameDropHit:Hide() end
         else
-          row.frameText:SetText("")
-          row.frameText:Hide()
+          row.frameDrop:Show()
+          if row.frameDropHit then row.frameDropHit:Show() end
+
+          local primary = GetPrimaryFrameID(displayRule)
+          local UDDM_SetText = _G and rawget(_G, "UIDropDownMenu_SetText")
+          if UDDM_SetText then
+            UDDM_SetText(row.frameDrop, primary and (displayByID[primary] or primary) or "(none)")
+          end
+
+          local UDDM_Initialize = _G and rawget(_G, "UIDropDownMenu_Initialize")
+          local UDDM_CreateInfo = _G and rawget(_G, "UIDropDownMenu_CreateInfo")
+          local UDDM_AddButton = _G and rawget(_G, "UIDropDownMenu_AddButton")
+
+          if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
+            UDDM_Initialize(row.frameDrop, function(_, level)
+              if level ~= 1 then return end
+              for _, id in ipairs(GetSortedFrameIDs()) do
+                local info = UDDM_CreateInfo()
+                info.text = displayByID[id] or id
+                info.checked = (primary == id)
+                info.func = function()
+                  SetRulePrimaryFrame(r, displayRule, id, src)
+                  RefreshAll()
+                  RefreshRulesList()
+                end
+                UDDM_AddButton(info)
+              end
+            end)
+          end
+
+          if row.frameDropHit then
+            row.frameDropHit:SetScript("OnClick", function()
+              local toggle = _G and rawget(_G, "ToggleDropDownMenu")
+              if toggle then
+                toggle(1, nil, row.frameDrop, row.frameDrop, 0, 0)
+              end
+            end)
+          end
         end
       end
 
@@ -6320,7 +7170,26 @@ local function EnsureOptionsFrame()
       end
 
       local editedMark = (src == "default" and IsDefaultRuleEdited(r)) and "|cff00ff00*|r " or ""
-      row.text:SetText(editedMark .. c .. baseText .. "|r")
+
+      -- Anchor/width depends on whether the enable toggle is shown.
+      row.text:ClearAllPoints()
+      if view == "trash" then
+        row.text:SetPoint("LEFT", row, "LEFT", 2, 0)
+      else
+        row.text:SetPoint("LEFT", row.toggle, "RIGHT", 4, 0)
+      end
+      row.text:SetPoint("RIGHT", row.frameDrop, "LEFT", -6, 0)
+      if row.text.SetWidth and content and content.GetWidth then
+        local totalW = tonumber(content:GetWidth() or 0) or 0
+        local leftPad = (view == "trash") and 2 or (18 + 4)
+        local rightPad = 6 + 150 + 6
+        local maxW = totalW - leftPad - rightPad
+        if maxW < 50 then maxW = 50 end
+        row.text:SetWidth(maxW)
+        SetRowRuleText(row, editedMark .. c, baseText, "|r", maxW)
+      else
+        row.text:SetText(editedMark .. c .. baseText .. "|r")
+      end
 
       local idx = i
       if view == "trash" then
@@ -6361,18 +7230,17 @@ local function EnsureOptionsFrame()
         RefreshRulesList()
       end
 
-      local function SetMoveButtonsVisible(isVisible)
-        if isVisible then
-          row.up:Show()
-          row.down:Show()
-        else
-          row.up:Hide()
-          row.down:Hide()
-        end
+      -- Always show move arrows for consistent UI; disable them when reordering isn't allowed.
+      local function DisableMoveButtons()
+        row.up:Show(); row.down:Show()
+        row.up:SetEnabled(false)
+        row.down:SetEnabled(false)
+        row.up:SetScript("OnClick", nil)
+        row.down:SetScript("OnClick", nil)
       end
 
       if view == "custom" then
-        SetMoveButtonsVisible(true)
+        row.up:Show(); row.down:Show()
         row.action:SetText("Edit")
         row.action:Show()
         row.action:SetScript("OnClick", function()
@@ -6416,7 +7284,7 @@ local function EnsureOptionsFrame()
           Print("Moved custom rule to Trash.")
         end)
       elseif view == "defaults" then
-        SetMoveButtonsVisible(false)
+        DisableMoveButtons()
         row:SetScript("OnMouseUp", nil)
         row.action:SetText("Edit")
         row.action:Show()
@@ -6449,7 +7317,7 @@ local function EnsureOptionsFrame()
           row.del:Hide()
         end
       elseif view == "trash" then
-        SetMoveButtonsVisible(false)
+        DisableMoveButtons()
         row:SetScript("OnMouseUp", nil)
         row.action:SetText("Restore")
         row.action:Show()
@@ -6483,7 +7351,7 @@ local function EnsureOptionsFrame()
 
         local src2 = (sourceOf and sourceOf[r]) or "custom"
         if src2 == "default" then
-          SetMoveButtonsVisible(false)
+          DisableMoveButtons()
           row.action:SetText("Edit")
           row.action:Show()
           row.action:SetScript("OnClick", function()
@@ -6514,7 +7382,7 @@ local function EnsureOptionsFrame()
             row.del:Hide()
           end
         elseif src2 == "custom" then
-          SetMoveButtonsVisible(true)
+          row.up:Show(); row.down:Show()
           row.action:SetText("Edit")
           row.action:Show()
           row.action:SetScript("OnClick", function()
@@ -6560,7 +7428,7 @@ local function EnsureOptionsFrame()
           end)
         else
           -- auto: no edit/delete
-          SetMoveButtonsVisible(false)
+          DisableMoveButtons()
           row.action:Hide()
           row.del:Hide()
         end
@@ -6603,6 +7471,79 @@ local function EnsureOptionsFrame()
     if r then r() end
   end)
 
+  local useCharPosBtn = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
+  useCharPosBtn:SetPoint("BOTTOMLEFT", resetBtn, "TOPLEFT", 0, 6)
+  useCharPosBtn:SetSize(24, 24)
+  SetCheckButtonLabel(useCharPosBtn, "Character Specific Layout")
+
+  -- Unlabeled: reverse display order (bars)
+  local reverseOrderBtn = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
+  reverseOrderBtn:SetSize(24, 24)
+  reverseOrderBtn:SetPoint("BOTTOMRIGHT", reloadBtn, "TOPRIGHT", 0, 6)
+  reverseOrderBtn:Hide()
+  reverseOrderBtn:SetScript("OnClick", function(self)
+    local v = (self and self.GetChecked and self:GetChecked()) and true or false
+    SetUISetting("reverseOrder", v)
+    RefreshAll()
+  end)
+  reverseOrderBtn:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Reverse order", 1, 1, 1)
+    GameTooltip:AddLine("Bars: left->right (default) becomes right->left.", 0.85, 0.85, 0.85, true)
+    GameTooltip:Show()
+  end)
+  reverseOrderBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
+  local function SyncCharPosToggle()
+    local v = (type(GetUseCharacterWindowPos) == "function" and GetUseCharacterWindowPos()) and true or false
+    if useCharPosBtn and useCharPosBtn.SetChecked then
+      useCharPosBtn:SetChecked(v)
+    end
+  end
+
+  local function SyncReverseOrderToggle()
+    local v = GetUISetting("reverseOrder", false) and true or false
+    if reverseOrderBtn and reverseOrderBtn.SetChecked then
+      reverseOrderBtn:SetChecked(v)
+    end
+  end
+
+  SyncCharPosToggle()
+  SyncReverseOrderToggle()
+
+  useCharPosBtn:SetScript("OnClick", function(self)
+    local v = (self and self.GetChecked and self:GetChecked()) and true or false
+    if type(SetUseCharacterWindowPos) == "function" then
+      SetUseCharacterWindowPos(v)
+    end
+    if RestoreWindowPosition then
+      RestoreWindowPosition("options", f, "CENTER", "CENTER", 0, 0)
+    end
+    if SaveWindowPosition then
+      SaveWindowPosition("options", f)
+    end
+    SyncCharPosToggle()
+    SyncReverseOrderToggle()
+    UpdateReverseOrderVisibility(optionsFrame and optionsFrame._activeTab)
+  end)
+
+  useCharPosBtn:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Layout", 1, 1, 1)
+    GameTooltip:AddLine("Default: account-wide layout / window positions.", 0.85, 0.85, 0.85, true)
+    GameTooltip:AddLine("Checked: this character uses its own layout / window positions.", 0.85, 0.85, 0.85, true)
+    GameTooltip:Show()
+  end)
+  useCharPosBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
+  -- Only show on the UI tab.
+  if useCharPosBtn.SetParent then useCharPosBtn:SetParent(panels.frames) end
+
+  f._useCharPosBtn = useCharPosBtn
+  f._reverseOrderBtn = reverseOrderBtn
+
   f._resetBtn = resetBtn
   f._reloadBtn = reloadBtn
 
@@ -6611,6 +7552,7 @@ local function EnsureOptionsFrame()
   local initial = tostring(GetUISetting("optionsTab", "frames") or "frames")
   if not panels[initial] then initial = "frames" end
   SelectTab(initial)
+  UpdateReverseOrderVisibility(initial)
   return f
 end
 
