@@ -22,4 +22,10 @@ fr0z3nUI_QuestTrackerXP10.lua
 fr0z3nUI_QuestTrackerXP11.lua
 fr0z3nUI_QuestTrackerXP12.lua
 fr0z3nUI_QuestTrackerCore.lua
+fr0z3nUI_QuestTrackerQuest.lua
+fr0z3nUI_QuestTrackerItems.lua
+fr0z3nUI_QuestTrackerText.lua
+fr0z3nUI_QuestTrackerSpells.lua
+fr0z3nUI_QuestTrackerRules.lua
+fr0z3nUI_QuestTrackerFrames.lua
 fr0z3nUI_QuestTrackerOptions.lua

@@ -1,0 +1,683 @@
+local addonName, ns = ...
+
+ns.FQTOptionsPanels = ns.FQTOptionsPanels or {}
+
+function ns.FQTOptionsPanels.BuildQuest(ctx)
+  if type(ctx) ~= "table" then return end
+
+  local panels = ctx.panels
+  if not (panels and panels.quest) then return end
+
+  local Print = ctx.Print or function(...) end
+  local CreateFrame = ctx.CreateFrame or CreateFrame
+
+  local UseModernMenuDropDown = ctx.UseModernMenuDropDown
+  local GetEffectiveFrames = ctx.GetEffectiveFrames
+  local GetFrameDisplayNameByID = ctx.GetFrameDisplayNameByID
+
+  local CreateQuickColorPalette = ctx.CreateQuickColorPalette
+
+  local GetCustomRules = ctx.GetCustomRules
+  local DeepCopyValue = ctx.DeepCopyValue
+  local GetDefaultRuleEdits = ctx.GetDefaultRuleEdits
+
+  local CreateAllFrames = ctx.CreateAllFrames
+  local RefreshAll = ctx.RefreshAll
+  local RefreshRulesList = ctx.RefreshRulesList
+
+  local GetKeepEditFormOpen = ctx.GetKeepEditFormOpen
+  local SelectTab = ctx.SelectTab
+
+  local AddPlaceholder = ctx.AddPlaceholder
+  local AttachLocationIDTooltip = ctx.AttachLocationIDTooltip
+
+  local UDDM_SetWidth = ctx.UDDM_SetWidth
+  local UDDM_SetText = ctx.UDDM_SetText
+  local UDDM_Initialize = ctx.UDDM_Initialize
+  local UDDM_CreateInfo = ctx.UDDM_CreateInfo
+  local UDDM_AddButton = ctx.UDDM_AddButton
+
+  local ColorLabel = ctx.ColorLabel
+  local FactionLabel = ctx.FactionLabel
+
+  local pQuest = panels.quest
+
+  local questTitle = pQuest:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  questTitle:SetPoint("TOPLEFT", 12, -40)
+  questTitle:SetText("Quest")
+
+  local qiLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  qiLabel:SetPoint("TOPLEFT", 12, -70)
+  qiLabel:SetText("Quest Info")
+
+  local qiScroll = CreateFrame("ScrollFrame", nil, pQuest, "UIPanelScrollFrameTemplate")
+  qiScroll:SetPoint("TOPLEFT", 12, -90)
+  qiScroll:SetSize(530, 90)
+
+  local qiBox = CreateFrame("EditBox", nil, qiScroll)
+  qiBox:SetMultiLine(true)
+  qiBox:SetAutoFocus(false)
+  qiBox:SetFontObject("ChatFontNormal")
+  qiBox:SetWidth(500)
+  qiBox:SetTextInsets(6, 6, 6, 6)
+  qiBox:SetText("")
+  qiBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  qiBox:SetScript("OnCursorChanged", function(self, x, y, w, h)
+    if not qiScroll then return end
+    qiScroll:UpdateScrollChildRect()
+    local offset = qiScroll:GetVerticalScroll() or 0
+    local height = qiScroll:GetHeight() or 0
+    local top = -y
+    if top < offset then
+      qiScroll:SetVerticalScroll(top)
+    elseif top > offset + height - 20 then
+      qiScroll:SetVerticalScroll(top - height + 20)
+    end
+  end)
+
+  qiScroll:SetScrollChild(qiBox)
+  if AddPlaceholder then AddPlaceholder(qiBox, "Quest Info (what to display)") end
+
+  pQuest._questInfoScroll = qiScroll
+
+  local qidLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  qidLabel:SetPoint("TOPLEFT", 12, -190)
+  qidLabel:SetText("QuestID")
+
+  local questIDBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+  questIDBox:SetSize(90, 20)
+  questIDBox:SetPoint("TOPLEFT", 12, -206)
+  questIDBox:SetAutoFocus(false)
+  questIDBox:SetNumeric(true)
+  questIDBox:SetText("0")
+
+  local afterLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  afterLabel:SetPoint("TOPLEFT", 110, -190)
+  afterLabel:SetText("After Quest (optional)")
+
+  local afterBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+  afterBox:SetSize(120, 20)
+  afterBox:SetPoint("TOPLEFT", 110, -206)
+  afterBox:SetAutoFocus(false)
+  afterBox:SetNumeric(true)
+  afterBox:SetText("0")
+
+  local barLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  barLabel:SetPoint("TOPLEFT", 245, -190)
+  barLabel:SetText("Bar / List")
+
+  local factionLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  factionLabel:SetPoint("TOPLEFT", 410, -190)
+  factionLabel:SetText("Faction")
+
+  local qTitleLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  qTitleLabel:SetPoint("TOPLEFT", 12, -230)
+  qTitleLabel:SetText("Title (optional)")
+
+  local qTitleBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+  qTitleBox:SetSize(220, 20)
+  qTitleBox:SetPoint("TOPLEFT", 12, -246)
+  qTitleBox:SetAutoFocus(false)
+  qTitleBox:SetText("")
+  if AddPlaceholder then AddPlaceholder(qTitleBox, "Custom title (leave blank for quest name)") end
+
+  local colorLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  colorLabel:SetPoint("TOPLEFT", 12, -270)
+  colorLabel:SetText("Color")
+
+  local qLevelLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  qLevelLabel:SetPoint("TOPLEFT", 180, -270)
+  qLevelLabel:SetText("Player level")
+
+  local questFrameDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
+  questFrameDrop:SetPoint("TOPLEFT", 230, -218)
+
+  if UDDM_SetWidth then UDDM_SetWidth(questFrameDrop, 160) end
+  if UDDM_SetText then UDDM_SetText(questFrameDrop, GetFrameDisplayNameByID("list1")) end
+  pQuest._questTargetFrameID = "list1"
+
+  local questFactionDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
+  questFactionDrop:SetPoint("TOPLEFT", 395, -218)
+  if UDDM_SetWidth then UDDM_SetWidth(questFactionDrop, 140) end
+  if UDDM_SetText then UDDM_SetText(questFactionDrop, "Both (Off)") end
+  pQuest._questFaction = nil
+
+  local questColorDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
+  questColorDrop:SetPoint("TOPLEFT", -8, -298)
+  if UDDM_SetWidth then UDDM_SetWidth(questColorDrop, 160) end
+  if UDDM_SetText then UDDM_SetText(questColorDrop, "None") end
+  pQuest._questColor = nil
+  pQuest._questColorName = "None"
+
+  local qLevelOpDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
+  qLevelOpDrop:SetPoint("TOPLEFT", 165, -298)
+  if UDDM_SetWidth then UDDM_SetWidth(qLevelOpDrop, 70) end
+  if UDDM_SetText then UDDM_SetText(qLevelOpDrop, "Off") end
+  pQuest._playerLevelOp = nil
+
+  local qLevelBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+  qLevelBox:SetSize(50, 20)
+  qLevelBox:SetPoint("TOPLEFT", 270, -294)
+  qLevelBox:SetAutoFocus(false)
+  qLevelBox:SetNumeric(true)
+  qLevelBox:SetText("0")
+
+  local qLocLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  qLocLabel:SetPoint("TOPLEFT", 330, -270)
+  qLocLabel:SetText("LocationID (uiMapID)")
+
+  local qLocBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+  qLocBox:SetSize(90, 20)
+  qLocBox:SetPoint("TOPLEFT", 330, -294)
+  qLocBox:SetAutoFocus(false)
+  qLocBox:SetText("0")
+  if AttachLocationIDTooltip then AttachLocationIDTooltip(qLocBox) end
+
+  local function SetQuestColor(name)
+    if name == "None" then
+      pQuest._questColor = nil
+    elseif name == "Green" then
+      pQuest._questColor = { 0.1, 1.0, 0.1 }
+    elseif name == "Blue" then
+      pQuest._questColor = { 0.2, 0.6, 1.0 }
+    elseif name == "Yellow" then
+      pQuest._questColor = { 1.0, 0.9, 0.2 }
+    elseif name == "Red" then
+      pQuest._questColor = { 1.0, 0.2, 0.2 }
+    elseif name == "Cyan" then
+      pQuest._questColor = { 0.2, 1.0, 1.0 }
+    else
+      pQuest._questColor = nil
+      name = "None"
+    end
+    pQuest._questColorName = name
+    if UDDM_SetText then
+      if ColorLabel then
+        UDDM_SetText(questColorDrop, ColorLabel(name))
+      else
+        UDDM_SetText(questColorDrop, name)
+      end
+    end
+  end
+
+  if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
+    local modernQuestFrame = UseModernMenuDropDown and UseModernMenuDropDown(questFrameDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Bar / List") end
+      for _, def in ipairs(GetEffectiveFrames()) do
+        if type(def) == "table" and def.id and root then
+          local id = tostring(def.id)
+          local label = GetFrameDisplayNameByID(id)
+          if root.CreateRadio then
+            root:CreateRadio(label, function() return (pQuest._questTargetFrameID == id) end, function()
+              pQuest._questTargetFrameID = id
+              if UDDM_SetText then UDDM_SetText(questFrameDrop, GetFrameDisplayNameByID(id)) end
+            end)
+          elseif root.CreateButton then
+            root:CreateButton(label, function()
+              pQuest._questTargetFrameID = id
+              if UDDM_SetText then UDDM_SetText(questFrameDrop, GetFrameDisplayNameByID(id)) end
+            end)
+          end
+        end
+      end
+    end)
+
+    local modernQuestFaction = UseModernMenuDropDown and UseModernMenuDropDown(questFactionDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Faction") end
+      local function Add(name, v)
+        if not root then return end
+        if root.CreateRadio then
+          root:CreateRadio(name, function() return (pQuest._questFaction == v) end, function()
+            pQuest._questFaction = v
+            if UDDM_SetText then
+              if FactionLabel then
+                UDDM_SetText(questFactionDrop, FactionLabel(v))
+              else
+                UDDM_SetText(questFactionDrop, name)
+              end
+            end
+          end)
+        elseif root.CreateButton then
+          root:CreateButton(name, function()
+            pQuest._questFaction = v
+            if UDDM_SetText then
+              if FactionLabel then
+                UDDM_SetText(questFactionDrop, FactionLabel(v))
+              else
+                UDDM_SetText(questFactionDrop, name)
+              end
+            end
+          end)
+        end
+      end
+      Add("Both (Off)", nil)
+      Add("Alliance", "Alliance")
+      Add("Horde", "Horde")
+    end)
+
+    local modernQuestColor = UseModernMenuDropDown and UseModernMenuDropDown(questColorDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Color") end
+      for _, name in ipairs({ "None", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
+        if root and root.CreateRadio then
+          root:CreateRadio(name, function() return (pQuest._questColorName == name) end, function() SetQuestColor(name) end)
+        elseif root and root.CreateButton then
+          root:CreateButton(name, function() SetQuestColor(name) end)
+        end
+      end
+    end)
+
+    local modernLevelOp = UseModernMenuDropDown and UseModernMenuDropDown(qLevelOpDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Player level") end
+      local function Add(name, op)
+        if not root then return end
+        if root.CreateRadio then
+          root:CreateRadio(name, function() return (pQuest._playerLevelOp == op) end, function()
+            pQuest._playerLevelOp = op
+            if UDDM_SetText then UDDM_SetText(qLevelOpDrop, name) end
+          end)
+        elseif root.CreateButton then
+          root:CreateButton(name, function()
+            pQuest._playerLevelOp = op
+            if UDDM_SetText then UDDM_SetText(qLevelOpDrop, name) end
+          end)
+        end
+      end
+      Add("Off", nil)
+      Add("<", "<")
+      Add("<=", "<=")
+      Add("=", "=")
+      Add(">=", ">=")
+      Add(">", ">")
+      Add("!=", "!=")
+    end)
+
+    if not modernQuestFrame then
+      UDDM_Initialize(questFrameDrop, function(self, level)
+        local info = UDDM_CreateInfo()
+        for _, def in ipairs(GetEffectiveFrames()) do
+          if type(def) == "table" and def.id then
+            local id = tostring(def.id)
+            info.text = GetFrameDisplayNameByID(id)
+            info.checked = (pQuest._questTargetFrameID == id) and true or false
+            info.func = function()
+              pQuest._questTargetFrameID = id
+              if UDDM_SetText then UDDM_SetText(questFrameDrop, GetFrameDisplayNameByID(id)) end
+            end
+            UDDM_AddButton(info)
+          end
+        end
+      end)
+    end
+
+    if not modernQuestFaction then
+      UDDM_Initialize(questFactionDrop, function(self, level)
+        do
+          local info = UDDM_CreateInfo()
+          info.text = "Both (Off)"
+          info.checked = (pQuest._questFaction == nil) and true or false
+          info.func = function()
+            pQuest._questFaction = nil
+            if UDDM_SetText then
+              if FactionLabel then
+                UDDM_SetText(questFactionDrop, FactionLabel(nil))
+              else
+                UDDM_SetText(questFactionDrop, "Both (Off)")
+              end
+            end
+          end
+          UDDM_AddButton(info)
+        end
+
+        do
+          local info = UDDM_CreateInfo()
+          info.text = "Alliance"
+          info.checked = (pQuest._questFaction == "Alliance") and true or false
+          info.func = function()
+            pQuest._questFaction = "Alliance"
+            if UDDM_SetText then
+              if FactionLabel then
+                UDDM_SetText(questFactionDrop, FactionLabel("Alliance"))
+              else
+                UDDM_SetText(questFactionDrop, "Alliance")
+              end
+            end
+          end
+          UDDM_AddButton(info)
+        end
+
+        do
+          local info = UDDM_CreateInfo()
+          info.text = "Horde"
+          info.checked = (pQuest._questFaction == "Horde") and true or false
+          info.func = function()
+            pQuest._questFaction = "Horde"
+            if UDDM_SetText then
+              if FactionLabel then
+                UDDM_SetText(questFactionDrop, FactionLabel("Horde"))
+              else
+                UDDM_SetText(questFactionDrop, "Horde")
+              end
+            end
+          end
+          UDDM_AddButton(info)
+        end
+      end)
+    end
+
+    if not modernQuestColor then
+      UDDM_Initialize(questColorDrop, function(self, level)
+        for _, name in ipairs({ "None", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
+          local info = UDDM_CreateInfo()
+          info.text = name
+          info.checked = (pQuest._questColorName == name) and true or false
+          info.func = function() SetQuestColor(name) end
+          UDDM_AddButton(info)
+        end
+      end)
+    end
+
+    if not modernLevelOp then
+      UDDM_Initialize(qLevelOpDrop, function(self, level)
+        local function Add(name, op)
+          local info = UDDM_CreateInfo()
+          info.text = name
+          info.checked = (pQuest._playerLevelOp == op) and true or false
+          info.func = function()
+            pQuest._playerLevelOp = op
+            if UDDM_SetText then UDDM_SetText(qLevelOpDrop, name) end
+          end
+          UDDM_AddButton(info)
+        end
+        Add("Off", nil)
+        Add("<", "<")
+        Add("<=", "<=")
+        Add("=", "=")
+        Add(">=", ">=")
+        Add(">", ">")
+        Add("!=", "!=")
+      end)
+    end
+  else
+    -- fallback: simple editbox if dropdown template is unavailable
+    local fb = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+    fb:SetSize(80, 20)
+    fb:SetPoint("TOPLEFT", 245, -206)
+    fb:SetAutoFocus(false)
+    fb:SetText("list1")
+    fb:SetScript("OnEnterPressed", function(self)
+      local v = tostring(self:GetText() or ""):gsub("%s+", "")
+      if v == "" then v = "list1" end
+      pQuest._questTargetFrameID = v
+      self:SetText(v)
+      self:ClearFocus()
+    end)
+    pQuest._questFrameFallbackBox = fb
+    questFrameDrop:Hide()
+
+    local fbf = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+    fbf:SetSize(80, 20)
+    fbf:SetPoint("TOPLEFT", 410, -206)
+    fbf:SetAutoFocus(false)
+    fbf:SetText("both")
+    fbf:SetScript("OnEnterPressed", function(self)
+      local v = tostring(self:GetText() or ""):lower():gsub("%s+", "")
+      if v == "a" or v == "alliance" then
+        pQuest._questFaction = "Alliance"
+        self:SetText("Alliance")
+      elseif v == "h" or v == "horde" then
+        pQuest._questFaction = "Horde"
+        self:SetText("Horde")
+      else
+        pQuest._questFaction = nil
+        self:SetText("both")
+      end
+      self:ClearFocus()
+    end)
+    pQuest._questFactionFallbackBox = fbf
+    questFactionDrop:Hide()
+
+    local cfb = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+    cfb:SetSize(80, 20)
+    cfb:SetPoint("TOPLEFT", 12, -292)
+    cfb:SetAutoFocus(false)
+    cfb:SetText("none")
+    cfb:SetScript("OnEnterPressed", function(self)
+      local v = tostring(self:GetText() or ""):lower():gsub("%s+", "")
+      if v == "green" then
+        pQuest._questColor = { 0.1, 1.0, 0.1 }
+      elseif v == "blue" then
+        pQuest._questColor = { 0.2, 0.6, 1.0 }
+      elseif v == "yellow" then
+        pQuest._questColor = { 1.0, 0.9, 0.2 }
+      elseif v == "red" then
+        pQuest._questColor = { 1.0, 0.2, 0.2 }
+      elseif v == "cyan" then
+        pQuest._questColor = { 0.2, 1.0, 1.0 }
+      else
+        pQuest._questColor = nil
+        v = "none"
+      end
+      self:SetText(v)
+      self:ClearFocus()
+    end)
+    pQuest._questColorFallbackBox = cfb
+    questColorDrop:Hide()
+
+    qLevelOpDrop:Hide()
+    qLevelLabel:Hide()
+    qLevelBox:Hide()
+  end
+
+  local addQuestBtn = CreateFrame("Button", nil, pQuest, "UIPanelButtonTemplate")
+  addQuestBtn:SetSize(140, 22)
+  addQuestBtn:SetPoint("TOPLEFT", 12, -340)
+  addQuestBtn:SetText("Add Quest Rule")
+
+  pQuest._questIDBox = questIDBox
+  pQuest._questInfoBox = qiBox
+  pQuest._questAfterBox = afterBox
+  pQuest._titleBox = qTitleBox
+  pQuest._locBox = qLocBox
+  pQuest._questFrameDrop = questFrameDrop
+  pQuest._questFactionDrop = questFactionDrop
+  pQuest._questColorDrop = questColorDrop
+  pQuest._qLevelOpDrop = qLevelOpDrop
+  pQuest._qLevelBox = qLevelBox
+  pQuest._addQuestBtn = addQuestBtn
+
+  local function ClearQuestInputs()
+    if qiBox then qiBox:SetText("") end
+    if qiScroll and qiScroll.SetVerticalScroll then qiScroll:SetVerticalScroll(0) end
+    if questIDBox then questIDBox:SetText("0") end
+    if afterBox then afterBox:SetText("0") end
+    if qTitleBox then qTitleBox:SetText("") end
+    if qLocBox then qLocBox:SetText("0") end
+
+    pQuest._questTargetFrameID = "list1"
+    if UDDM_SetText and questFrameDrop then UDDM_SetText(questFrameDrop, GetFrameDisplayNameByID("list1")) end
+    if pQuest._questFrameFallbackBox then pQuest._questFrameFallbackBox:SetText("list1") end
+
+    pQuest._questFaction = nil
+    if UDDM_SetText and questFactionDrop and FactionLabel then UDDM_SetText(questFactionDrop, FactionLabel(nil)) end
+    if pQuest._questFactionFallbackBox then pQuest._questFactionFallbackBox:SetText("both") end
+
+    pQuest._questColor = nil
+    pQuest._questColorName = "None"
+    if UDDM_SetText and questColorDrop then UDDM_SetText(questColorDrop, "None") end
+    if pQuest._questColorFallbackBox then pQuest._questColorFallbackBox:SetText("none") end
+
+    pQuest._playerLevelOp = nil
+    if UDDM_SetText and qLevelOpDrop then UDDM_SetText(qLevelOpDrop, "Off") end
+    if qLevelBox then qLevelBox:SetText("0") end
+  end
+
+  local cancelQuestEditBtn = CreateFrame("Button", nil, pQuest, "UIPanelButtonTemplate")
+  cancelQuestEditBtn:SetSize(120, 22)
+  cancelQuestEditBtn:SetPoint("LEFT", addQuestBtn, "RIGHT", 8, 0)
+  cancelQuestEditBtn:SetText("Cancel Edit")
+  cancelQuestEditBtn:Hide()
+  pQuest._cancelEditBtn = cancelQuestEditBtn
+
+  -- Quick color palette for quest text color
+  if CreateQuickColorPalette then
+    CreateQuickColorPalette(pQuest, addQuestBtn, "TOPLEFT", "TOPLEFT", 0, 33, {
+      cols = 5,
+      getColor = function()
+        if type(pQuest._questColor) == "table" then
+          return pQuest._questColor[1], pQuest._questColor[2], pQuest._questColor[3]
+        end
+        return nil
+      end,
+      onPick = function(r, g, b)
+        pQuest._questColor = { r, g, b }
+        pQuest._questColorName = "Custom"
+        if UDDM_SetText and ColorLabel then UDDM_SetText(questColorDrop, ColorLabel("Custom")) end
+      end,
+    })
+  end
+
+  addQuestBtn:SetScript("OnClick", function()
+    local questID = tonumber(questIDBox:GetText() or "")
+    if not questID or questID <= 0 then
+      Print("Enter a questID > 0.")
+      return
+    end
+
+    local targetFrame = tostring(pQuest._questTargetFrameID or ""):gsub("%s+", "")
+    if targetFrame == "" then targetFrame = "list1" end
+
+    local infoText = tostring(qiBox:GetText() or "")
+    infoText = infoText:gsub("\r\n?", "\n")
+    -- Preserve leading spaces/tabs for indentation; only strip trailing whitespace and blank-line padding.
+    infoText = infoText:gsub("^\n+", ""):gsub("\n+$", "")
+    infoText = infoText:gsub("%s+$", "")
+    local questInfo = (infoText ~= "") and infoText or nil
+
+    local titleText = tostring(qTitleBox:GetText() or "")
+    titleText = titleText:gsub("^%s+", ""):gsub("%s+$", "")
+    local title = (titleText ~= "") and titleText or nil
+
+    local afterID = tonumber(afterBox:GetText() or "")
+    local prereq = nil
+    if afterID and afterID > 0 then
+      prereq = { afterID }
+    end
+
+    local locText = tostring(qLocBox:GetText() or ""):gsub("%s+", "")
+    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
+
+    local rules = GetCustomRules()
+    if pQuest._editingCustomIndex and type(rules[pQuest._editingCustomIndex]) == "table" then
+      local rule = rules[pQuest._editingCustomIndex]
+      rule.questID = questID
+      rule.frameID = targetFrame
+      rule.questInfo = questInfo
+      rule.label = title
+      rule.prereq = prereq
+      rule.faction = pQuest._questFaction
+      rule.color = pQuest._questColor
+      rule.locationID = locationID
+
+      local op = pQuest._playerLevelOp
+      local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
+      if lvl and lvl <= 0 then lvl = nil end
+      if op and lvl then
+        rule.playerLevelOp = op
+        rule.playerLevel = lvl
+      else
+        rule.playerLevelOp = nil
+        rule.playerLevel = nil
+      end
+      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = true end
+
+      pQuest._editingCustomIndex = nil
+      pQuest._editingDefaultBase = nil
+      pQuest._editingDefaultKey = nil
+      addQuestBtn:SetText("Add Quest Rule")
+      cancelQuestEditBtn:Hide()
+      Print("Saved quest rule.")
+    elseif pQuest._editingDefaultBase and pQuest._editingDefaultKey and type(GetDefaultRuleEdits) == "function" then
+      local edits = GetDefaultRuleEdits()
+      local base = pQuest._editingDefaultBase
+      local key = tostring(pQuest._editingDefaultKey)
+      local effective = (type(edits[key]) == "table") and edits[key] or base
+      local rule = DeepCopyValue(effective)
+
+      rule.questID = questID
+      rule.frameID = targetFrame
+      rule.questInfo = questInfo
+      rule.label = title
+      rule.prereq = prereq
+      rule.faction = pQuest._questFaction
+      rule.color = pQuest._questColor
+      rule.locationID = locationID
+
+      local op = pQuest._playerLevelOp
+      local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
+      if lvl and lvl <= 0 then lvl = nil end
+      if op and lvl then
+        rule.playerLevelOp = op
+        rule.playerLevel = lvl
+      else
+        rule.playerLevelOp = nil
+        rule.playerLevel = nil
+      end
+      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = true end
+
+      if base and base.key ~= nil then rule.key = tostring(base.key) end
+      edits[key] = rule
+
+      pQuest._editingCustomIndex = nil
+      pQuest._editingDefaultBase = nil
+      pQuest._editingDefaultKey = nil
+      addQuestBtn:SetText("Add Quest Rule")
+      cancelQuestEditBtn:Hide()
+      Print("Saved default quest rule edit.")
+    else
+      local key = string.format("custom:q:%d:%s:%d", tostring(questID), tostring(targetFrame), (#rules + 1))
+
+      local op = pQuest._playerLevelOp
+      local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
+      if lvl and lvl <= 0 then lvl = nil end
+      if not (op and lvl) then op = nil; lvl = nil end
+
+      rules[#rules + 1] = {
+        key = key,
+        questID = questID,
+        frameID = targetFrame,
+        questInfo = questInfo,
+        label = title,
+        prereq = prereq,
+        faction = pQuest._questFaction,
+        color = pQuest._questColor,
+        locationID = locationID,
+        playerLevelOp = op,
+        playerLevel = lvl,
+        hideWhenCompleted = true,
+      }
+
+      Print("Added quest rule for quest " .. questID .. " -> " .. targetFrame)
+    end
+
+    if CreateAllFrames then CreateAllFrames() end
+    if RefreshAll then RefreshAll() end
+    if RefreshRulesList then RefreshRulesList() end
+    if not GetKeepEditFormOpen() then
+      ClearQuestInputs()
+      if SelectTab then SelectTab("rules") end
+    end
+  end)
+
+  cancelQuestEditBtn:SetScript("OnClick", function()
+    pQuest._editingCustomIndex = nil
+    pQuest._editingDefaultBase = nil
+    pQuest._editingDefaultKey = nil
+    addQuestBtn:SetText("Add Quest Rule")
+    cancelQuestEditBtn:Hide()
+
+    if not GetKeepEditFormOpen() then
+      ClearQuestInputs()
+      if SelectTab then SelectTab("rules") end
+    end
+  end)
+end

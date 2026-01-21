@@ -490,11 +490,7 @@ local function EnsureOptionsFrame()
     end
   end)
 
-  -- QUEST tab
-  local questTitle = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  questTitle:SetPoint("TOPLEFT", 12, -40)
-  questTitle:SetText("Quest")
-
+  -- Shared options helpers (used across multiple tabs and module builders)
   local function AddPlaceholder(editBox, text)
     if not (editBox and editBox.CreateFontString) then return end
     local ph = editBox:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -562,6 +558,125 @@ local function EnsureOptionsFrame()
       if GameTooltip then GameTooltip:Hide() end
     end)
   end
+
+  local function ColorLabel(v)
+    if v == nil then return "None" end
+    if type(v) == "string" then return v end
+    return "Custom"
+  end
+
+  local function FactionLabel(v)
+    v = tostring(v or "")
+    if v == "Alliance" then return "Alliance" end
+    if v == "Horde" then return "Horde" end
+    return "Both (Off)"
+  end
+
+  local optionsCtx
+  local function GetOptionsCtx()
+    if optionsCtx then return optionsCtx end
+
+    local UDDM_SetWidth = _G and rawget(_G, "UIDropDownMenu_SetWidth")
+    local UDDM_SetText = _G and rawget(_G, "UIDropDownMenu_SetText")
+    local UDDM_Initialize = _G and rawget(_G, "UIDropDownMenu_Initialize")
+    local UDDM_CreateInfo = _G and rawget(_G, "UIDropDownMenu_CreateInfo")
+    local UDDM_AddButton = _G and rawget(_G, "UIDropDownMenu_AddButton")
+
+    optionsCtx = {
+      optionsFrame = f,
+      panels = panels,
+
+      Print = Print,
+      CreateFrame = CreateFrame,
+
+      ApplyFAOBackdrop = ApplyFAOBackdrop,
+      GetCalendarDebugEvents = GetCalendarDebugEvents,
+
+      UseModernMenuDropDown = UseModernMenuDropDown,
+      GetEffectiveFrames = GetEffectiveFrames,
+      GetCustomFrames = GetCustomFrames,
+      GetFrameDisplayNameByID = GetFrameDisplayNameByID,
+      GetItemNameSafe = GetItemNameSafe,
+      GetQuestTitle = GetQuestTitle,
+
+      GetUISetting = GetUISetting,
+      SetUISetting = SetUISetting,
+
+      CreateQuickColorPalette = CreateQuickColorPalette,
+      SetCheckButtonLabel = SetCheckButtonLabel,
+
+      GetCustomRules = GetCustomRules,
+      GetCustomRulesTrash = GetCustomRulesTrash,
+      EnsureUniqueKeyForCustomRule = EnsureUniqueKeyForCustomRule,
+      IsRuleDisabled = IsRuleDisabled,
+      ToggleRuleDisabled = ToggleRuleDisabled,
+      OpenCustomRuleInTab = function(...)
+        if ns and ns.OpenCustomRuleInTab then
+          return ns.OpenCustomRuleInTab(...)
+        end
+      end,
+      OpenDefaultRuleInTab = function(...)
+        if ns and ns.OpenDefaultRuleInTab then
+          return ns.OpenDefaultRuleInTab(...)
+        end
+      end,
+      DeepCopyValue = DeepCopyValue,
+      GetDefaultRuleEdits = function()
+        if ns and ns.GetDefaultRuleEdits then
+          return ns.GetDefaultRuleEdits() or {}
+        end
+        return {}
+      end,
+
+      CreateAllFrames = CreateAllFrames,
+      DestroyFrameByID = DestroyFrameByID,
+      ShallowCopyTable = ShallowCopyTable,
+      UpdateReverseOrderVisibility = UpdateReverseOrderVisibility,
+      RefreshAll = RefreshAll,
+      RefreshFramesList = function() if RefreshFramesList then return RefreshFramesList() end end,
+      SetRefreshFramesList = function(fn)
+        if type(fn) == "function" then
+          RefreshFramesList = fn
+        end
+      end,
+      RefreshRulesList = function() if RefreshRulesList then return RefreshRulesList() end end,
+      SetRefreshRulesList = function(fn)
+        if type(fn) == "function" then
+          RefreshRulesList = fn
+        end
+      end,
+
+      GetKeepEditFormOpen = GetKeepEditFormOpen,
+      SelectTab = SelectTab,
+
+      AddPlaceholder = AddPlaceholder,
+      HideInputBoxTemplateArt = HideInputBoxTemplateArt,
+      HideDropDownMenuArt = HideDropDownMenuArt,
+      AttachLocationIDTooltip = AttachLocationIDTooltip,
+
+      UDDM_SetWidth = UDDM_SetWidth,
+      UDDM_SetText = UDDM_SetText,
+      UDDM_Initialize = UDDM_Initialize,
+      UDDM_CreateInfo = UDDM_CreateInfo,
+      UDDM_AddButton = UDDM_AddButton,
+
+      ColorLabel = ColorLabel,
+      FactionLabel = FactionLabel,
+    }
+
+    return optionsCtx
+  end
+
+  -- QUEST tab (Quest module)
+  local useQuestModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildQuest) == "function"
+  if useQuestModule then
+    ns.FQTOptionsPanels.BuildQuest(GetOptionsCtx())
+  else
+    -- Legacy Quest tab UI moved to fr0z3nUI_QuestTrackerQuest.lua
+    if false then
+  local questTitle = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  questTitle:SetPoint("TOPLEFT", 12, -40)
+  questTitle:SetText("Quest")
 
   local qiLabel = panels.quest:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   qiLabel:SetPoint("TOPLEFT", 12, -70)
@@ -695,12 +810,6 @@ local function EnsureOptionsFrame()
   qLocBox:SetText("0")
   AttachLocationIDTooltip(qLocBox)
 
-  local function ColorLabel(v)
-    if v == nil then return "None" end
-    if type(v) == "string" then return v end
-    return "Custom"
-  end
-
   local function SetQuestColor(name)
     if name == "None" then
       panels.quest._questColor = nil
@@ -720,13 +829,8 @@ local function EnsureOptionsFrame()
     end
     panels.quest._questColorName = name
     if UDDM_SetText then UDDM_SetText(questColorDrop, ColorLabel(name)) end
-  end
+    end
 
-  local function FactionLabel(v)
-    v = tostring(v or "")
-    if v == "Alliance" then return "Alliance" end
-    if v == "Horde" then return "Horde" end
-    return "Both (Off)"
   end
 
   if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
@@ -1181,7 +1285,15 @@ local function EnsureOptionsFrame()
     end
   end)
 
-  -- ITEMS tab
+  end
+
+  -- ITEMS tab (Items module)
+  local useItemsModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildItems) == "function"
+  if useItemsModule then
+    ns.FQTOptionsPanels.BuildItems(GetOptionsCtx())
+  else
+    -- Legacy Items tab UI moved to fr0z3nUI_QuestTrackerItems.lua
+    if false then
   do
   local pItems = panels.items
 
@@ -2067,7 +2179,17 @@ local function EnsureOptionsFrame()
 
   end
 
-  -- TEXT tab
+    end
+
+  end
+
+  -- TEXT tab (Text module)
+  local useTextModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildText) == "function"
+  if useTextModule then
+    ns.FQTOptionsPanels.BuildText(GetOptionsCtx())
+  else
+    -- Legacy Text tab UI moved to fr0z3nUI_QuestTrackerText.lua
+    if false then
   do
   local textTitle = panels.text:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   textTitle:SetPoint("TOPLEFT", 12, -40)
@@ -2859,8 +2981,18 @@ local function EnsureOptionsFrame()
 
   end
 
-  -- SPELLS tab
+    end
+
+  end
+
+  -- SPELLS tab (Spells module)
   do
+    local useSpellsModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildSpells) == "function"
+    if useSpellsModule then
+      ns.FQTOptionsPanels.BuildSpells(GetOptionsCtx())
+    else
+      -- Legacy spells UI moved to fr0z3nUI_QuestTrackerSpells.lua
+      if false then
   local spellsTitle = panels.spells:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   spellsTitle:SetPoint("TOPLEFT", 12, -40)
   spellsTitle:SetText("Spells")
@@ -3707,6 +3839,9 @@ local function EnsureOptionsFrame()
     end
   end)
 
+      end
+
+    end
   end
 
   local function ClearTabEdits()
@@ -3816,8 +3951,8 @@ local function EnsureOptionsFrame()
       end
 
       panels.quest._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and qLevelOpDrop then UDDM_SetText(qLevelOpDrop, panels.quest._playerLevelOp or "Off") end
-      if qLevelBox then qLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+      if UDDM_SetText and panels.quest._qLevelOpDrop then UDDM_SetText(panels.quest._qLevelOpDrop, panels.quest._playerLevelOp or "Off") end
+      if panels.quest._qLevelBox then panels.quest._qLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
       return
     end
 
@@ -4057,6 +4192,8 @@ local function EnsureOptionsFrame()
     if panels.text._textLevelBox then panels.text._textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
   end
 
+  ns.OpenCustomRuleInTab = OpenCustomRuleInTab
+
   local function OpenDefaultRuleInTab(baseRule)
     if not optionsFrame then return end
     if type(baseRule) ~= "table" then return end
@@ -4110,8 +4247,8 @@ local function EnsureOptionsFrame()
       end
 
       panels.quest._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and qLevelOpDrop then UDDM_SetText(qLevelOpDrop, panels.quest._playerLevelOp or "Off") end
-      if qLevelBox then qLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+      if UDDM_SetText and panels.quest._qLevelOpDrop then UDDM_SetText(panels.quest._qLevelOpDrop, panels.quest._playerLevelOp or "Off") end
+      if panels.quest._qLevelBox then panels.quest._qLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
       return
     end
 
@@ -4354,7 +4491,15 @@ local function EnsureOptionsFrame()
     if panels.text._textLevelBox then panels.text._textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
   end
 
-  -- RULES tab (existing custom rules UI)
+  ns.OpenDefaultRuleInTab = OpenDefaultRuleInTab
+
+  -- RULES tab (Rules module)
+  local useRulesModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildRules) == "function"
+  if useRulesModule then
+    ns.FQTOptionsPanels.BuildRules(GetOptionsCtx())
+  else
+    -- Legacy Rules tab UI moved to fr0z3nUI_QuestTrackerRules.lua
+    if false then
   local rulesTitle = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   rulesTitle:SetPoint("TOPLEFT", 12, -40)
   rulesTitle:SetText("Rules")
@@ -5467,6 +5612,17 @@ local function EnsureOptionsFrame()
   end)
   f._rulesContent = rulesContent
   f._ruleRows = {}
+
+    end
+  end
+
+  -- FRAMES tab (Frames module)
+  local useFramesModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildFrames) == "function"
+  if useFramesModule then
+    ns.FQTOptionsPanels.BuildFrames(GetOptionsCtx())
+  else
+    -- Legacy Frames tab UI moved to fr0z3nUI_QuestTrackerFrames.lua
+    if false then
 
   -- FRAMES tab
   local framesTitle = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -6730,6 +6886,10 @@ local function EnsureOptionsFrame()
     end
   end
 
+    end
+  end
+
+  if not (type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildRules) == "function") then
   RefreshRulesList = function()
     if not optionsFrame then return end
 
@@ -7439,6 +7599,7 @@ local function EnsureOptionsFrame()
     for i = #list + 1, #rows do
       if rows[i] then rows[i]:Hide() end
     end
+  end
   end
 
   RefreshActiveTab = function()
