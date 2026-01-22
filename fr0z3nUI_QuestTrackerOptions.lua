@@ -37,6 +37,15 @@ local FindCustomRuleIndex = ns.FindCustomRuleIndex
 local UnassignRuleFromFrame = ns.UnassignRuleFromFrame
 local GetCalendarDebugEvents = ns.GetCalendarDebugEvents
 
+-- UIDropDownMenu helpers (file-scope so diagnostics don't report undefined globals)
+local UDDM_SetWidth = _G and rawget(_G, "UIDropDownMenu_SetWidth")
+local UDDM_SetText = _G and rawget(_G, "UIDropDownMenu_SetText")
+local UDDM_Initialize = _G and rawget(_G, "UIDropDownMenu_Initialize")
+local UDDM_CreateInfo = _G and rawget(_G, "UIDropDownMenu_CreateInfo")
+local UDDM_AddButton = _G and rawget(_G, "UIDropDownMenu_AddButton")
+local UDDM_Enable = _G and rawget(_G, "UIDropDownMenu_EnableDropDown")
+local UDDM_Disable = _G and rawget(_G, "UIDropDownMenu_DisableDropDown")
+
 local function UseModernMenuDropDown(dropdown, build)
   local mu = _G and rawget(_G, "MenuUtil")
   if not (type(mu) == "table" and type(mu.CreateContextMenu) == "function") then
@@ -829,8 +838,6 @@ local function EnsureOptionsFrame()
     end
     panels.quest._questColorName = name
     if UDDM_SetText then UDDM_SetText(questColorDrop, ColorLabel(name)) end
-    end
-
   end
 
   if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
@@ -7715,6 +7722,8 @@ local function EnsureOptionsFrame()
   SelectTab(initial)
   UpdateReverseOrderVisibility(initial)
   return f
+end
+
 end
 
 local function ShowOptions()
