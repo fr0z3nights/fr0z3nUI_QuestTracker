@@ -44,9 +44,55 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   local UDDM_CreateInfo = ctx.UDDM_CreateInfo
   local UDDM_AddButton = ctx.UDDM_AddButton
 
+  local GetRuleExpansionChoices = ctx.GetRuleExpansionChoices
+  local GetRuleCreateExpansion = ctx.GetRuleCreateExpansion
+  local SetRuleCreateExpansion = ctx.SetRuleCreateExpansion
+  local SyncRuleCreateExpansionDrops = ctx.SyncRuleCreateExpansionDrops
+
   local textTitle = panels.text:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   textTitle:SetPoint("TOPLEFT", 12, -40)
   textTitle:SetText("Text")
+
+  -- Expansion selector (stamped onto new/edited rules as _expansionID/_expansionName)
+  local expLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  expLabel:SetPoint("TOPRIGHT", panels.text, "TOPRIGHT", -12, -40)
+  expLabel:SetText("Expansion")
+
+  local expDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
+  expDrop:SetPoint("TOPRIGHT", panels.text, "TOPRIGHT", -6, -54)
+  if UDDM_SetWidth then UDDM_SetWidth(expDrop, 180) end
+  if UDDM_SetText then UDDM_SetText(expDrop, "") end
+  panels.text._expansionDrop = expDrop
+
+  local function ResolveExpansionNameByID(id)
+    id = tonumber(id)
+    if not id then return nil end
+    local list = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or {}
+    for _, e in ipairs(list) do
+      if type(e) == "table" and tonumber(e.id) == id and type(e.name) == "string" and e.name ~= "" then
+        return e.name
+      end
+    end
+    return nil
+  end
+
+  function panels.text:_syncRuleCreateExpansion()
+    local id, name = nil, nil
+    if type(GetRuleCreateExpansion) == "function" then
+      id, name = GetRuleCreateExpansion()
+    end
+    if not name and id then
+      name = ResolveExpansionNameByID(id)
+    end
+    local label = name or "Weekly"
+    if UDDM_SetText and expDrop then UDDM_SetText(expDrop, label) end
+  end
+
+  if type(SyncRuleCreateExpansionDrops) == "function" then
+    SyncRuleCreateExpansionDrops()
+  elseif panels.text._syncRuleCreateExpansion then
+    panels.text:_syncRuleCreateExpansion()
+  end
 
   local function EnsureCalendarPopout()
     if not f then return nil end
@@ -411,6 +457,59 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       if UDDM_SetText then UDDM_SetText(textColorDrop, name) end
     end
 
+    local modernTextExpansion = UseModernMenuDropDown and UseModernMenuDropDown(expDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Expansion") end
+      local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+      for _, e in ipairs(choices) do
+        if type(e) == "table" then
+          local id, name = e.id, e.name
+          local function IsSelected()
+            local curID, curName = nil, nil
+            if type(GetRuleCreateExpansion) == "function" then
+              curID, curName = GetRuleCreateExpansion()
+            end
+            return (tonumber(curID) == tonumber(id)) or (curName ~= nil and curName == name)
+          end
+          local function SetSelected()
+            if type(SetRuleCreateExpansion) == "function" then
+              SetRuleCreateExpansion(id, name)
+            end
+          end
+          if root and root.CreateRadio then
+            root:CreateRadio(name or "Weekly", IsSelected, SetSelected)
+          elseif root and root.CreateButton then
+            root:CreateButton(name or "Weekly", SetSelected)
+          end
+        end
+      end
+    end)
+
+    if not modernTextExpansion then
+      UDDM_Initialize(expDrop, function(self, level)
+        local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+        for _, e in ipairs(choices) do
+          if type(e) == "table" then
+            local id, name = e.id, e.name
+            local info = UDDM_CreateInfo()
+            info.text = name or "Weekly"
+            info.checked = function()
+              local curID, curName = nil, nil
+              if type(GetRuleCreateExpansion) == "function" then
+                curID, curName = GetRuleCreateExpansion()
+              end
+              return (tonumber(curID) == tonumber(id)) or (curName ~= nil and curName == name)
+            end
+            info.func = function()
+              if type(SetRuleCreateExpansion) == "function" then
+                SetRuleCreateExpansion(id, name)
+              end
+            end
+            UDDM_AddButton(info)
+          end
+        end
+      end)
+    end
+
     local modernTextFrame = UseModernMenuDropDown and UseModernMenuDropDown(textFrameDrop, function(root)
       if root and root.CreateTitle then root:CreateTitle("Bar / List") end
       for _, def in ipairs(GetEffectiveFrames()) do
@@ -720,6 +819,13 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     local locText = tostring(textLocBox:GetText() or ""):gsub("%s+", "")
     local locationID = (locText ~= "" and locText ~= "0") and locText or nil
 
+    -- Expansion selection (shared across all rule create tabs)
+    local expID, expName = nil, nil
+    if type(GetRuleCreateExpansion) == "function" then
+      expID, expName = GetRuleCreateExpansion()
+    end
+    if not expName and expID then expName = ResolveExpansionNameByID(expID) end
+
     local rules = GetCustomRules()
     if panels.text._editingCustomIndex and type(rules[panels.text._editingCustomIndex]) == "table" then
       local rule = rules[panels.text._editingCustomIndex]
@@ -731,6 +837,14 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       rule.rep = rep
       rule.restedOnly = textRestedOnly:GetChecked() and true or false
       rule.locationID = locationID
+
+      if expID then
+        rule._expansionID = expID
+        rule._expansionName = expName
+      else
+        rule._expansionID = nil
+        rule._expansionName = nil
+      end
 
       local op = panels.text._playerLevelOp
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
@@ -767,6 +881,14 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       rule.restedOnly = textRestedOnly:GetChecked() and true or false
       rule.locationID = locationID
 
+      if expID then
+        rule._expansionID = expID
+        rule._expansionName = expName
+      else
+        rule._expansionID = nil
+        rule._expansionName = nil
+      end
+
       local op = panels.text._playerLevelOp
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
@@ -794,7 +916,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if not (op and lvl) then op = nil; lvl = nil end
-      rules[#rules + 1] = {
+      local r = {
         key = key,
         frameID = targetFrame,
         label = nameText,
@@ -808,6 +930,13 @@ function ns.FQTOptionsPanels.BuildText(ctx)
         playerLevel = lvl,
         hideWhenCompleted = false,
       }
+
+      if expID then
+        r._expansionID = expID
+        r._expansionName = expName
+      end
+
+      rules[#rules + 1] = r
 
       Print("Added text entry -> " .. targetFrame)
     end

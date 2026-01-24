@@ -58,6 +58,44 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
   if UDDM_SetText then UDDM_SetText(rulesViewDrop, "All") end
   optionsFrame._rulesViewDrop = rulesViewDrop
 
+  local rulesCategoryDrop = CreateFrame("Frame", nil, panels.rules, "UIDropDownMenuTemplate")
+  rulesCategoryDrop:SetPoint("TOPRIGHT", rulesViewDrop, "TOPLEFT", -6, 0)
+  if UDDM_SetWidth then UDDM_SetWidth(rulesCategoryDrop, 120) end
+  if UDDM_SetText then UDDM_SetText(rulesCategoryDrop, "Any Category") end
+  optionsFrame._rulesCategoryDrop = rulesCategoryDrop
+
+  local rulesCategoryDropHit = CreateFrame("Button", nil, panels.rules)
+  rulesCategoryDropHit:EnableMouse(true)
+  rulesCategoryDropHit:SetAlpha(0.01)
+  rulesCategoryDropHit:SetPoint("TOPLEFT", rulesCategoryDrop, "TOPLEFT", 18, -2)
+  rulesCategoryDropHit:SetPoint("BOTTOMRIGHT", rulesCategoryDrop, "BOTTOMRIGHT", -18, 2)
+  optionsFrame._rulesCategoryDropHit = rulesCategoryDropHit
+
+  local rulesExpansionDrop = CreateFrame("Frame", nil, panels.rules, "UIDropDownMenuTemplate")
+  rulesExpansionDrop:SetPoint("TOPRIGHT", rulesCategoryDrop, "TOPLEFT", -6, 0)
+  if UDDM_SetWidth then UDDM_SetWidth(rulesExpansionDrop, 140) end
+  if UDDM_SetText then UDDM_SetText(rulesExpansionDrop, "Any Expansion") end
+  optionsFrame._rulesExpansionDrop = rulesExpansionDrop
+
+  local rulesExpansionDropHit = CreateFrame("Button", nil, panels.rules)
+  rulesExpansionDropHit:EnableMouse(true)
+  rulesExpansionDropHit:SetAlpha(0.01)
+  rulesExpansionDropHit:SetPoint("TOPLEFT", rulesExpansionDrop, "TOPLEFT", 18, -2)
+  rulesExpansionDropHit:SetPoint("BOTTOMRIGHT", rulesExpansionDrop, "BOTTOMRIGHT", -18, 2)
+  optionsFrame._rulesExpansionDropHit = rulesExpansionDropHit
+
+  local rulesSearch = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
+  rulesSearch:SetAutoFocus(false)
+  rulesSearch:SetSize(220, 18)
+  rulesSearch:SetPoint("TOPLEFT", 12, -56)
+  rulesSearch:SetTextInsets(6, 6, 2, 2)
+  optionsFrame._rulesSearch = rulesSearch
+
+  local rulesSearchHint = rulesSearch:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  rulesSearchHint:SetPoint("LEFT", rulesSearch, "LEFT", 8, 0)
+  rulesSearchHint:SetText("Search…")
+  optionsFrame._rulesSearchHint = rulesSearchHint
+
   local rulesViewDropHit = CreateFrame("Button", nil, panels.rules)
   rulesViewDropHit:EnableMouse(true)
   rulesViewDropHit:SetAlpha(0.01)
@@ -146,6 +184,60 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
   optionsFrame._rulesView = tostring((type(GetUISetting) == "function" and GetUISetting("rulesView", "all")) or "all")
 
+  local function GetRulesSearchText()
+    if not optionsFrame then return "" end
+    local s = tostring(optionsFrame._rulesSearchText or ((type(GetUISetting) == "function") and GetUISetting("rulesSearch", "") or ""))
+    optionsFrame._rulesSearchText = s
+    return s
+  end
+
+  local function SetRulesSearchText(s)
+    if not optionsFrame then return end
+    s = tostring(s or "")
+    optionsFrame._rulesSearchText = s
+    if type(SetUISetting) == "function" then
+      SetUISetting("rulesSearch", s)
+    end
+  end
+
+  local function GetRulesExpansionFilter()
+    if not optionsFrame then return "all" end
+    local v = tostring(optionsFrame._rulesExpansionFilter or ((type(GetUISetting) == "function") and GetUISetting("rulesExpansionFilter", "all") or "all"))
+    if v == "" then v = "all" end
+    optionsFrame._rulesExpansionFilter = v
+    return v
+  end
+
+  local function SetRulesExpansionFilter(v)
+    if not optionsFrame then return end
+    v = tostring(v or "all")
+    if v == "" then v = "all" end
+    optionsFrame._rulesExpansionFilter = v
+    if type(SetUISetting) == "function" then
+      SetUISetting("rulesExpansionFilter", v)
+    end
+    if optionsFrame._refreshRulesList then optionsFrame._refreshRulesList() end
+  end
+
+  local function GetRulesCategoryFilter()
+    if not optionsFrame then return "all" end
+    local v = tostring(optionsFrame._rulesCategoryFilter or ((type(GetUISetting) == "function") and GetUISetting("rulesCategoryFilter", "all") or "all"))
+    if v == "" then v = "all" end
+    optionsFrame._rulesCategoryFilter = v
+    return v
+  end
+
+  local function SetRulesCategoryFilter(v)
+    if not optionsFrame then return end
+    v = tostring(v or "all")
+    if v == "" then v = "all" end
+    optionsFrame._rulesCategoryFilter = v
+    if type(SetUISetting) == "function" then
+      SetUISetting("rulesCategoryFilter", v)
+    end
+    if optionsFrame._refreshRulesList then optionsFrame._refreshRulesList() end
+  end
+
   do
     local v = GetRulesView()
     if UDDM_SetText then
@@ -183,6 +275,122 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       local toggle = _G and rawget(_G, "ToggleDropDownMenu")
       if toggle then
         toggle(1, nil, rulesViewDrop, rulesViewDrop, 0, 0)
+      end
+    end)
+  end
+
+  if rulesSearch then
+    rulesSearch:SetScript("OnShow", function(self)
+      local s = GetRulesSearchText()
+      if self.SetText then self:SetText(s) end
+      if optionsFrame and optionsFrame._rulesSearchHint and optionsFrame._rulesSearchHint.SetShown then
+        optionsFrame._rulesSearchHint:SetShown((s or "") == "")
+      end
+    end)
+    rulesSearch:SetScript("OnTextChanged", function(self)
+      local s = tostring(self.GetText and self:GetText() or "")
+      SetRulesSearchText(s)
+      if optionsFrame and optionsFrame._rulesSearchHint and optionsFrame._rulesSearchHint.SetShown then
+        optionsFrame._rulesSearchHint:SetShown((s or "") == "")
+      end
+      if optionsFrame and optionsFrame._refreshRulesList then optionsFrame._refreshRulesList() end
+    end)
+    rulesSearch:SetScript("OnEscapePressed", function(self)
+      self:ClearFocus()
+      if self.SetText then self:SetText("") end
+      SetRulesSearchText("")
+      if optionsFrame and optionsFrame._refreshRulesList then optionsFrame._refreshRulesList() end
+    end)
+    rulesSearch:SetScript("OnEnterPressed", function(self)
+      self:ClearFocus()
+    end)
+  end
+
+  local function InitRulesExpansionDrop()
+    local v = GetRulesExpansionFilter()
+    if UDDM_SetText then
+      UDDM_SetText(rulesExpansionDrop, (v == "all") and "Any Expansion" or v)
+    end
+  end
+
+  local function InitRulesCategoryDrop()
+    local v = GetRulesCategoryFilter()
+    if UDDM_SetText then
+      UDDM_SetText(rulesCategoryDrop, (v == "all") and "Any Category" or v)
+    end
+  end
+
+  InitRulesExpansionDrop()
+  InitRulesCategoryDrop()
+
+  if type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(rulesExpansionDrop, function(root)
+    if root and root.CreateTitle then root:CreateTitle("Expansion") end
+    local choices = (optionsFrame and optionsFrame._rulesExpansionChoices) or { "all" }
+    for _, val in ipairs(choices) do
+      local label = (val == "all") and "Any" or tostring(val)
+      if root and root.CreateRadio then
+        root:CreateRadio(label, function() return (GetRulesExpansionFilter() == tostring(val)) end, function() SetRulesExpansionFilter(val) end)
+      elseif root and root.CreateButton then
+        root:CreateButton(label, function() SetRulesExpansionFilter(val) end)
+      end
+    end
+  end) then
+    -- modern menu wired
+  elseif UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
+    UDDM_Initialize(rulesExpansionDrop, function(_, level)
+      if level ~= 1 then return end
+      local choices = (optionsFrame and optionsFrame._rulesExpansionChoices) or { "all" }
+      for _, val in ipairs(choices) do
+        local info = UDDM_CreateInfo()
+        info.text = (val == "all") and "Any" or tostring(val)
+        info.checked = (GetRulesExpansionFilter() == tostring(val)) and true or false
+        info.func = function() SetRulesExpansionFilter(val) end
+        UDDM_AddButton(info)
+      end
+    end)
+  end
+
+  if rulesExpansionDropHit then
+    rulesExpansionDropHit:SetScript("OnClick", function()
+      local toggle = _G and rawget(_G, "ToggleDropDownMenu")
+      if toggle then
+        toggle(1, nil, rulesExpansionDrop, rulesExpansionDrop, 0, 0)
+      end
+    end)
+  end
+
+  if type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(rulesCategoryDrop, function(root)
+    if root and root.CreateTitle then root:CreateTitle("Category") end
+    local choices = (optionsFrame and optionsFrame._rulesCategoryChoices) or { "all" }
+    for _, val in ipairs(choices) do
+      local label = (val == "all") and "Any" or tostring(val)
+      if root and root.CreateRadio then
+        root:CreateRadio(label, function() return (GetRulesCategoryFilter() == tostring(val)) end, function() SetRulesCategoryFilter(val) end)
+      elseif root and root.CreateButton then
+        root:CreateButton(label, function() SetRulesCategoryFilter(val) end)
+      end
+    end
+  end) then
+    -- modern menu wired
+  elseif UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
+    UDDM_Initialize(rulesCategoryDrop, function(_, level)
+      if level ~= 1 then return end
+      local choices = (optionsFrame and optionsFrame._rulesCategoryChoices) or { "all" }
+      for _, val in ipairs(choices) do
+        local info = UDDM_CreateInfo()
+        info.text = (val == "all") and "Any" or tostring(val)
+        info.checked = (GetRulesCategoryFilter() == tostring(val)) and true or false
+        info.func = function() SetRulesCategoryFilter(val) end
+        UDDM_AddButton(info)
+      end
+    end)
+  end
+
+  if rulesCategoryDropHit then
+    rulesCategoryDropHit:SetScript("OnClick", function()
+      local toggle = _G and rawget(_G, "ToggleDropDownMenu")
+      if toggle then
+        toggle(1, nil, rulesCategoryDrop, rulesCategoryDrop, 0, 0)
       end
     end)
   end
@@ -363,24 +571,443 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
     local view = GetRulesView()
 
-    local list
+    local list = {}
     local sourceOf = nil
     if view == "defaults" then
-      list = ns.rules or {}
+      for _, r in ipairs(ns.rules or {}) do
+        list[#list + 1] = r
+      end
     elseif view == "trash" then
-      list = (type(GetCustomRulesTrash) == "function") and GetCustomRulesTrash() or {}
+      for _, r in ipairs(((type(GetCustomRulesTrash) == "function") and GetCustomRulesTrash()) or {}) do
+        list[#list + 1] = r
+      end
     elseif view == "custom" then
-      list = (type(GetCustomRules) == "function") and GetCustomRules() or {}
+      for _, r in ipairs(((type(GetCustomRules) == "function") and GetCustomRules()) or {}) do
+        list[#list + 1] = r
+      end
     else
-      list = {}
       sourceOf = {}
       for _, r in ipairs(ns.rules or {}) do
         list[#list + 1] = r
         sourceOf[r] = "default"
       end
-      for _, r in ipairs((type(GetCustomRules) == "function") and GetCustomRules() or {}) do
+      for _, r in ipairs(((type(GetCustomRules) == "function") and GetCustomRules()) or {}) do
         list[#list + 1] = r
         sourceOf[r] = "custom"
+      end
+    end
+
+    -- Build filter choices (expansion/category) from the unfiltered set for this view.
+    local function RuleExpansionName(rule, src)
+      if type(rule) == "table" then
+        local n = rule._expansionName
+        if type(n) == "string" and n ~= "" then return n end
+      end
+      if src == "custom" or src == "trash" then return "Custom" end
+      if src == "default" then return "Unclassified" end
+      return "Unclassified"
+    end
+
+    local function RuleCategory(rule)
+      if type(rule) ~= "table" then return "Other" end
+      local c = rule.category or rule._category
+      if type(c) == "string" and c ~= "" then return c end
+      if rule.questID ~= nil then return "Quest" end
+      if type(rule.item) == "table" and rule.item.itemID ~= nil then return "Item" end
+      if rule.spellKnown ~= nil or rule.notSpellKnown ~= nil then return "Spell" end
+      if type(rule.aura) == "table" then
+        if rule.aura.eventKind ~= nil or rule.aura.keywords ~= nil then return "Event" end
+        return "Aura"
+      end
+      if rule.locationID ~= nil then return "Location" end
+      return "Other"
+    end
+
+    do
+      local expSet, expList = {}, { "all" }
+      local expIDByName = {}
+      local catSet, catList = {}, { "all" }
+      for i = 1, #list do
+        local r = list[i]
+        local src = (view == "defaults") and "default" or (view == "trash") and "trash" or (view == "custom") and "custom" or (sourceOf and sourceOf[r])
+        local exp = RuleExpansionName(r, src)
+        if exp and not expSet[exp] then
+          expSet[exp] = true
+          expList[#expList + 1] = exp
+        end
+
+        if exp and exp ~= "" then
+          local eid = nil
+          if exp == "Weekly / Events" then
+            eid = 10000
+          elseif exp == "Custom" then
+            eid = -10000
+          else
+            eid = (type(r) == "table" and tonumber(r._expansionID)) or nil
+          end
+          if eid ~= nil then
+            local prev = expIDByName[exp]
+            if prev == nil or eid > prev then
+              expIDByName[exp] = eid
+            end
+          end
+        end
+
+        local rr = (src == "default") and GetEffectiveDefaultRule(r) or r
+        local cat = RuleCategory(rr)
+        if cat and not catSet[cat] then
+          catSet[cat] = true
+          catList[#catList + 1] = cat
+        end
+      end
+      table.sort(expList, function(a, b)
+        if a == "all" then return true end
+        if b == "all" then return false end
+        local ia = expIDByName[a]
+        local ib = expIDByName[b]
+        ia = (type(ia) == "number") and ia or 0
+        ib = (type(ib) == "number") and ib or 0
+        if ia ~= ib then return ia > ib end
+        return tostring(a) > tostring(b)
+      end)
+      table.sort(catList, function(a, b)
+        if a == "all" then return true end
+        if b == "all" then return false end
+        return tostring(a) < tostring(b)
+      end)
+      optionsFrame._rulesExpansionChoices = expList
+      optionsFrame._rulesCategoryChoices = catList
+    end
+
+    -- Apply filters (search + expansion + category) before ordering.
+    do
+      local q = tostring(GetRulesSearchText() or "")
+      q = q:gsub("^%s+", ""):gsub("%s+$", "")
+      local ql = q:lower()
+      local expFilter = tostring(GetRulesExpansionFilter() or "all")
+      local catFilter = tostring(GetRulesCategoryFilter() or "all")
+
+      if UDDM_SetText then
+        UDDM_SetText(rulesExpansionDrop, (expFilter == "all") and "Any Expansion" or expFilter)
+        UDDM_SetText(rulesCategoryDrop, (catFilter == "all") and "Any Category" or catFilter)
+      end
+
+      local function MatchesSearch(rr)
+        if ql == "" then return true end
+        if type(rr) ~= "table" then return false end
+        local parts = {}
+        if rr.label then parts[#parts + 1] = tostring(rr.label) end
+        if rr.questInfo then parts[#parts + 1] = tostring(rr.questInfo) end
+        if rr.key then parts[#parts + 1] = tostring(rr.key) end
+        if rr.questID ~= nil then parts[#parts + 1] = tostring(rr.questID) end
+        if type(rr.item) == "table" and rr.item.itemID ~= nil then parts[#parts + 1] = tostring(rr.item.itemID) end
+        if rr.spellKnown ~= nil then parts[#parts + 1] = tostring(rr.spellKnown) end
+        if rr.notSpellKnown ~= nil then parts[#parts + 1] = tostring(rr.notSpellKnown) end
+        if rr.locationID ~= nil then parts[#parts + 1] = tostring(rr.locationID) end
+        if rr.group ~= nil then parts[#parts + 1] = tostring(rr.group) end
+        if type(rr.aura) == "table" then
+          if rr.aura.spellID ~= nil then parts[#parts + 1] = tostring(rr.aura.spellID) end
+          if rr.aura.eventKind ~= nil then parts[#parts + 1] = tostring(rr.aura.eventKind) end
+          if type(rr.aura.keywords) == "table" then
+            for _, kw in ipairs(rr.aura.keywords) do parts[#parts + 1] = tostring(kw) end
+          end
+        end
+        local hay = table.concat(parts, " "):lower()
+        return hay:find(ql, 1, true) ~= nil
+      end
+
+      if ql ~= "" or expFilter ~= "all" or catFilter ~= "all" then
+        local filtered = {}
+        for i = 1, #list do
+          local r = list[i]
+          local src = (view == "defaults") and "default" or (view == "trash") and "trash" or (view == "custom") and "custom" or (sourceOf and sourceOf[r])
+          local rr = (src == "default") and GetEffectiveDefaultRule(r) or r
+
+          local ok = true
+          if expFilter ~= "all" then
+            ok = (RuleExpansionName(r, src) == expFilter)
+          end
+          if ok and catFilter ~= "all" then
+            ok = (RuleCategory(rr) == catFilter)
+          end
+          if ok and ql ~= "" then
+            ok = MatchesSearch(rr)
+          end
+
+          if ok then
+            filtered[#filtered + 1] = r
+          end
+        end
+        list = filtered
+      end
+    end
+
+    -- Rules-tab ordering (independent of any frame contents ordering).
+    -- Stored as an array of RuleKey() strings in account UI settings.
+    local function GetRulesTabOrder()
+      if type(GetUISetting) ~= "function" or type(SetUISetting) ~= "function" then
+        return {}
+      end
+      local o = GetUISetting("rulesTabOrder", nil)
+      if type(o) ~= "table" then
+        o = {}
+        SetUISetting("rulesTabOrder", o)
+      end
+      return o
+    end
+
+    local function IndexOfKey(order, key)
+      if type(order) ~= "table" then return nil end
+      key = tostring(key or "")
+      if key == "" then return nil end
+      for i = 1, #order do
+        if tostring(order[i]) == key then return i end
+      end
+      return nil
+    end
+
+    local function EnsureKeyInOrder(order, key)
+      if type(order) ~= "table" then return end
+      key = tostring(key or "")
+      if key == "" then return end
+      if not IndexOfKey(order, key) then
+        order[#order + 1] = key
+      end
+    end
+
+    local function SwapKeysInOrder(aKey, bKey)
+      local order = GetRulesTabOrder()
+      aKey = tostring(aKey or "")
+      bKey = tostring(bKey or "")
+      if aKey == "" or bKey == "" or aKey == bKey then return false end
+      EnsureKeyInOrder(order, aKey)
+      EnsureKeyInOrder(order, bKey)
+      local ai = IndexOfKey(order, aKey)
+      local bi = IndexOfKey(order, bKey)
+      if not (ai and bi) then return false end
+      order[ai], order[bi] = order[bi], order[ai]
+      if type(SetUISetting) == "function" then
+        SetUISetting("rulesTabOrder", order)
+      end
+      return true
+    end
+
+    local function SortListByRulesTabOrder()
+      if view == "trash" then return end
+      local order = GetRulesTabOrder()
+
+      -- Seed: ensure all currently-visible keys exist in the saved order list.
+      -- This prevents a first-time move from appending keys to the end (which looks like a random jump).
+      for i = 1, #list do
+        local k = RuleKey(list[i])
+        if k then
+          EnsureKeyInOrder(order, k)
+        end
+      end
+      if type(SetUISetting) == "function" then
+        SetUISetting("rulesTabOrder", order)
+      end
+
+      local orderIndex = {}
+      for i = 1, #order do
+        local k = tostring(order[i] or "")
+        if k ~= "" and not orderIndex[k] then
+          orderIndex[k] = i
+        end
+      end
+      local orig = {}
+      for i = 1, #list do orig[list[i]] = i end
+      table.sort(list, function(a, b)
+        local ka = RuleKey(a)
+        local kb = RuleKey(b)
+        local pa = ka and orderIndex[tostring(ka)] or nil
+        local pb = kb and orderIndex[tostring(kb)] or nil
+        if pa and pb and pa ~= pb then return pa < pb end
+        if pa and not pb then return true end
+        if pb and not pa then return false end
+        return (orig[a] or 0) < (orig[b] or 0)
+      end)
+    end
+
+    SortListByRulesTabOrder()
+
+    -- Expansion grouping (Rules tab): build a display list with expandable headers.
+    local function GetRulesExpansionCollapsed()
+      if type(GetUISetting) ~= "function" or type(SetUISetting) ~= "function" then
+        return {}
+      end
+      local o = GetUISetting("rulesExpCollapsed", nil)
+      if type(o) ~= "table" then
+        o = {}
+        SetUISetting("rulesExpCollapsed", o)
+      end
+      return o
+    end
+
+    local function SetExpansionCollapsed(expName, collapsed)
+      expName = tostring(expName or "")
+      if expName == "" then return end
+      if type(GetUISetting) ~= "function" or type(SetUISetting) ~= "function" then return end
+      local o = GetRulesExpansionCollapsed()
+      o[expName] = collapsed and true or nil
+      SetUISetting("rulesExpCollapsed", o)
+    end
+
+    local function GetRulesCategoryCollapsed()
+      if type(GetUISetting) ~= "function" or type(SetUISetting) ~= "function" then
+        return {}
+      end
+      local o = GetUISetting("rulesCatCollapsed", nil)
+      if type(o) ~= "table" then
+        o = {}
+        SetUISetting("rulesCatCollapsed", o)
+      end
+      return o
+    end
+
+    local function CatKey(expName, catName)
+      expName = tostring(expName or "")
+      catName = tostring(catName or "")
+      return expName .. "\031" .. catName
+    end
+
+    local function SetCategoryCollapsed(expName, catName, collapsed)
+      expName = tostring(expName or "")
+      catName = tostring(catName or "")
+      if expName == "" or catName == "" then return end
+      if type(GetUISetting) ~= "function" or type(SetUISetting) ~= "function" then return end
+      local o = GetRulesCategoryCollapsed()
+      o[CatKey(expName, catName)] = collapsed and true or nil
+      SetUISetting("rulesCatCollapsed", o)
+    end
+
+    local displayItems = {}
+    if view ~= "trash" then
+      local groups = {}
+      local expOrder = {}
+      local seen = {}
+      local collapsedMap = GetRulesExpansionCollapsed()
+
+      local function ExpansionID(rule, src)
+        if type(rule) == "table" then
+          local n = tonumber(rule._expansionID)
+          if n ~= nil then return n end
+        end
+        if src == "custom" then return 9999 end
+        return 0
+      end
+
+      for i = 1, #list do
+        local r = list[i]
+        local src = (view == "defaults") and "default" or (view == "custom") and "custom" or ((sourceOf and sourceOf[r]) or "custom")
+        local expName = RuleExpansionName(r, src)
+        local g = groups[expName]
+        if not g then
+          g = { id = ExpansionID(r, src), items = {} }
+          groups[expName] = g
+        end
+        g.items[#g.items + 1] = { rule = r, src = src }
+        if not seen[expName] then
+          seen[expName] = true
+          expOrder[#expOrder + 1] = expName
+        end
+      end
+
+      table.sort(expOrder, function(a, b)
+        local ga = groups[a]
+        local gb = groups[b]
+        local ia = (ga and ga.id) or 0
+        local ib = (gb and gb.id) or 0
+        -- Reverse expansion order: EV first, then 12..01.
+        local ra = ia
+        local rb = ib
+        if tostring(a) == "Weekly / Events" then ra = 10000 end
+        if tostring(b) == "Weekly / Events" then rb = 10000 end
+        if tostring(a) == "Custom" then ra = -10000 end
+        if tostring(b) == "Custom" then rb = -10000 end
+        if ra ~= rb then return ra > rb end
+        return tostring(a) > tostring(b)
+      end)
+
+      local catCollapsedMap = GetRulesCategoryCollapsed()
+
+      local function CategoryPriority(cat)
+        cat = tostring(cat or "")
+        if cat == "Quest" then return 1 end
+        if cat == "Item" then return 2 end
+        if cat == "Spell" then return 3 end
+        if cat == "Event" then return 4 end
+        if cat == "Aura" then return 5 end
+        if cat == "Location" then return 6 end
+        if cat == "Other" then return 99 end
+        return 50
+      end
+
+      for _, expName in ipairs(expOrder) do
+        local g = groups[expName]
+        local isCollapsed = (type(collapsedMap) == "table" and collapsedMap[expName] == true) or false
+        displayItems[#displayItems + 1] = {
+          kind = "header",
+          expName = expName,
+          expID = g and g.id or 0,
+          count = g and #g.items or 0,
+          collapsed = isCollapsed,
+        }
+        if not isCollapsed and g and type(g.items) == "table" then
+          local cats = {}
+          local catOrder = {}
+          local catSeen = {}
+          for ii = 1, #g.items do
+            local entry = g.items[ii]
+            local rr = (type(entry) == "table") and entry.rule or nil
+            local src = (type(entry) == "table") and entry.src or nil
+            local eff = (src == "default") and GetEffectiveDefaultRule(rr) or rr
+            local cat = RuleCategory(eff)
+            if type(cat) ~= "string" or cat == "" then cat = "Other" end
+            local cg = cats[cat]
+            if not cg then
+              cg = { items = {} }
+              cats[cat] = cg
+            end
+            cg.items[#cg.items + 1] = entry
+            if not catSeen[cat] then
+              catSeen[cat] = true
+              catOrder[#catOrder + 1] = cat
+            end
+          end
+
+          table.sort(catOrder, function(a, b)
+            local pa = CategoryPriority(a)
+            local pb = CategoryPriority(b)
+            if pa ~= pb then return pa < pb end
+            return tostring(a) < tostring(b)
+          end)
+
+          for _, catName in ipairs(catOrder) do
+            local cg = cats[catName]
+            local isCatCollapsed = (type(catCollapsedMap) == "table") and (catCollapsedMap[CatKey(expName, catName)] == true) or false
+            displayItems[#displayItems + 1] = {
+              kind = "catHeader",
+              expName = expName,
+              catName = catName,
+              count = cg and cg.items and #cg.items or 0,
+              collapsed = isCatCollapsed,
+            }
+
+            if not isCatCollapsed and cg and type(cg.items) == "table" then
+              for jj = 1, #cg.items do
+                local entry = cg.items[jj]
+                if type(entry) == "table" and type(entry.rule) == "table" then
+                  displayItems[#displayItems + 1] = { kind = "rule", rule = entry.rule, expName = expName, catName = catName }
+                end
+              end
+            end
+          end
+        end
+      end
+    else
+      for i = 1, #list do
+        displayItems[#displayItems + 1] = { kind = "rule", rule = list[i], expName = "Trash", catName = "Trash" }
       end
     end
 
@@ -392,7 +1019,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       local w = tonumber(optionsFrame._rulesScroll:GetWidth() or 0) or 0
       content:SetWidth(math.max(1, w - 28))
     end
-    content:SetHeight(math.max(1, #list * rowH))
+    content:SetHeight(math.max(1, #displayItems * rowH))
 
     local zebraA = SafeZebraAlpha()
 
@@ -408,6 +1035,14 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       local custom = (type(GetCustomRules) == "function") and GetCustomRules() or {}
       for ci, cr in ipairs(custom) do
         if cr == rule then return ci end
+      end
+      return nil
+    end
+
+    local function FindTrashIndex(rule)
+      local trash = (type(GetCustomRulesTrash) == "function") and GetCustomRulesTrash() or {}
+      for ti, tr in ipairs(trash) do
+        if tr == rule then return ti end
       end
       return nil
     end
@@ -430,8 +1065,9 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       row.down:SetScript("OnClick", nil)
     end
 
-    for i = 1, #list do
-      local r = list[i]
+    for i = 1, #displayItems do
+      local item = displayItems[i]
+      local r = (type(item) == "table" and item.kind == "rule") and item.rule or nil
       local row = rows[i]
       if not row then
         row = CreateFrame("Frame", nil, content)
@@ -448,7 +1084,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
         row.toggle = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
         row.toggle:SetSize(18, 18)
-        row.toggle:SetPoint("LEFT", 0, 0)
+        -- Positioned after the move buttons (up/down).
 
         row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         row.text:SetPoint("LEFT", row.toggle, "RIGHT", 4, 0)
@@ -456,6 +1092,12 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         if row.text.SetMaxLines then row.text:SetMaxLines(1) end
         if row.text.SetWordWrap then row.text:SetWordWrap(false) end
         if row.text.SetNonSpaceWrap then row.text:SetNonSpaceWrap(false) end
+
+        row.headerHit = CreateFrame("Button", nil, row)
+        row.headerHit:SetAllPoints(row)
+        row.headerHit:SetAlpha(0.01)
+        row.headerHit:EnableMouse(true)
+        row.headerHit:Hide()
 
         row.frameDrop = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
         if HideDropDownMenuArt then HideDropDownMenuArt(row.frameDrop) end
@@ -466,37 +1108,158 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         row.frameDropHit:SetAlpha(0.01)
 
         row.action = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        row.action:SetSize(70, 18)
+        row.action:SetSize(52, 18)
 
         row.up = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        row.up:SetSize(18, 18)
-        row.up:SetText("^")
+        row.up:SetSize(16, 16)
+        row.up:SetText("")
+        row.up:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Up")
+        row.up:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Down")
+        row.up:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Highlight")
+        row.up:SetDisabledTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Disabled")
 
         row.down = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        row.down:SetSize(18, 18)
-        row.down:SetText("v")
-
-        row.action:SetPoint("RIGHT", -62, 0)
+        row.down:SetSize(16, 16)
+        row.down:SetText("")
+        row.down:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Up")
+        row.down:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Down")
+        row.down:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Highlight")
+        row.down:SetDisabledTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Disabled")
 
         row.del = CreateFrame("Button", nil, row, "UIPanelCloseButton")
         row.del:SetSize(20, 20)
-        row.del:SetPoint("RIGHT", 6, 0)
 
-        row.down:SetPoint("RIGHT", row.del, "LEFT", -2, 0)
-        row.up:SetPoint("RIGHT", row.down, "LEFT", -2, 0)
+        -- Right side actions (X, Edit, then frame dropdown).
+        row.del:SetPoint("RIGHT", 0, 0)
+        row.action:SetPoint("RIGHT", row.del, "LEFT", -2, 0)
 
         row.frameDrop:SetPoint("RIGHT", row.action, "LEFT", 0, -2)
-        if UDDM_SetWidth then UDDM_SetWidth(row.frameDrop, 150) end
-        row.frameDropHit:SetPoint("TOPLEFT", row.frameDrop, "TOPLEFT", 18, -2)
-        row.frameDropHit:SetPoint("BOTTOMRIGHT", row.frameDrop, "BOTTOMRIGHT", -18, 2)
+        row._frameDropW = 100
+        if UDDM_SetWidth then UDDM_SetWidth(row.frameDrop, row._frameDropW) end
 
-        row.text:SetPoint("RIGHT", row.frameDrop, "LEFT", -6, 0)
+        -- Right-align the dropdown text (the arrow is hidden, so this looks cleaner).
+        do
+          local just = _G and rawget(_G, "UIDropDownMenu_SetJustifyText")
+          if type(just) == "function" then
+            just(row.frameDrop, "RIGHT")
+          end
+          local t = row.frameDrop and rawget(row.frameDrop, "Text")
+          if t and t.SetJustifyH then t:SetJustifyH("RIGHT") end
+        end
+
+        -- Remove the dropdown arrow/button; clicking the label still opens the menu.
+        do
+          local btn = row.frameDrop and rawget(row.frameDrop, "Button")
+          if btn and btn.Hide then btn:Hide() end
+          if btn and btn.EnableMouse then btn:EnableMouse(false) end
+        end
+
+        -- Anchor the drop-down menu below the dropdown so it opens down (not sideways).
+        row.frameDropAnchor = CreateFrame("Frame", nil, row)
+        row.frameDropAnchor:SetSize(1, 1)
+        row.frameDropAnchor:SetPoint("TOPLEFT", row.frameDrop, "BOTTOMLEFT", 0, 0)
+
+        row.frameDropHit:SetPoint("TOPLEFT", row.frameDrop, "TOPLEFT", 0, -2)
+        row.frameDropHit:SetPoint("BOTTOMRIGHT", row.frameDrop, "BOTTOMRIGHT", 0, 2)
+
+        -- Left side order controls before enable checkbox.
+        row.up:SetPoint("LEFT", row, "LEFT", 0, 0)
+        row.down:SetPoint("LEFT", row.up, "RIGHT", 2, 0)
+        row.toggle:SetPoint("LEFT", row.down, "RIGHT", 2, 0)
+
+        row.text:SetPoint("RIGHT", row.frameDrop, "LEFT", -2, 0)
 
         rows[i] = row
       end
 
       row:SetPoint("TOPLEFT", 0, -(i - 1) * rowH)
       row:SetPoint("TOPRIGHT", 0, -(i - 1) * rowH)
+
+      local kind = (type(item) == "table") and tostring(item.kind or "") or ""
+      if kind == "header" then
+        local expName = tostring(item.expName or "")
+        local count = tonumber(item.count or 0) or 0
+        local isCollapsed = item.collapsed and true or false
+
+        if row.headerHit then
+          row.headerHit:Show()
+          row.headerHit:SetScript("OnClick", function()
+            SetExpansionCollapsed(expName, not isCollapsed)
+            RefreshRulesListImpl()
+          end)
+        end
+
+        if row.up then row.up:Hide() end
+        if row.down then row.down:Hide() end
+        if row.toggle then row.toggle:Hide() end
+        if row.frameDrop then row.frameDrop:Hide() end
+        if row.frameDropHit then row.frameDropHit:Hide() end
+        if row.action then row.action:Hide() end
+        if row.del then row.del:Hide() end
+
+        if row.bg then
+          if row.bg.SetColorTexture then
+            row.bg:SetColorTexture(0.2, 0.7, 1.0, 0.10)
+          elseif row.bg.SetVertexColor then
+            row.bg:SetVertexColor(0.2, 0.7, 1.0, 0.10)
+          end
+          row.bg:Show()
+        end
+
+        if row.text then
+          row.text:SetFontObject("GameFontNormal")
+          row.text:ClearAllPoints()
+          row.text:SetPoint("LEFT", row, "LEFT", 4, 0)
+          row.text:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+          local prefix = isCollapsed and "+ " or "- "
+          row.text:SetText(prefix .. expName .. " (" .. tostring(count) .. ")")
+          row.text:Show()
+        end
+      elseif kind == "catHeader" then
+        local expName = tostring(item.expName or "")
+        local catName = tostring(item.catName or "")
+        local count = tonumber(item.count or 0) or 0
+        local isCollapsed = item.collapsed and true or false
+
+        if row.headerHit then
+          row.headerHit:Show()
+          row.headerHit:SetScript("OnClick", function()
+            SetCategoryCollapsed(expName, catName, not isCollapsed)
+            RefreshRulesListImpl()
+          end)
+        end
+
+        if row.up then row.up:Hide() end
+        if row.down then row.down:Hide() end
+        if row.toggle then row.toggle:Hide() end
+        if row.frameDrop then row.frameDrop:Hide() end
+        if row.frameDropHit then row.frameDropHit:Hide() end
+        if row.action then row.action:Hide() end
+        if row.del then row.del:Hide() end
+
+        if row.bg then
+          if row.bg.SetColorTexture then
+            row.bg:SetColorTexture(1, 1, 1, 0.06)
+          elseif row.bg.SetVertexColor then
+            row.bg:SetVertexColor(1, 1, 1, 0.06)
+          end
+          row.bg:Show()
+        end
+
+        if row.text then
+          row.text:SetFontObject("GameFontDisableSmall")
+          row.text:ClearAllPoints()
+          row.text:SetPoint("LEFT", row, "LEFT", 18, 0)
+          row.text:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+          local prefix = isCollapsed and "+ " or "- "
+          row.text:SetText(prefix .. catName .. " (" .. tostring(count) .. ")")
+          row.text:Show()
+        end
+      else
+        if row.headerHit then
+          row.headerHit:Hide()
+          row.headerHit:SetScript("OnClick", nil)
+        end
 
       if row.bg then
         if row.bg.SetColorTexture then
@@ -548,7 +1311,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
             row.frameDropHit:SetScript("OnClick", function()
               local toggle = _G and rawget(_G, "ToggleDropDownMenu")
               if toggle then
-                toggle(1, nil, row.frameDrop, row.frameDrop, 0, 0)
+                toggle(1, nil, row.frameDrop, row.frameDropAnchor or row.frameDrop, 0, 0)
               end
             end)
           end
@@ -583,16 +1346,19 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
       row.text:ClearAllPoints()
       if view == "trash" then
-        row.text:SetPoint("LEFT", row, "LEFT", 2, 0)
+        row.text:SetPoint("LEFT", row.down, "RIGHT", 4, 0)
       else
         row.text:SetPoint("LEFT", row.toggle, "RIGHT", 4, 0)
       end
-      row.text:SetPoint("RIGHT", row.frameDrop, "LEFT", -6, 0)
+      row.text:SetPoint("RIGHT", row.frameDrop, "LEFT", -2, 0)
 
       if row.text.SetWidth and content and content.GetWidth then
         local totalW = tonumber(content:GetWidth() or 0) or 0
-        local leftPad = (view == "trash") and 2 or (18 + 4)
-        local rightPad = 6 + 150 + 6
+        local dropW = (type(row) == "table" and tonumber(row._frameDropW or 0) or 0) or 0
+        if dropW <= 0 then dropW = 110 end
+        -- Left side: up/down + (optional) checkbox.
+        local leftPad = (view == "trash") and (18 + 2 + 18 + 4) or (18 + 2 + 18 + 2 + 18 + 4)
+        local rightPad = 2 + dropW + 4
         local maxW = totalW - leftPad - rightPad
         if maxW < 50 then maxW = 50 end
         row.text:SetWidth(maxW)
@@ -602,6 +1368,14 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       end
 
       local idx = i
+      local thisExpName = tostring((type(item) == "table" and item.expName) or "")
+      if thisExpName == "" then
+        thisExpName = RuleExpansionName(r, src)
+      end
+      local thisCatName = tostring((type(item) == "table" and item.catName) or "")
+      if thisCatName == "" then
+        thisCatName = RuleCategory(displayRule)
+      end
       if view == "trash" then
         row.toggle:Hide()
       else
@@ -615,32 +1389,68 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         end)
       end
 
-      if view == "custom" then
+      local function NeighborRule(delta)
+        local di = tonumber(delta) or 0
+        if di == 0 then return nil end
+        local step = (di > 0) and 1 or -1
+        local j = idx + step
+        while j >= 1 and j <= #displayItems do
+          local it = displayItems[j]
+          if type(it) == "table" and it.kind == "rule" and tostring(it.expName or "") == thisExpName and tostring(it.catName or "") == thisCatName then
+            return it.rule
+          end
+          j = j + step
+        end
+        return nil
+      end
+
+      local function ApplyRulesTabReorderButtons()
+        if view == "trash" then
+          DisableMoveButtons(row)
+          return
+        end
+
+        local k = RuleKey(r)
+        if not k then
+          DisableMoveButtons(row)
+          return
+        end
+
+        local prev = NeighborRule(-1)
+        local next = NeighborRule(1)
+        local prevKey = prev and RuleKey(prev) or nil
+        local nextKey = next and RuleKey(next) or nil
+
         row.up:Show(); row.down:Show()
+        row.up:SetEnabled(prevKey ~= nil)
+        row.down:SetEnabled(nextKey ~= nil)
+
+        row.up:SetScript("OnClick", function()
+          local prev2 = NeighborRule(-1)
+          local k2 = prev2 and RuleKey(prev2) or nil
+          if not k2 then return end
+          if SwapKeysInOrder(k, k2) then
+            RefreshRulesListImpl()
+          end
+        end)
+        row.down:SetScript("OnClick", function()
+          local next2 = NeighborRule(1)
+          local k2 = next2 and RuleKey(next2) or nil
+          if not k2 then return end
+          if SwapKeysInOrder(k, k2) then
+            RefreshRulesListImpl()
+          end
+        end)
+      end
+
+      if view == "custom" then
+        ApplyRulesTabReorderButtons()
         row.action:SetText("Edit")
         row.action:Show()
         row.action:SetScript("OnClick", function()
-          local ci = FindCustomIndex(list[idx])
+          local ci = FindCustomIndex(r)
           if not ci then return end
           if OpenCustomRuleInTab then OpenCustomRuleInTab(ci) end
-        end)
-
-        do
-          local ci = FindCustomIndex(list[idx])
-          local n = #((type(GetCustomRules) == "function" and GetCustomRules()) or {})
-          row.up:SetEnabled(ci ~= nil and ci > 1)
-          row.down:SetEnabled(ci ~= nil and ci < n)
-        end
-
-        row.up:SetScript("OnClick", function()
-          local ci = FindCustomIndex(list[idx])
-          if not ci then return end
-          MoveCustomByIndex(ci, -1)
-        end)
-        row.down:SetScript("OnClick", function()
-          local ci = FindCustomIndex(list[idx])
-          if not ci then return end
-          MoveCustomByIndex(ci, 1)
         end)
 
         row.del:Show()
@@ -649,31 +1459,37 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
             Print("Hold SHIFT and click X to move a rule to Trash.")
             return
           end
+          local ruleToTrash = r
+          if type(ruleToTrash) ~= "table" then return end
+          local ci = FindCustomIndex(ruleToTrash)
+          if not ci then return end
+          local custom = (type(GetCustomRules) == "function") and GetCustomRules() or {}
           local trash = (type(GetCustomRulesTrash) == "function") and GetCustomRulesTrash() or {}
-          trash[#trash + 1] = list[idx]
-          table.remove(list, idx)
+          trash[#trash + 1] = custom[ci]
+          table.remove(custom, ci)
           if RefreshAll then RefreshAll() end
           RefreshRulesListImpl()
           Print("Moved custom rule to Trash.")
         end)
       elseif view == "defaults" then
-        DisableMoveButtons(row)
+        ApplyRulesTabReorderButtons()
+
         row.action:SetText("Edit")
         row.action:Show()
         row.action:SetScript("OnClick", function()
-          local base = list[idx]
+          local base = r
           if type(base) ~= "table" then return end
           if OpenDefaultRuleInTab then OpenDefaultRuleInTab(base) end
         end)
 
-        if IsDefaultRuleEdited(list[idx]) then
+        if IsDefaultRuleEdited(r) then
           row.del:Show()
           row.del:SetScript("OnClick", function()
             if not (IsShiftKeyDown and IsShiftKeyDown()) then
               Print("Hold SHIFT and click X to reset this default rule edit.")
               return
             end
-            local base = list[idx]
+            local base = r
             local key = RuleKey(base)
             if not key or key == "" then return end
             local edits = (type(GetDefaultRuleEdits) == "function") and (GetDefaultRuleEdits() or {}) or {}
@@ -691,7 +1507,8 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         row.action:Show()
         row.action:SetScript("OnClick", function()
           local trash = (type(GetCustomRulesTrash) == "function") and GetCustomRulesTrash() or {}
-          local r2 = trash[idx]
+          local ti = FindTrashIndex(r)
+          local r2 = ti and trash[ti] or nil
           if type(r2) ~= "table" then return end
           local restored = DeepCopyValue and DeepCopyValue(r2) or r2
           if type(EnsureUniqueKeyForCustomRule) == "function" then
@@ -699,7 +1516,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
           end
           local custom = (type(GetCustomRules) == "function") and GetCustomRules() or {}
           custom[#custom + 1] = restored
-          table.remove(trash, idx)
+          if ti then table.remove(trash, ti) end
           if RefreshAll then RefreshAll() end
           RefreshRulesListImpl()
           Print("Restored custom rule.")
@@ -711,14 +1528,16 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
             Print("Hold SHIFT and click X to delete permanently.")
             return
           end
-          table.remove(list, idx)
+          local trash = (type(GetCustomRulesTrash) == "function") and GetCustomRulesTrash() or {}
+          local ti = FindTrashIndex(r)
+          if ti then table.remove(trash, ti) end
           RefreshRulesListImpl()
           Print("Deleted trashed rule permanently.")
         end)
       else
         local src2 = (sourceOf and sourceOf[r]) or "custom"
         if src2 == "default" then
-          DisableMoveButtons(row)
+          ApplyRulesTabReorderButtons()
           row.action:SetText("Edit")
           row.action:Show()
           row.action:SetScript("OnClick", function()
@@ -746,31 +1565,13 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
             row.del:Hide()
           end
         elseif src2 == "custom" then
-          row.up:Show(); row.down:Show()
+          ApplyRulesTabReorderButtons()
           row.action:SetText("Edit")
           row.action:Show()
           row.action:SetScript("OnClick", function()
             local ci = FindCustomIndex(r)
             if not ci then return end
             if OpenCustomRuleInTab then OpenCustomRuleInTab(ci) end
-          end)
-
-          do
-            local ci = FindCustomIndex(r)
-            local n = #((type(GetCustomRules) == "function" and GetCustomRules()) or {})
-            row.up:SetEnabled(ci ~= nil and ci > 1)
-            row.down:SetEnabled(ci ~= nil and ci < n)
-          end
-
-          row.up:SetScript("OnClick", function()
-            local ci = FindCustomIndex(r)
-            if not ci then return end
-            MoveCustomByIndex(ci, -1)
-          end)
-          row.down:SetScript("OnClick", function()
-            local ci = FindCustomIndex(r)
-            if not ci then return end
-            MoveCustomByIndex(ci, 1)
           end)
 
           row.del:Show()
@@ -796,10 +1597,12 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         end
       end
 
+      end
+
       row:Show()
     end
 
-    for i = #list + 1, #rows do
+    for i = #displayItems + 1, #rows do
       if rows[i] then rows[i]:Hide() end
     end
   end

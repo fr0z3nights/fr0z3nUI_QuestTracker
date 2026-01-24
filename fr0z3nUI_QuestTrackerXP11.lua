@@ -5,6 +5,9 @@
 
 ns.rules = ns.rules or {}
 
+local EXPANSION_ID = 11
+local EXPANSION_NAME = "The War Within"
+
 local bakedRules = {
 
 {["label"] = "TD 3.01  11  Q-82520  Pet - Mind Slurp", ["frameID"] = "list1", ["key"] = "custom:q:82520:list1:68",
@@ -110,16 +113,25 @@ local bakedRules = {
 ["locationID"] = 6666666,
 ["notInGroup"] = false, },
 
-{["label"] = "Weekly: Delves (Bran)", ["frameID"] = "bar1", ["key"] = "wk:delves:bran",
-["questID"] = 82706,["requireInLog"] = false, ["hideWhenCompleted"] = true,
+{["label"] = "Delvez", ["frameID"] = "bar1", ["key"] = "wk:delves:bran",
+["questID"] = 82706, ["requireInLog"] = false, ["hideWhenCompleted"] = true,
 ["playerLevelOp"] = ">=", ["playerLevel"] = 70,
 ["progress"] = { ["objectiveIndex"] = 1 },},
+
+{["label"] = "Reshii Wraps", ["frameID"] = "bar1", ["key"] = "custom:q:90938:bar1:1",
+["questID"] = 90938, ["requireInLog"] = false, ["hideWhenCompleted"] = true,
+["playerLevelOp"] = ">=", ["playerLevel"] = 80, ["color"] = { 0.2, 0.6, 1, },
+["questInfo"] = "Reshii",},
+
+
 
 }
 
 for i = 1, #bakedRules do
   local r = bakedRules[i]
   if type(r) == "table" then
+    if r._expansionID == nil then r._expansionID = EXPANSION_ID end
+    if r._expansionName == nil then r._expansionName = EXPANSION_NAME end
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end

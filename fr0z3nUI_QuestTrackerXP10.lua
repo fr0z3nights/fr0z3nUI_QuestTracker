@@ -5,6 +5,9 @@
 
 ns.rules = ns.rules or {}
 
+local EXPANSION_ID = 10
+local EXPANSION_NAME = "Dragonflight"
+
 local bakedRules = {
 
 {["label"] = "SU  10  Dragon Isles  34 Slot Bag", ["frameID"] = "list1", ["key"] = "custom:q:65646:list1:84",
@@ -32,6 +35,8 @@ local bakedRules = {
 for i = 1, #bakedRules do
   local r = bakedRules[i]
   if type(r) == "table" then
+    if r._expansionID == nil then r._expansionID = EXPANSION_ID end
+    if r._expansionName == nil then r._expansionName = EXPANSION_NAME end
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end

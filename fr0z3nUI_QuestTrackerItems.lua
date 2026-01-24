@@ -42,11 +42,57 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
   local UDDM_CreateInfo = ctx.UDDM_CreateInfo
   local UDDM_AddButton = ctx.UDDM_AddButton
 
+  local GetRuleExpansionChoices = ctx.GetRuleExpansionChoices
+  local GetRuleCreateExpansion = ctx.GetRuleCreateExpansion
+  local SetRuleCreateExpansion = ctx.SetRuleCreateExpansion
+  local SyncRuleCreateExpansionDrops = ctx.SyncRuleCreateExpansionDrops
+
   local pItems = panels.items
 
   local itemsTitle = pItems:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   itemsTitle:SetPoint("TOPLEFT", 12, -40)
   itemsTitle:SetText("Items")
+
+  -- Expansion selector (stamped onto new/edited rules as _expansionID/_expansionName)
+  local expLabel = pItems:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  expLabel:SetPoint("TOPRIGHT", pItems, "TOPRIGHT", -12, -40)
+  expLabel:SetText("Expansion")
+
+  local expDrop = CreateFrame("Frame", nil, pItems, "UIDropDownMenuTemplate")
+  expDrop:SetPoint("TOPRIGHT", pItems, "TOPRIGHT", -6, -54)
+  if UDDM_SetWidth then UDDM_SetWidth(expDrop, 180) end
+  if UDDM_SetText then UDDM_SetText(expDrop, "") end
+  pItems._expansionDrop = expDrop
+
+  local function ResolveExpansionNameByID(id)
+    id = tonumber(id)
+    if not id then return nil end
+    local list = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or {}
+    for _, e in ipairs(list) do
+      if type(e) == "table" and tonumber(e.id) == id and type(e.name) == "string" and e.name ~= "" then
+        return e.name
+      end
+    end
+    return nil
+  end
+
+  function pItems:_syncRuleCreateExpansion()
+    local id, name = nil, nil
+    if type(GetRuleCreateExpansion) == "function" then
+      id, name = GetRuleCreateExpansion()
+    end
+    if not name and id then
+      name = ResolveExpansionNameByID(id)
+    end
+    local label = name or "Weekly"
+    if UDDM_SetText and expDrop then UDDM_SetText(expDrop, label) end
+  end
+
+  if type(SyncRuleCreateExpansionDrops) == "function" then
+    SyncRuleCreateExpansionDrops()
+  elseif pItems._syncRuleCreateExpansion then
+    pItems:_syncRuleCreateExpansion()
+  end
 
   local itemIDBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
   itemIDBox:SetSize(70, 20)
@@ -394,6 +440,67 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
   if AttachLocationIDTooltip then AttachLocationIDTooltip(itemsLocBox) end
 
   if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
+    -- Expansion dropdown
+    local modernExpansion = UseModernMenuDropDown and UseModernMenuDropDown(expDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Expansion") end
+      local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+
+      for _, opt in ipairs(choices) do
+        local id = (type(opt) == "table") and opt.id or -1
+        local name = (type(opt) == "table") and opt.name or "Weekly"
+        name = (type(name) == "string" and name ~= "") and name or "Weekly"
+
+        local function IsSelected()
+          local curID, curName = nil, nil
+          if type(GetRuleCreateExpansion) == "function" then
+            curID, curName = GetRuleCreateExpansion()
+          end
+          curID = tonumber(curID)
+          return curID == tonumber(id) or (curName ~= nil and curName == name)
+        end
+
+        local function SetSelected()
+          if type(SetRuleCreateExpansion) == "function" then
+            SetRuleCreateExpansion(id, name)
+          end
+        end
+
+        if root and root.CreateRadio then
+          root:CreateRadio(name, IsSelected, SetSelected)
+        elseif root and root.CreateButton then
+          root:CreateButton(name, SetSelected)
+        end
+      end
+    end)
+
+    if not modernExpansion then
+      UDDM_Initialize(expDrop, function(self, level)
+        local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+        for _, opt in ipairs(choices) do
+          local id = (type(opt) == "table") and opt.id or -1
+          local name = (type(opt) == "table") and opt.name or "Weekly"
+          name = (type(name) == "string" and name ~= "") and name or "Weekly"
+
+          local info = UDDM_CreateInfo()
+          info.text = name
+          do
+            local curID, curName = nil, nil
+            if type(GetRuleCreateExpansion) == "function" then
+              curID, curName = GetRuleCreateExpansion()
+            end
+            curID = tonumber(curID)
+            info.checked = (curID == tonumber(id)) or (curName ~= nil and curName == name)
+          end
+          info.func = function()
+            if type(SetRuleCreateExpansion) == "function" then
+              SetRuleCreateExpansion(id, name)
+            end
+          end
+          UDDM_AddButton(info)
+        end
+      end)
+    end
+
     local function ColorsMatch(tbl, r, g, b)
       if type(tbl) ~= "table" then return false end
       return (tonumber(tbl[1]) == r) and (tonumber(tbl[2]) == g) and (tonumber(tbl[3]) == b)
@@ -785,6 +892,14 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
     local locationID = (locText ~= "" and locText ~= "0") and locText or nil
 
     local rules = GetCustomRules()
+    local expID, expName = nil, nil
+    if type(GetRuleCreateExpansion) == "function" then
+      expID, expName = GetRuleCreateExpansion()
+    end
+    expID = tonumber(expID)
+    if not expName and expID then expName = ResolveExpansionNameByID(expID) end
+    if expName == "Custom" then expName = nil; expID = nil end
+
     if pItems._editingCustomIndex and type(rules[pItems._editingCustomIndex]) == "table" then
       local rule = rules[pItems._editingCustomIndex]
       rule.frameID = targetFrame
@@ -795,6 +910,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       rule.itemInfo = itemInfo
       rule.rep = rep
       rule.locationID = locationID
+      rule._expansionID = expID
+      rule._expansionName = expName
 
       local op = pItems._playerLevelOp
       local lvl = itemsLevelBox and tonumber(itemsLevelBox:GetText() or "") or nil
@@ -839,6 +956,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       rule.itemInfo = itemInfo
       rule.rep = rep
       rule.locationID = locationID
+      rule._expansionID = expID
+      rule._expansionName = expName
 
       local op = pItems._playerLevelOp
       local lvl = itemsLevelBox and tonumber(itemsLevelBox:GetText() or "") or nil
@@ -887,6 +1006,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
         itemInfo = itemInfo,
         rep = rep,
         locationID = locationID,
+        _expansionID = expID,
+        _expansionName = expName,
         playerLevelOp = op,
         playerLevel = lvl,
         item = {

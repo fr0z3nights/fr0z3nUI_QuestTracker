@@ -15,8 +15,6 @@ local SaveFramePosition = ns.SaveFramePosition
 local GetTrackerFrameByID = ns.GetTrackerFrameByID
 local DestroyFrameByID = ns.DestroyFrameByID
 local ResetFramePositionsToDefaults = ns.ResetFramePositionsToDefaults
-local GetUseCharacterWindowPos = ns.GetUseCharacterWindowPos
-local SetUseCharacterWindowPos = ns.SetUseCharacterWindowPos
 
 local GetEffectiveRules = ns.GetEffectiveRules
 local GetEffectiveFrames = ns.GetEffectiveFrames
@@ -112,10 +110,46 @@ local RefreshRulesList
 local RefreshFramesList
 local RefreshActiveTab
 
+-- Default (safe) implementations so tab switching never hard-errors.
+-- When the Rules/Frames modules load, they will replace these via ctx.SetRefresh*.
+RefreshRulesList = function()
+  local f = optionsFrame
+  local fn = f and f._refreshRulesList
+  if type(fn) == "function" then
+    return fn()
+  end
+end
+
+RefreshFramesList = function()
+  local f = optionsFrame
+  local fn = f and f._refreshFramesList
+  if type(fn) == "function" then
+    return fn()
+  end
+end
+
+RefreshActiveTab = function()
+  local f = optionsFrame
+  if not f then return end
+  local t = tostring(f._activeTab or "")
+  if t == "rules" then
+    if RefreshRulesList then return RefreshRulesList() end
+  elseif t == "frames" then
+    if RefreshFramesList then return RefreshFramesList() end
+  end
+end
+
 local function EnsureOptionsFrame()
   if optionsFrame then return optionsFrame end
 
   local f = CreateFrame("Frame", "FR0Z3NUIFQTOptions", UIParent, "BackdropTemplate")
+  if not f then
+    f = CreateFrame("Frame", "FR0Z3NUIFQTOptions", UIParent)
+  end
+  if not f then
+    Print("Failed to create options frame.")
+    return nil
+  end
 
   -- Allow closing with Escape.
   do
@@ -147,10 +181,6 @@ local function EnsureOptionsFrame()
 
   f:HookScript("OnShow", function(self)
     RestoreWindowPosition("options", self, "CENTER", "CENTER", 0, 0)
-    if self._useCharPosBtn then
-      local v = (type(GetUseCharacterWindowPos) == "function" and GetUseCharacterWindowPos()) and true or false
-      if self._useCharPosBtn.SetChecked then self._useCharPosBtn:SetChecked(v) end
-    end
     editMode = true
     SetCoreEditMode(true)
   end)
@@ -277,11 +307,6 @@ local function EnsureOptionsFrame()
     if f._resetBtn and f._resetBtn.SetShown then f._resetBtn:SetShown(showFooter) end
     if f._reloadBtn and f._reloadBtn.SetShown then f._reloadBtn:SetShown(showFooter) end
 
-    if name == "frames" and f._useCharPosBtn and f._useCharPosBtn.SetChecked then
-      local v = (type(GetUseCharacterWindowPos) == "function" and GetUseCharacterWindowPos()) and true or false
-      f._useCharPosBtn:SetChecked(v)
-    end
-
     UpdateReverseOrderVisibility(name)
 
     if optionsFrame then
@@ -289,16 +314,16 @@ local function EnsureOptionsFrame()
       SetUISetting("optionsTab", name)
     end
     if name == "rules" then
-      RefreshRulesList()
+      if RefreshRulesList then RefreshRulesList() end
     elseif name == "frames" then
-      RefreshFramesList()
+      if RefreshFramesList then RefreshFramesList() end
     end
   end
 
   local tabOrder = { "rules", "items", "quest", "spells", "text", "frames" }
   local tabText = {
     frames = "UI",
-    rules = "[FQT] Quest Tracker",
+    rules = "|cff00ccff[FQT]|r Quest Tracker",
     items = "Items",
     quest = "Quest",
     spells = "Spell",
@@ -318,6 +343,17 @@ local function EnsureOptionsFrame()
     btn:SetSize((name == "rules") and 140 or 70, 18)
     btn:SetText(tabText[name] or name)
     btn._tabName = name
+
+    -- Keep the [FQT] header-looking button readable even when selected (disabled).
+    if name == "rules" then
+      local gfn = _G and rawget(_G, "GameFontNormal")
+      if gfn then
+        if btn.SetNormalFontObject then btn:SetNormalFontObject(gfn) end
+        if btn.SetDisabledFontObject then btn:SetDisabledFontObject(gfn) end
+        if btn.SetHighlightFontObject then btn:SetHighlightFontObject(gfn) end
+      end
+    end
+
     if i == 1 then
       btn:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -10)
     else
@@ -581,6 +617,166 @@ local function EnsureOptionsFrame()
     return "Both (Off)"
   end
 
+  local function GetRuleExpansionChoices()
+    local base = {
+      { id = -2, name = "Events" },
+      { id = -1, name = "Weekly" },
+      { id = 12, name = "Midnight" },
+      { id = 11, name = "The War Within" },
+      { id = 10, name = "Dragonflight" },
+      { id = 9, name = "Shadowlands" },
+      { id = 8, name = "Battle for Azeroth" },
+      { id = 7, name = "Legion" },
+      { id = 6, name = "Warlords of Draenor" },
+      { id = 5, name = "Mists of Pandaria" },
+      { id = 4, name = "Cataclysm" },
+      { id = 3, name = "Wrath of the Lich King" },
+      { id = 2, name = "The Burning Crusade" },
+      { id = 1, name = "Classic" },
+    }
+
+    -- Extend from loaded packs (so custom pack names show up too).
+    local seen = {}
+    for _, e in ipairs(base) do
+      if e and e.name then seen[tostring(e.name)] = true end
+    end
+    for _, r in ipairs((type(ns) == "table" and ns.rules) or {}) do
+      if type(r) == "table" then
+        local n = r._expansionName
+        local id = tonumber(r._expansionID)
+        if type(n) == "string" then
+          n = n:gsub("^%s+", ""):gsub("%s+$", "")
+          if n ~= "" and not seen[n] then
+            base[#base + 1] = { id = id, name = n }
+            seen[n] = true
+          end
+        end
+      end
+    end
+
+    local function Weight(id)
+      if id == -2 then return 19000 end -- Events first
+      if id == -1 then return 18000 end -- Weekly next
+      return tonumber(id) or 0
+    end
+    table.sort(base, function(a, b)
+      local wa = Weight(a and a.id)
+      local wb = Weight(b and b.id)
+      if wa ~= wb then return wa > wb end
+      return tostring(a and a.name or "") < tostring(b and b.name or "")
+    end)
+
+    return base
+  end
+
+  local function ResolveRuleExpansionNameByID(id)
+    id = tonumber(id)
+    if id == nil then return nil end
+    for _, e in ipairs(GetRuleExpansionChoices()) do
+      if type(e) == "table" and tonumber(e.id) == id and type(e.name) == "string" and e.name ~= "" then
+        return e.name
+      end
+    end
+    return nil
+  end
+
+  local function GetDefaultRuleCreateExpansion()
+    local bestID, bestName = nil, nil
+
+    -- Prefer the newest expansion actually present in loaded rules.
+    for _, r in ipairs((type(ns) == "table" and ns.rules) or {}) do
+      if type(r) == "table" then
+        local id = tonumber(r._expansionID)
+        local name = (type(r._expansionName) == "string") and r._expansionName or nil
+        if id and id > 0 then
+          if not bestID or id > bestID then
+            bestID, bestName = id, name
+          end
+        end
+      end
+    end
+
+    -- Fall back to highest known expansion in choices.
+    if not bestID then
+      for _, e in ipairs(GetRuleExpansionChoices()) do
+        if type(e) == "table" then
+          local id = tonumber(e.id)
+          if id and id > 0 then
+            if not bestID or id > bestID then
+              bestID, bestName = id, e.name
+            end
+          end
+        end
+      end
+    end
+
+    -- Absolute fallbacks.
+    if not bestID then bestID, bestName = -1, "Weekly" end
+    if not bestName then bestName = ResolveRuleExpansionNameByID(bestID) end
+    if not bestName then bestName = "Weekly" end
+    return bestID, bestName
+  end
+
+  local function GetRuleCreateExpansion()
+    -- Stored in UI settings so it persists across sessions.
+    local id = GetUISetting and GetUISetting("ruleCreateExpansionID", nil) or nil
+    local name = GetUISetting and GetUISetting("ruleCreateExpansionName", nil) or nil
+    id = tonumber(id)
+    if type(name) == "string" then
+      name = name:gsub("^%s+", ""):gsub("%s+$", "")
+      if name == "" then name = nil end
+    else
+      name = nil
+    end
+    -- Ensure there is always a concrete category (Expansion/Weekly/Events).
+    local resolvedName = (id ~= nil) and (name or ResolveRuleExpansionNameByID(id)) or nil
+    if id == nil or resolvedName == nil then
+      local defID, defName = GetDefaultRuleCreateExpansion()
+      id, resolvedName = defID, defName
+      if SetUISetting then
+        SetUISetting("ruleCreateExpansionID", id)
+        SetUISetting("ruleCreateExpansionName", resolvedName)
+      end
+    end
+    return id, resolvedName
+  end
+
+  local function SyncRuleCreateExpansionDrops()
+    for _, p in pairs({ panels and panels.quest, panels and panels.items, panels and panels.spells, panels and panels.text }) do
+      if p and type(p._syncRuleCreateExpansion) == "function" then
+        p:_syncRuleCreateExpansion()
+      end
+    end
+  end
+
+  local function SetRuleCreateExpansion(id, name)
+    id = tonumber(id)
+    if type(name) == "string" then
+      name = name:gsub("^%s+", ""):gsub("%s+$", "")
+      if name == "" then name = nil end
+    else
+      name = nil
+    end
+
+    -- Force concrete category selection.
+    if id == nil then
+      id, name = GetDefaultRuleCreateExpansion()
+    end
+    if name == nil then
+      name = ResolveRuleExpansionNameByID(id)
+    end
+    if name == nil then
+      local defID, defName = GetDefaultRuleCreateExpansion()
+      id, name = defID, defName
+    end
+
+    if SetUISetting then
+      SetUISetting("ruleCreateExpansionID", id)
+      SetUISetting("ruleCreateExpansionName", name)
+    end
+    SyncRuleCreateExpansionDrops()
+  end
+
   local optionsCtx
   local function GetOptionsCtx()
     if optionsCtx then return optionsCtx end
@@ -671,6 +867,11 @@ local function EnsureOptionsFrame()
 
       ColorLabel = ColorLabel,
       FactionLabel = FactionLabel,
+
+      GetRuleExpansionChoices = GetRuleExpansionChoices,
+      GetRuleCreateExpansion = GetRuleCreateExpansion,
+      SetRuleCreateExpansion = SetRuleCreateExpansion,
+      SyncRuleCreateExpansionDrops = SyncRuleCreateExpansionDrops,
     }
 
     return optionsCtx
@@ -1291,6 +1492,8 @@ local function EnsureOptionsFrame()
       SelectTab("rules")
     end
   end)
+
+  end
 
   end
 
@@ -3924,6 +4127,8 @@ local function EnsureOptionsFrame()
     ClearTabEdits()
 
     local t = DetectRuleTypeLite(rule)
+    -- When editing, keep the rule-create Expansion dropdown in sync with this rule.
+    SetRuleCreateExpansion(rule._expansionID, rule._expansionName)
     if t == "quest" then
       SelectTab("quest")
       panels.quest._editingCustomIndex = customIndex
@@ -4219,6 +4424,8 @@ local function EnsureOptionsFrame()
     ClearTabEdits()
 
     local t = DetectRuleTypeLite(rule)
+    -- When editing, keep the rule-create Expansion dropdown in sync with this rule.
+    SetRuleCreateExpansion(rule._expansionID, rule._expansionName)
     if t == "quest" then
       SelectTab("quest")
       panels.quest._editingDefaultBase = baseRule
@@ -5662,10 +5869,10 @@ local function EnsureOptionsFrame()
     if dropdown.SetAlpha then dropdown:SetAlpha(enabled and 1 or 0.5) end
   end
 
-  -- Global List Padding control
+  -- Global padding control (list padding outside edit mode; bar spacing always)
   local listPadLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   listPadLabel:SetPoint("TOPLEFT", 365, -160)
-  listPadLabel:SetText("List padding (px)")
+  listPadLabel:SetText("Pad (px)")
 
   local listPadBox = CreateFrame("EditBox", nil, panels.frames, "InputBoxTemplate")
   listPadBox:SetSize(40, 20)
@@ -5675,7 +5882,9 @@ local function EnsureOptionsFrame()
   if listPadBox.SetJustifyH then listPadBox:SetJustifyH("RIGHT") end
 
   local function RefreshListPadBox(self)
-    local v = tonumber(GetUISetting("listPadding", 0) or 0) or 0
+    local p = GetUISetting("pad", nil)
+    if p == nil then p = GetUISetting("listPadding", 0) end
+    local v = tonumber(p or 0) or 0
     if v < 0 then v = 0 end
     if v > 50 then v = 50 end
     self:SetText(tostring(v))
@@ -5688,6 +5897,8 @@ local function EnsureOptionsFrame()
     local v = tonumber(self:GetText() or "") or 0
     if v < 0 then v = 0 end
     if v > 50 then v = 50 end
+    SetUISetting("pad", v)
+    -- Back-compat with older key.
     SetUISetting("listPadding", v)
     RefreshListPadBox(self)
     if self.ClearFocus then self:ClearFocus() end
@@ -5734,6 +5945,8 @@ local function EnsureOptionsFrame()
       hideWhenEmpty = false,
       stretchWidth = false,
     }
+    if optionsFrame then optionsFrame._selectedFrameID = id end
+    if f then f._selectedFrameID = id end
     CreateAllFrames()
     RefreshAll()
     RefreshFramesList()
@@ -5763,6 +5976,8 @@ local function EnsureOptionsFrame()
       bgAlpha = 0,
       hideWhenEmpty = false,
     }
+    if optionsFrame then optionsFrame._selectedFrameID = id end
+    if f then f._selectedFrameID = id end
     CreateAllFrames()
     RefreshAll()
     RefreshFramesList()
@@ -5866,15 +6081,20 @@ local function EnsureOptionsFrame()
 
   local function NormalizeAnchorCornerLocal(v)
     v = tostring(v or ""):lower():gsub("%s+", "")
+    v = v:gsub("_", ""):gsub("-", "")
     if v == "tl" or v == "topleft" then return "tl" end
     if v == "tr" or v == "topright" then return "tr" end
+    if v == "tc" or v == "topcenter" or v == "topcentre" then return "tc" end
     if v == "bl" or v == "bottomleft" then return "bl" end
     if v == "br" or v == "bottomright" then return "br" end
+    if v == "bc" or v == "bottomcenter" or v == "bottomcentre" then return "bc" end
     return nil
   end
 
   local function DeriveAnchorCornerFromPoint(point)
     point = tostring(point or ""):upper()
+    if point == "TOP" then return "tc" end
+    if point == "BOTTOM" then return "bc" end
     local vert = point:find("BOTTOM", 1, true) and "b" or "t"
     local horiz = point:find("RIGHT", 1, true) and "r" or "l"
     return vert .. horiz
@@ -5905,8 +6125,10 @@ local function EnsureOptionsFrame()
     corner = NormalizeAnchorCornerLocal(corner) or "tl"
     if corner == "tl" then return "down-right" end
     if corner == "tr" then return "down-left" end
+    if corner == "tc" then return "down-right" end
     if corner == "bl" then return "up-right" end
     if corner == "br" then return "up-left" end
+    if corner == "bc" then return "up-right" end
     return "down-right"
   end
 
@@ -5923,8 +6145,10 @@ local function EnsureOptionsFrame()
     corner = NormalizeAnchorCornerLocal(corner) or "tl"
     if corner == "tl" then return "Top Left" end
     if corner == "tr" then return "Top Right" end
+    if corner == "tc" then return "Center-Top (Align Center)" end
     if corner == "bl" then return "Bottom Left" end
     if corner == "br" then return "Bottom Right" end
+    if corner == "bc" then return "Center-Bottom (Align Center)" end
     return "Top Left"
   end
 
@@ -5939,6 +6163,9 @@ local function EnsureOptionsFrame()
 
   local function AnchorGrowLabel(corner)
     corner = NormalizeAnchorCornerLocal(corner) or "tl"
+    if corner == "tc" or corner == "bc" then
+      return AnchorCornerLabel(corner)
+    end
     local dir = DeriveGrowDirFromCorner(corner)
     return string.format("%s (%s)", AnchorCornerLabel(corner), GrowDirLabel(dir))
   end
@@ -6258,6 +6485,10 @@ local function EnsureOptionsFrame()
 
     if optionsFrame._frameAnchorPosDrop then
       local corner = NormalizeAnchorCornerLocal(def.anchorCorner) or "tl"
+      -- Bars support center-top/center-bottom alignment; lists are corners only.
+      if t ~= "bar" and (corner == "tc" or corner == "bc") then
+        corner = "tl"
+      end
       if UDDM_SetText then UDDM_SetText(optionsFrame._frameAnchorPosDrop, AnchorGrowLabel(corner)) end
       SetDropDownEnabled(optionsFrame._frameAnchorPosDrop, true)
     end
@@ -6619,6 +6850,27 @@ local function EnsureOptionsFrame()
     -- Unify grow direction with the chosen corner.
     def.growDir = DeriveGrowDirFromCorner(corner)
 
+    -- Follow the configured anchor rules (no screen-coordinate conversion).
+    -- Update the frame's stored anchor point and clear any saved dragged position
+    -- so the new anchor is actually applied.
+    do
+      local point
+      if corner == "tc" then
+        point = "TOP"
+      elseif corner == "bc" then
+        point = "BOTTOM"
+      else
+        point = (corner == "tr" and "TOPRIGHT") or (corner == "bl" and "BOTTOMLEFT") or (corner == "br" and "BOTTOMRIGHT") or "TOPLEFT"
+      end
+
+      def.point = point
+      def.relPoint = point
+
+      if type(ns.ClearSavedFramePosition) == "function" then
+        ns.ClearSavedFramePosition(id)
+      end
+    end
+
     RefreshAll()
     RefreshFramesList()
   end
@@ -6641,13 +6893,17 @@ local function EnsureOptionsFrame()
   if UseModernMenuDropDown(anchorPosDrop, function(root)
     if root and root.CreateTitle then root:CreateTitle("Anchor") end
     local cur = nil
+    local isBar = false
     do
       local id = tostring(optionsFrame and optionsFrame._selectedFrameID or "")
       local eff = (id ~= "") and FindEffectiveFrameDef(id) or nil
       cur = (type(eff) == "table") and NormalizeAnchorCornerLocal(eff.anchorCorner) or nil
+      isBar = (type(eff) == "table" and tostring(eff.type or "list") == "bar") and true or false
       if not cur then cur = "tl" end
+      if not isBar and (cur == "tc" or cur == "bc") then cur = "tl" end
     end
-    for _, v in ipairs({ "tl", "tr", "bl", "br" }) do
+    local choices = isBar and { "tl", "tc", "tr", "bl", "bc", "br" } or { "tl", "tr", "bl", "br" }
+    for _, v in ipairs(choices) do
       if root and root.CreateRadio then
         root:CreateRadio(AnchorGrowLabel(v), function() return cur == v end, function() ApplySelectedFrameAnchorCorner(v) end)
       elseif root and root.CreateButton then
@@ -6658,7 +6914,14 @@ local function EnsureOptionsFrame()
     -- modern menu wired
   elseif UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
     UDDM_Initialize(anchorPosDrop, function(self, level)
-      for _, v in ipairs({ "tl", "tr", "bl", "br" }) do
+      local isBar = false
+      do
+        local id = tostring(optionsFrame and optionsFrame._selectedFrameID or "")
+        local eff = (id ~= "") and FindEffectiveFrameDef(id) or nil
+        isBar = (type(eff) == "table" and tostring(eff.type or "list") == "bar") and true or false
+      end
+      local choices = isBar and { "tl", "tc", "tr", "bl", "bc", "br" } or { "tl", "tr", "bl", "br" }
+      for _, v in ipairs(choices) do
         local info = UDDM_CreateInfo()
         info.text = AnchorGrowLabel(v)
         info.func = function() ApplySelectedFrameAnchorCorner(v) end
@@ -7622,13 +7885,22 @@ local function EnsureOptionsFrame()
   local resetBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
   resetBtn:SetSize(160, 22)
   resetBtn:SetPoint("BOTTOMLEFT", 12, 12)
-  resetBtn:SetText("Reset Frames")
+  resetBtn:SetText("Reset Layout")
   resetBtn:SetScript("OnClick", function()
     ResetFramePositionsToDefaults()
     RefreshAll()
     RefreshActiveTab()
-    Print("Frame positions reset to defaults.")
+    Print("Layout reset to defaults.")
   end)
+
+  resetBtn:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
+    GameTooltip:SetText("Reset Layout")
+    GameTooltip:AddLine("Resets frame positions for the active layout.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  resetBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
 
   local reloadBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
   reloadBtn:SetSize(160, 22)
@@ -7638,11 +7910,6 @@ local function EnsureOptionsFrame()
     local r = _G and _G["ReloadUI"]
     if r then r() end
   end)
-
-  local useCharPosBtn = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
-  useCharPosBtn:SetPoint("BOTTOMLEFT", resetBtn, "TOPLEFT", 0, 6)
-  useCharPosBtn:SetSize(24, 24)
-  SetCheckButtonLabel(useCharPosBtn, "Character Specific Layout")
 
   -- Unlabeled: reverse display order (bars)
   local reverseOrderBtn = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
@@ -7663,53 +7930,13 @@ local function EnsureOptionsFrame()
   end)
   reverseOrderBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
 
-  local function SyncCharPosToggle()
-    local v = (type(GetUseCharacterWindowPos) == "function" and GetUseCharacterWindowPos()) and true or false
-    if useCharPosBtn and useCharPosBtn.SetChecked then
-      useCharPosBtn:SetChecked(v)
-    end
-  end
-
   local function SyncReverseOrderToggle()
     local v = GetUISetting("reverseOrder", false) and true or false
     if reverseOrderBtn and reverseOrderBtn.SetChecked then
       reverseOrderBtn:SetChecked(v)
     end
   end
-
-  SyncCharPosToggle()
   SyncReverseOrderToggle()
-
-  useCharPosBtn:SetScript("OnClick", function(self)
-    local v = (self and self.GetChecked and self:GetChecked()) and true or false
-    if type(SetUseCharacterWindowPos) == "function" then
-      SetUseCharacterWindowPos(v)
-    end
-    if RestoreWindowPosition then
-      RestoreWindowPosition("options", f, "CENTER", "CENTER", 0, 0)
-    end
-    if SaveWindowPosition then
-      SaveWindowPosition("options", f)
-    end
-    SyncCharPosToggle()
-    SyncReverseOrderToggle()
-    UpdateReverseOrderVisibility(optionsFrame and optionsFrame._activeTab)
-  end)
-
-  useCharPosBtn:SetScript("OnEnter", function(self)
-    if not GameTooltip then return end
-    GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:SetText("Layout", 1, 1, 1)
-    GameTooltip:AddLine("Default: account-wide layout / window positions.", 0.85, 0.85, 0.85, true)
-    GameTooltip:AddLine("Checked: this character uses its own layout / window positions.", 0.85, 0.85, 0.85, true)
-    GameTooltip:Show()
-  end)
-  useCharPosBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
-
-  -- Only show on the UI tab.
-  if useCharPosBtn.SetParent then useCharPosBtn:SetParent(panels.frames) end
-
-  f._useCharPosBtn = useCharPosBtn
   f._reverseOrderBtn = reverseOrderBtn
 
   f._resetBtn = resetBtn
@@ -7724,14 +7951,16 @@ local function EnsureOptionsFrame()
   return f
 end
 
-end
-
 local function ShowOptions()
   editMode = true
   SetCoreEditMode(true)
   RefreshAll()
   local f = EnsureOptionsFrame()
-  RefreshActiveTab()
+  if not f then
+    Print("Options UI frame unavailable.")
+    return
+  end
+  if RefreshActiveTab then RefreshActiveTab() end
   f:Show()
 end
 

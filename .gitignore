@@ -8,6 +8,7 @@ Cache/
 *.zip
 *.rar
 *.7z
+dist/
 
 ## Editor/IDE
 .vscode/

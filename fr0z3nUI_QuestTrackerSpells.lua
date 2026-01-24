@@ -39,11 +39,57 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   local UDDM_CreateInfo = ctx.UDDM_CreateInfo
   local UDDM_AddButton = ctx.UDDM_AddButton
 
+  local GetRuleExpansionChoices = ctx.GetRuleExpansionChoices
+  local GetRuleCreateExpansion = ctx.GetRuleCreateExpansion
+  local SetRuleCreateExpansion = ctx.SetRuleCreateExpansion
+  local SyncRuleCreateExpansionDrops = ctx.SyncRuleCreateExpansionDrops
+
   local pSpells = panels.spells
 
   local spellsTitle = pSpells:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   spellsTitle:SetPoint("TOPLEFT", 12, -40)
   spellsTitle:SetText("Spells")
+
+  -- Expansion selector (stamped onto new/edited rules as _expansionID/_expansionName)
+  local expLabel = pSpells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  expLabel:SetPoint("TOPRIGHT", pSpells, "TOPRIGHT", -12, -40)
+  expLabel:SetText("Expansion")
+
+  local expDrop = CreateFrame("Frame", nil, pSpells, "UIDropDownMenuTemplate")
+  expDrop:SetPoint("TOPRIGHT", pSpells, "TOPRIGHT", -6, -54)
+  if UDDM_SetWidth then UDDM_SetWidth(expDrop, 180) end
+  if UDDM_SetText then UDDM_SetText(expDrop, "") end
+  pSpells._expansionDrop = expDrop
+
+  local function ResolveExpansionNameByID(id)
+    id = tonumber(id)
+    if not id then return nil end
+    local list = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or {}
+    for _, e in ipairs(list) do
+      if type(e) == "table" and tonumber(e.id) == id and type(e.name) == "string" and e.name ~= "" then
+        return e.name
+      end
+    end
+    return nil
+  end
+
+  function pSpells:_syncRuleCreateExpansion()
+    local id, name = nil, nil
+    if type(GetRuleCreateExpansion) == "function" then
+      id, name = GetRuleCreateExpansion()
+    end
+    if not name and id then
+      name = ResolveExpansionNameByID(id)
+    end
+    local label = name or "Weekly"
+    if UDDM_SetText and expDrop then UDDM_SetText(expDrop, label) end
+  end
+
+  if type(SyncRuleCreateExpansionDrops) == "function" then
+    SyncRuleCreateExpansionDrops()
+  elseif pSpells._syncRuleCreateExpansion then
+    pSpells:_syncRuleCreateExpansion()
+  end
 
   local spellsNameBox = CreateFrame("EditBox", nil, pSpells, "InputBoxTemplate")
   spellsNameBox:SetSize(530, 20)
@@ -293,6 +339,33 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       if UDDM_SetText then UDDM_SetText(spellsColorDrop, name) end
     end
 
+    local modernSpellsExpansion = type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(expDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Expansion") end
+      local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+      for _, e in ipairs(choices) do
+        if type(e) == "table" then
+          local id, name = e.id, e.name
+          local function IsSelected()
+            local curID, curName = nil, nil
+            if type(GetRuleCreateExpansion) == "function" then
+              curID, curName = GetRuleCreateExpansion()
+            end
+            return (tonumber(curID) == tonumber(id)) or (curName ~= nil and curName == name)
+          end
+          local function SetSelected()
+            if type(SetRuleCreateExpansion) == "function" then
+              SetRuleCreateExpansion(id, name)
+            end
+          end
+          if root and root.CreateRadio then
+            root:CreateRadio(name or "Weekly", IsSelected, SetSelected)
+          elseif root and root.CreateButton then
+            root:CreateButton(name or "Weekly", SetSelected)
+          end
+        end
+      end
+    end)
+
     local modernSpellsClass = type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(classDrop, function(root)
       if root and root.CreateTitle then root:CreateTitle("Class") end
       local function ToggleClass(tok)
@@ -451,6 +524,39 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
             RefreshSpellClassDropText()
           end
           UDDM_AddButton(info)
+        end
+      end)
+    end
+
+    if not modernSpellsExpansion then
+      UDDM_Initialize(expDrop, function(self, level)
+        local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = nil, name = "Custom" } }
+        for _, e in ipairs(choices) do
+          if type(e) == "table" then
+            local id, name = e.id, e.name
+            local info = UDDM_CreateInfo()
+            info.text = name or "Custom"
+            info.checked = function()
+              local curID, curName = nil, nil
+              if type(GetRuleCreateExpansion) == "function" then
+                curID, curName = GetRuleCreateExpansion()
+              end
+              if curID == nil and (curName == nil or curName == "" or curName == "Custom") then
+                return (id == nil) and true or false
+              end
+              return (curID ~= nil and id ~= nil and tonumber(curID) == tonumber(id))
+            end
+            info.func = function()
+              if type(SetRuleCreateExpansion) == "function" then
+                if id == nil or name == "Custom" then
+                  SetRuleCreateExpansion(nil, nil)
+                else
+                  SetRuleCreateExpansion(id, name)
+                end
+              end
+            end
+            UDDM_AddButton(info)
+          end
         end
       end)
     end
@@ -738,6 +844,13 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
 
     local rules = type(GetCustomRules) == "function" and GetCustomRules() or {}
 
+    -- Expansion selection (shared across all rule create tabs)
+    local expID, expName = nil, nil
+    if type(GetRuleCreateExpansion) == "function" then
+      expID, expName = GetRuleCreateExpansion()
+    end
+    if not expName and expID then expName = ResolveExpansionNameByID(expID) end
+
     if panels.spells._editingCustomIndex and type(rules[panels.spells._editingCustomIndex]) == "table" then
       local rule = rules[panels.spells._editingCustomIndex]
       rule.frameID = targetFrame
@@ -761,6 +874,14 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       rule.locationID = locationID
       rule.spellKnown = known
       rule.notSpellKnown = notKnown
+
+      if expID then
+        rule._expansionID = expID
+        rule._expansionName = expName
+      else
+        rule._expansionID = nil
+        rule._expansionName = nil
+      end
 
       local op = panels.spells._playerLevelOp
       local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
@@ -809,6 +930,14 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       rule.locationID = locationID
       rule.spellKnown = known
       rule.notSpellKnown = notKnown
+
+      if expID then
+        rule._expansionID = expID
+        rule._expansionName = expName
+      else
+        rule._expansionID = nil
+        rule._expansionName = nil
+      end
 
       local op = panels.spells._playerLevelOp
       local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
@@ -865,6 +994,11 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       end
       if known then r.spellKnown = known end
       if notKnown then r.notSpellKnown = notKnown end
+
+      if expID then
+        r._expansionID = expID
+        r._expansionName = expName
+      end
 
       rules[#rules + 1] = r
       Print("Added spell rule -> " .. targetFrame)

@@ -7,7 +7,17 @@
 ## SavedVariables: fr0z3nUI_QuestTracker_Acc
 ## SavedVariablesPerCharacter: fr0z3nUI_QuestTracker_Char
 
-fr0z3nUI_QuestTrackerWK.lua
+# You can disable optional rule packs by commenting out file lines with '#'.
+# Example: '# fr0z3nUI_QuestTrackerXP04.lua'
+
+# Layout (UI defaults) - always load
+fr0z3nUI_QuestTrackerLayout.lua
+
+# Built-in rule packs (optional)
+fr0z3nUI_QuestTrackerXPWK.lua
+fr0z3nUI_QuestTrackerXPEV.lua
+
+# Expansion rule packs (optional)
 fr0z3nUI_QuestTrackerXP00.lua
 fr0z3nUI_QuestTrackerXP01.lua
 fr0z3nUI_QuestTrackerXP02.lua
@@ -21,6 +31,8 @@ fr0z3nUI_QuestTrackerXP09.lua
 fr0z3nUI_QuestTrackerXP10.lua
 fr0z3nUI_QuestTrackerXP11.lua
 fr0z3nUI_QuestTrackerXP12.lua
+
+# Engine
 fr0z3nUI_QuestTrackerCore.lua
 fr0z3nUI_QuestTrackerQuest.lua
 fr0z3nUI_QuestTrackerItems.lua

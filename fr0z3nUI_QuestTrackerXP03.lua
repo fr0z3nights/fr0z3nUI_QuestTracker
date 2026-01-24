@@ -5,6 +5,9 @@
 
 ns.rules = ns.rules or {}
 
+local EXPANSION_ID = 3
+local EXPANSION_NAME = "Wrath of the Lich King"
+
 local bakedRules = {
 
 {["label"] = "Kirin Tor Ring\n + Filter 'All\", Ring 1", ["frameID"] = "list1", ["key"] = "custom:item:40586:list1:81",
@@ -105,6 +108,8 @@ local bakedRules = {
 for i = 1, #bakedRules do
   local r = bakedRules[i]
   if type(r) == "table" then
+    if r._expansionID == nil then r._expansionID = EXPANSION_ID end
+    if r._expansionName == nil then r._expansionName = EXPANSION_NAME end
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end

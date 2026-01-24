@@ -273,6 +273,9 @@ local function NormalizeSV()
   fr0z3nUI_QuestTracker_Acc.settings.customFrames = fr0z3nUI_QuestTracker_Acc.settings.customFrames or {}
   fr0z3nUI_QuestTracker_Char.settings = fr0z3nUI_QuestTracker_Char.settings or {}
 
+  -- Character-specific layout data (mirrors account customFrames when enabled).
+  fr0z3nUI_QuestTracker_Char.settings.customFrames = fr0z3nUI_QuestTracker_Char.settings.customFrames or {}
+
   fr0z3nUI_QuestTracker_Char.settings.disabledRules = fr0z3nUI_QuestTracker_Char.settings.disabledRules or {}
   fr0z3nUI_QuestTracker_Char.settings.framePos = fr0z3nUI_QuestTracker_Char.settings.framePos or {}
   fr0z3nUI_QuestTracker_Char.settings.frameScroll = fr0z3nUI_QuestTracker_Char.settings.frameScroll or {}
@@ -290,15 +293,20 @@ local function NormalizeSV()
   do
     local function NormalizeAnchorCornerLocal(v)
       v = tostring(v or ""):lower():gsub("%s+", "")
+      v = v:gsub("_", ""):gsub("-", "")
       if v == "tl" or v == "topleft" then return "tl" end
       if v == "tr" or v == "topright" then return "tr" end
+      if v == "tc" or v == "topcenter" or v == "topcentre" then return "tc" end
       if v == "bl" or v == "bottomleft" then return "bl" end
       if v == "br" or v == "bottomright" then return "br" end
+      if v == "bc" or v == "bottomcenter" or v == "bottomcentre" then return "bc" end
       return nil
     end
 
     local function PointToAnchorCornerLocal(point)
       point = tostring(point or ""):upper()
+      if point == "TOP" then return "tc" end
+      if point == "BOTTOM" then return "bc" end
       local vert = point:find("BOTTOM", 1, true) and "b" or "t"
       local horiz = point:find("RIGHT", 1, true) and "r" or "l"
       return vert .. horiz
@@ -321,13 +329,15 @@ local function NormalizeSV()
       corner = NormalizeAnchorCornerLocal(corner) or "tl"
       if corner == "tl" then return "down-right" end
       if corner == "tr" then return "down-left" end
+      if corner == "tc" then return "down-right" end
       if corner == "bl" then return "up-right" end
       if corner == "br" then return "up-left" end
+      if corner == "bc" then return "up-right" end
       return "down-right"
     end
 
-    local frames = fr0z3nUI_QuestTracker_Acc.settings.customFrames
-    if type(frames) == "table" then
+    local function NormalizeFrames(frames)
+      if type(frames) ~= "table" then return end
       for _, def in ipairs(frames) do
         if type(def) == "table" then
           if def.anchorCorner == nil then
@@ -341,6 +351,9 @@ local function NormalizeSV()
         end
       end
     end
+
+    NormalizeFrames(fr0z3nUI_QuestTracker_Acc.settings.customFrames)
+    NormalizeFrames(fr0z3nUI_QuestTracker_Char.settings.customFrames)
   end
 
   EnsureRulesNormalized()
@@ -466,6 +479,21 @@ local function GetEffectiveFrames()
   local base = ns.frames or {}
   local custom = GetCustomFrames()
 
+  local function MergeFrameDef(baseDef, overrideDef)
+    if type(baseDef) ~= "table" then baseDef = {} end
+    if type(overrideDef) ~= "table" then return ShallowCopyTable(baseDef) end
+
+    local out = ShallowCopyTable(baseDef) or {}
+    for k, v in pairs(overrideDef) do
+      -- Only override fields that are explicitly present in the custom definition.
+      -- (Prevents missing point/x/y in custom frames from forcing fallback anchors.)
+      if v ~= nil then
+        out[k] = v
+      end
+    end
+    return out
+  end
+
   local byID = {}
   local ordered = {}
 
@@ -486,7 +514,7 @@ local function GetEffectiveFrames()
         if not byID[id] then
           ordered[#ordered + 1] = id
         end
-        byID[id] = ShallowCopyTable(def)
+        byID[id] = MergeFrameDef(byID[id], def)
       end
     end
   end
@@ -529,73 +557,9 @@ local function GetWindowPosStore()
     return t.windowPos
   end
 
-  local charUI = fr0z3nUI_QuestTracker_Char.settings.ui
-  if type(charUI) == "table" and charUI.useCharWindowPos == true then
-    return Ensure(charUI)
-  end
-
   local accUI = fr0z3nUI_QuestTracker_Acc.settings.ui
   return Ensure(accUI)
 end
-
-local function UseCharacterWindowPositions()
-  NormalizeSV()
-  local ui = fr0z3nUI_QuestTracker_Char.settings.ui
-  return (type(ui) == "table" and ui.useCharWindowPos == true) and true or false
-end
-
-ns.GetUseCharacterWindowPos = UseCharacterWindowPositions
-
-local function SetUseCharacterWindowPositions(v)
-  NormalizeSV()
-  v = v and true or false
-  local charUI = fr0z3nUI_QuestTracker_Char.settings.ui
-  if type(charUI) ~= "table" then
-    charUI = {}
-    fr0z3nUI_QuestTracker_Char.settings.ui = charUI
-  end
-
-  local function IsEmpty(t)
-    if type(t) ~= "table" then return true end
-    return next(t) == nil
-  end
-
-  local accUI = fr0z3nUI_QuestTracker_Acc.settings.ui
-  if type(accUI) ~= "table" then
-    accUI = {}
-    fr0z3nUI_QuestTracker_Acc.settings.ui = accUI
-  end
-  accUI.windowPos = (type(accUI.windowPos) == "table") and accUI.windowPos or {}
-  charUI.windowPos = (type(charUI.windowPos) == "table") and charUI.windowPos or {}
-
-  if v and IsEmpty(charUI.windowPos) and not IsEmpty(accUI.windowPos) then
-    for k, pos in pairs(accUI.windowPos) do
-      if type(pos) == "table" then
-        charUI.windowPos[k] = {
-          point = pos.point,
-          relPoint = pos.relPoint,
-          x = pos.x,
-          y = pos.y,
-        }
-      end
-    end
-  elseif (not v) and IsEmpty(accUI.windowPos) and not IsEmpty(charUI.windowPos) then
-    for k, pos in pairs(charUI.windowPos) do
-      if type(pos) == "table" then
-        accUI.windowPos[k] = {
-          point = pos.point,
-          relPoint = pos.relPoint,
-          x = pos.x,
-          y = pos.y,
-        }
-      end
-    end
-  end
-
-  charUI.useCharWindowPos = v
-end
-
-ns.SetUseCharacterWindowPos = SetUseCharacterWindowPositions
 
 local function SaveWindowPosition(name, frame)
   if not (frame and frame.GetPoint) then return end
@@ -649,8 +613,62 @@ RuleKey = function(rule)
   if type(rule) ~= "table" then return nil end
   if rule.key ~= nil then return tostring(rule.key) end
   if rule.questID then return "q:" .. tostring(rule.questID) end
-  if rule.label then return "label:" .. tostring(rule.label) end
   if rule.group then return "group:" .. tostring(rule.group) .. ":" .. tostring(rule.order or 0) end
+
+  -- Additional stable keys for rules that don't have explicit `key`/`questID`/`label`.
+  if type(rule.item) == "table" and rule.item.itemID ~= nil then
+    local itemID = tonumber(rule.item.itemID)
+    if itemID and itemID > 0 then
+      local required = tonumber(rule.item.required or rule.item.count or 0) or 0
+      local mustHave = (rule.item.mustHave == true) and 1 or 0
+      return "item:" .. tostring(itemID) .. ":" .. tostring(required) .. ":" .. tostring(mustHave)
+    end
+  end
+
+  if rule.locationID ~= nil then
+    local loc = tostring(rule.locationID)
+    if loc ~= "" then
+      return "loc:" .. loc
+    end
+  end
+
+  if rule.spellKnown ~= nil or rule.notSpellKnown ~= nil then
+    local a = tonumber(rule.spellKnown or 0) or 0
+    local b = tonumber(rule.notSpellKnown or 0) or 0
+    if a > 0 or b > 0 then
+      return "spellKnown:" .. tostring(a) .. ":" .. tostring(b)
+    end
+  end
+
+  if type(rule.aura) == "table" then
+    local spellID = tonumber(rule.aura.spellID or 0) or 0
+    if spellID > 0 then
+      local mustHave = (rule.aura.mustHave == true) and 1 or 0
+      return "aura:" .. tostring(spellID) .. ":" .. tostring(mustHave)
+    end
+
+    -- Calendar/timewalking kind rules.
+    local kind = tostring(rule.aura.eventKind or "")
+    if kind ~= "" then
+      local kw = ""
+      if type(rule.aura.keywords) == "table" then
+        local parts = {}
+        for i = 1, #rule.aura.keywords do
+          local s = tostring(rule.aura.keywords[i] or "")
+          if s ~= "" then parts[#parts + 1] = s end
+        end
+        if parts[1] then kw = table.concat(parts, "|") end
+      end
+      if kw ~= "" then
+        return "event:" .. kind .. ":" .. kw
+      end
+      return "event:" .. kind
+    end
+  end
+
+  -- `label` is often not unique; only use it as a last-resort stable key.
+  if rule.label then return "label:" .. tostring(rule.label) end
+
   return nil
 end
 
@@ -1634,13 +1652,15 @@ local function ApplyFontStyle(fs, fontDef)
       local sh = shadow.color or shadow[3]
       local x = tonumber(shadow.x or shadow[1] or 1) or 1
       local y = tonumber(shadow.y or shadow[2] or -1) or -1
-      if sh then
-        local hex = tostring(sh):gsub("^#", "")
-        if hex:len() == 6 then
-          local r = tonumber(hex:sub(1, 2), 16) / 255
-          local g = tonumber(hex:sub(3, 4), 16) / 255
-          local b = tonumber(hex:sub(5, 6), 16) / 255
+      if sh ~= nil then
+        local hex2 = tostring(sh):gsub("^#", "")
+        if hex2:len() == 6 then
+          local r = tonumber(hex2:sub(1, 2), 16) / 255
+          local g = tonumber(hex2:sub(3, 4), 16) / 255
+          local b = tonumber(hex2:sub(5, 6), 16) / 255
           fs:SetShadowColor(r, g, b, 1)
+        else
+          fs:SetShadowColor(0, 0, 0, 1)
         end
       else
         fs:SetShadowColor(0, 0, 0, 1)
@@ -1718,8 +1738,8 @@ local function BuildIndicators(rule)
             local show = EvaluateIndicatorCondition(ind.overlay)
             if show then
               overlay = {
-                text = tostring(ind.overlay.text or ""),
-                color = type(ind.overlay.color) == "table" and ind.overlay.color or { 1.0, 1.0, 1.0 },
+                text = ind.overlay.text,
+                color = ind.overlay.color,
               }
             end
           end
@@ -1797,7 +1817,15 @@ local function ApplyOverlayFont(label, baseFS)
   label:SetFont(font, overlaySize, flags)
 end
 
-local function GetIndicatorMetrics(baseFS)
+local function ClampPadPx(v)
+  v = tonumber(v)
+  if v == nil then return nil end
+  if v < -10 then v = -10 end
+  if v > 50 then v = 50 end
+  return v
+end
+
+local function GetIndicatorMetrics(baseFS, padPx)
   local size = 12
   if baseFS and baseFS.GetFont then
     local _, s = baseFS:GetFont()
@@ -1809,12 +1837,21 @@ local function GetIndicatorMetrics(baseFS)
   if icon < 10 then icon = 10 end
   if icon > 22 then icon = 22 end
 
+  local uiPad = ClampPadPx(padPx)
+  if uiPad == nil and type(GetUISetting) == "function" then
+    local v = GetUISetting("pad", nil)
+    if v == nil then v = GetUISetting("listPadding", 0) end
+    uiPad = ClampPadPx(v) or 0
+  end
+  uiPad = uiPad or 0
+
   local gap = 2
-  local pad = 4
+  local pad = 4 + uiPad
+  if pad < 0 then pad = 0 end
   return icon, gap, pad
 end
 
-local function RenderIndicators(frame, rowIndex, baseFS, indicators)
+local function RenderIndicators(frame, rowIndex, baseFS, indicators, padPx)
   local row = EnsureIndicatorRow(frame, rowIndex)
   if not row then return end
 
@@ -1823,13 +1860,31 @@ local function RenderIndicators(frame, rowIndex, baseFS, indicators)
     return
   end
 
-  local ICON, GAP, PAD = GetIndicatorMetrics(baseFS)
+  local ICON, GAP, PAD = GetIndicatorMetrics(baseFS, padPx)
+
+  local function IsEffectivelyBlankText(fs)
+    if not fs or not fs.GetText then return true end
+    local t = fs:GetText()
+    if t == nil or t == "" then return true end
+    -- Treat NBSP as whitespace too.
+    t = tostring(t):gsub("\194\160", " ")
+    t = t:gsub("%s+", "")
+    return t == ""
+  end
+
+  local blankText = IsEffectivelyBlankText(baseFS)
+  local textWidth = blankText and 0 or (baseFS:GetStringWidth() or 0)
+
+  -- Only add spacing between text and icons when there is real text.
+  -- For icon-only rows, avoid reserving extra space.
+  local outerGap = blankText and 0 or PAD
+  local leftInset = blankText and 0 or PAD
 
   local count = #indicators
-  local width = PAD + (count * ICON) + ((count - 1) * GAP)
+  local width = leftInset + (count * ICON) + ((count - 1) * GAP)
 
   row.container:ClearAllPoints()
-  row.container:SetPoint("TOPLEFT", baseFS, "TOPLEFT", (baseFS:GetStringWidth() or 0) + PAD, 0)
+  row.container:SetPoint("TOPLEFT", baseFS, "TOPLEFT", textWidth + outerGap, 0)
   row.container:SetSize(width, ICON)
   row.container:Show()
 
@@ -1838,7 +1893,7 @@ local function RenderIndicators(frame, rowIndex, baseFS, indicators)
     local tex, lbl = EnsureIndicatorIcon(row, i)
     if tex and lbl then
       tex:ClearAllPoints()
-      tex:SetPoint("TOPLEFT", row.container, "TOPLEFT", PAD + (i - 1) * (ICON + GAP), 0)
+      tex:SetPoint("TOPLEFT", row.container, "TOPLEFT", leftInset + (i - 1) * (ICON + GAP), 0)
       tex:SetSize(ICON, ICON)
       if tex.SetColorTexture then
         local c = spec.color or { 1, 0, 0 }
@@ -1874,20 +1929,37 @@ local function RenderIndicators(frame, rowIndex, baseFS, indicators)
   end
 end
 
-local function GetIndicatorsWidth(baseFS, indicators)
+local function GetIndicatorsWidth(baseFS, indicators, padPx)
   if type(indicators) ~= "table" or indicators[1] == nil then return 0 end
-  local ICON, GAP, PAD = GetIndicatorMetrics(baseFS)
+  local ICON, GAP, PAD = GetIndicatorMetrics(baseFS, padPx)
+
+  local blankText = true
+  if baseFS and baseFS.GetText then
+    local t = baseFS:GetText()
+    if t ~= nil and t ~= "" then
+      t = tostring(t):gsub("\194\160", " ")
+      t = t:gsub("%s+", "")
+      blankText = (t == "")
+    end
+  end
+  local leftInset = blankText and 0 or PAD
+
   local count = #indicators
-  return PAD + (count * ICON) + ((count - 1) * GAP)
+  return leftInset + (count * ICON) + ((count - 1) * GAP)
 end
 
-local function BuildRuleStatus(rule, ctx)
+local function BuildRuleStatus(rule, ctx, opts)
   local questID = tonumber(rule and rule.questID)
+
+  if type(opts) ~= "table" then opts = nil end
+  -- In edit mode we typically bypass visibility gates so you can inspect/toggle everything.
+  -- Some callers (bars) want the normal "only active" filtering even while editing.
+  local applyGates = (not editMode) or (opts and opts.forceNormalVisibility == true) or false
 
   if type(ctx) ~= "table" then ctx = nil end
 
   -- Generic conditional rules (used for profession/flow helpers)
-  if not editMode and type(rule) == "table" and type(rule.showIf) == "table" then
+  if applyGates and type(rule) == "table" and type(rule.showIf) == "table" then
     local s = rule.showIf
 
     if s.class ~= nil then
@@ -1943,7 +2015,7 @@ local function BuildRuleStatus(rule, ctx)
   local completed = false
   if questID and IsQuestCompleted(questID) then
     completed = true
-    if hideWhenCompleted and not editMode then
+    if hideWhenCompleted and applyGates then
       return nil
     end
   end
@@ -1972,7 +2044,7 @@ local function BuildRuleStatus(rule, ctx)
     end
     if ok then
       completed = true
-      if hideWhenCompleted and not editMode then
+      if hideWhenCompleted and applyGates then
         return nil
       end
     end
@@ -1988,7 +2060,7 @@ local function BuildRuleStatus(rule, ctx)
 
   -- Require a remembered TW kind (used by token indicator rows that should appear
   -- on alts once any character picked up the weekly quest).
-  if not editMode and type(rule) == "table" and rule.requireRememberedTimewalkingKind == true then
+  if applyGates and type(rule) == "table" and rule.requireRememberedTimewalkingKind == true then
     local twKind = rule.twKind
     if twKind == nil then
       return nil
@@ -2034,12 +2106,12 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Prereqs gate
-  if not editMode and not ArePrereqsMet(rule.prereq) then
+  if applyGates and not ArePrereqsMet(rule.prereq) then
     return nil
   end
 
   -- Hide if any quest is currently in log (useful to avoid duplicate reminder rows)
-  if not editMode and type(rule) == "table" and type(rule.hideIfAnyQuestInLog) == "table" then
+  if applyGates and type(rule) == "table" and type(rule.hideIfAnyQuestInLog) == "table" then
     for _, q in ipairs(rule.hideIfAnyQuestInLog) do
       local qid = tonumber(q)
       if qid and qid > 0 and IsQuestInLog(qid) then
@@ -2049,7 +2121,7 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Hide if any quest is completed (useful when quests drop from log on completion)
-  if not editMode and type(rule) == "table" and type(rule.hideIfAnyQuestCompleted) == "table" then
+  if applyGates and type(rule) == "table" and type(rule.hideIfAnyQuestCompleted) == "table" then
     for _, q in ipairs(rule.hideIfAnyQuestCompleted) do
       local qid = tonumber(q)
       if qid and qid > 0 and IsQuestCompleted(qid) then
@@ -2059,14 +2131,14 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Hide a generic reminder if we've already learned which TW weekly is active this reset.
-  if not editMode and type(rule) == "table" and rule.hideIfRememberedTimewalkingKind == true then
+  if applyGates and type(rule) == "table" and rule.hideIfRememberedTimewalkingKind == true then
     if HasRememberedWeeklyTimewalkingKind() then
       return nil
     end
   end
 
   -- Class gate (optional)
-  if not editMode and type(rule) == "table" and rule.class ~= nil then
+  if applyGates and type(rule) == "table" and rule.class ~= nil then
     local have = tostring((ctx and ctx.class) or GetPlayerClass() or ""):upper()
     local want = rule.class
 
@@ -2092,21 +2164,21 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Primary-professions-missing gate (optional)
-  if not editMode and type(rule) == "table" and rule.missingPrimaryProfessions == true then
+  if applyGates and type(rule) == "table" and rule.missingPrimaryProfessions == true then
     if not (IsPrimaryProfessionSlotMissing(1) or IsPrimaryProfessionSlotMissing(2)) then
       return nil
     end
   end
 
   -- Not-in-group gate (optional)
-  if not editMode and type(rule) == "table" and rule.notInGroup == true then
+  if applyGates and type(rule) == "table" and rule.notInGroup == true then
     if (ctx and ctx.isInGroup) or IsInGroupSafe() then
       return nil
     end
   end
 
   -- Location gate (optional; uiMapID)
-  if not editMode and type(rule) == "table" and rule.locationID ~= nil then
+  if applyGates and type(rule) == "table" and rule.locationID ~= nil then
     local wants = ParseLocationIDs(rule.locationID)
     if wants and wants[1] then
       local have = (ctx and ctx.mapID) or GetBestMapIDSafe()
@@ -2121,7 +2193,7 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Spell gates (optional)
-  if not editMode and type(rule) == "table" then
+  if applyGates and type(rule) == "table" then
     local function CheckList(field, shouldKnow)
       local v = rule[field]
       if v == nil then return true end
@@ -2144,14 +2216,14 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Rested-area gate (optional)
-  if not editMode and type(rule) == "table" and rule.restedOnly == true then
+  if applyGates and type(rule) == "table" and rule.restedOnly == true then
     if not IsRestingSafe() then
       return nil
     end
   end
 
   -- Reputation gate (optional)
-  if not editMode and type(rule) == "table" and type(rule.rep) == "table" and rule.rep.factionID then
+  if applyGates and type(rule) == "table" and type(rule.rep) == "table" and rule.rep.factionID then
     local standingID = GetStandingIDByFactionID(rule.rep.factionID)
     if standingID then
       local minStanding = tonumber(rule.rep.minStanding)
@@ -2165,7 +2237,7 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Faction gate (optional)
-  if not editMode and type(rule) == "table" and rule.faction ~= nil then
+  if applyGates and type(rule) == "table" and rule.faction ~= nil then
     local want = tostring(rule.faction)
     if want == "Alliance" or want == "Horde" then
       local have = (ctx and ctx.faction) or GetPlayerFaction()
@@ -2176,7 +2248,7 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Level gate (useful for Timewalking "max" vs "leveling" variants)
-  if not editMode and type(rule) == "table" and rule.levelGate ~= nil then
+  if applyGates and type(rule) == "table" and rule.levelGate ~= nil then
     local g = tostring(rule.levelGate):lower()
     local atMax = (ctx and ctx.isAtMaxLevel ~= nil) and (ctx.isAtMaxLevel and true or false) or IsAtMaxLevel()
     if g == "max" and not atMax then
@@ -2188,7 +2260,7 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Player level gate (optional; applies to any rule type)
-  if not editMode and not IsPlayerLevelGateMet(rule, ctx) then
+  if applyGates and not IsPlayerLevelGateMet(rule, ctx) then
     return nil
   end
 
@@ -2196,7 +2268,7 @@ local function BuildRuleStatus(rule, ctx)
   -- Exception: if the quest is already completed and the rule is configured to
   -- keep showing when completed, allow it to remain visible even if it drops
   -- out of the quest log (Timewalking weeklies commonly do this).
-  if not editMode and questID and rule.requireInLog == true and not IsQuestInLog(questID) then
+  if applyGates and questID and rule.requireInLog == true and not IsQuestInLog(questID) then
     local twKind = (type(rule) == "table") and rule.twKind or nil
     if twKind ~= nil and HasRememberedWeeklyTimewalkingKind(twKind) then
       -- allow: another character already picked up this week's TW quest
@@ -2206,7 +2278,7 @@ local function BuildRuleStatus(rule, ctx)
   end
 
   -- Aura gate
-  if not editMode and type(rule.aura) == "table" then
+  if applyGates and type(rule.aura) == "table" then
     local has = nil
     local rememberedKey = nil
 
@@ -2231,10 +2303,10 @@ local function BuildRuleStatus(rule, ctx)
     end
 
     if has ~= nil then
-      if has and rule.aura.rememberDaily == true and (rule.aura.mustHave ~= false) then
+      if has and rule.aura.rememberDaily == true and (rule.aura.mustHave ~= false) and (not editMode) then
         RememberDailyAura(rememberedKey)
       end
-      if has and rule.aura.rememberWeekly == true and (rule.aura.mustHave ~= false) then
+      if has and rule.aura.rememberWeekly == true and (rule.aura.mustHave ~= false) and (not editMode) then
         RememberWeeklyAura(rememberedKey)
       end
       if (not has) and rule.aura.rememberDaily == true and (rule.aura.mustHave ~= false) then
@@ -2263,7 +2335,7 @@ local function BuildRuleStatus(rule, ctx)
   if type(rule.item) == "table" and rule.item.itemID then
     local itemID = tonumber(rule.item.itemID)
 
-    if not editMode then
+    if applyGates then
       local currencyID = tonumber(rule.item.currencyID)
       local currencyRequired = tonumber(rule.item.currencyRequired)
       if currencyID and currencyRequired and currencyID > 0 and currencyRequired > 0 then
@@ -2274,7 +2346,7 @@ local function BuildRuleStatus(rule, ctx)
     end
 
     -- Optional quest-gating for quest-collection items.
-    if not editMode then
+    if applyGates then
       local qid = tonumber(rule.item.questID)
       if qid and qid > 0 and IsQuestCompleted(qid) then
         return nil
@@ -2287,14 +2359,14 @@ local function BuildRuleStatus(rule, ctx)
 
     local count = GetItemCountSafe(itemID)
 
-    if not editMode then
+    if applyGates then
       local showBelow = tonumber(rule.item.showWhenBelow)
       if showBelow and showBelow > 0 and count >= showBelow then
         return nil
       end
     end
 
-    if not editMode then
+    if applyGates then
       if rule.item.hideWhenAcquired == true and count > 0 then
         return nil
       end
@@ -2315,7 +2387,7 @@ local function BuildRuleStatus(rule, ctx)
     end
 
     -- Optional vendor reminder: if exalted, show a SELL prompt for remaining items.
-    if not editMode and type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
+    if applyGates and type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
       local standingID = GetStandingIDByFactionID(rule.rep.factionID)
       if standingID and standingID >= 8 then
         if count <= 0 then
@@ -2448,10 +2520,18 @@ local function BuildRuleStatus(rule, ctx)
   else
     local textName = (type(rule) == "table" and rule.label ~= nil and tostring(rule.label) ~= "") and tostring(rule.label) or "Task"
     rawTitle = textName
-    if type(rule) == "table" and rule.textInfo ~= nil and tostring(rule.textInfo) ~= "" then
+    if type(rule) == "table" and rule.preferQuestInfoForTitle == true then
+      local qiLine = FirstNonEmptyLine(rule.questInfo)
+      if qiLine then
+        -- Intentionally allow NBSP/blank-like questInfo to suppress label text (used by TW token rows).
+        title = tostring(qiLine)
+      end
+    end
+
+    if title == nil and type(rule) == "table" and rule.textInfo ~= nil and tostring(rule.textInfo) ~= "" then
       title = tostring(rule.textInfo)
     else
-      title = textName
+      title = title or textName
     end
   end
 
@@ -2521,6 +2601,7 @@ local function BuildRuleStatus(rule, ctx)
   return {
     questID = questID,
     title = title,
+    rawTitle = rawTitle,
     editText = editText,
     extra = extra,
     completed = completed,
@@ -2584,16 +2665,31 @@ end
 
 local function GetFramePosStore()
   NormalizeSV()
+  fr0z3nUI_QuestTracker_Acc.settings.framePos = fr0z3nUI_QuestTracker_Acc.settings.framePos or {}
   fr0z3nUI_QuestTracker_Char.settings.framePos = fr0z3nUI_QuestTracker_Char.settings.framePos or {}
-  return fr0z3nUI_QuestTracker_Char.settings.framePos
+  return fr0z3nUI_QuestTracker_Acc.settings.framePos
 end
+
+local function ClearSavedFramePosition(frameID)
+  frameID = tostring(frameID or "")
+  if frameID == "" then return false end
+  local store = GetFramePosStore()
+  if type(store) ~= "table" then return false end
+  store[frameID] = nil
+  return true
+end
+
+ns.ClearSavedFramePosition = ClearSavedFramePosition
 
 local function NormalizeAnchorCorner(v)
   v = tostring(v or ""):lower():gsub("%s+", "")
+  v = v:gsub("_", ""):gsub("-", "")
   if v == "tl" or v == "topleft" then return "tl" end
   if v == "tr" or v == "topright" then return "tr" end
+  if v == "tc" or v == "topcenter" or v == "topcentre" then return "tc" end
   if v == "bl" or v == "bottomleft" then return "bl" end
   if v == "br" or v == "bottomright" then return "br" end
+  if v == "bc" or v == "bottomcenter" or v == "bottomcentre" then return "bc" end
   return nil
 end
 
@@ -2601,13 +2697,17 @@ local function AnchorCornerToPoint(corner)
   corner = NormalizeAnchorCorner(corner)
   if corner == "tl" then return "TOPLEFT" end
   if corner == "tr" then return "TOPRIGHT" end
+  if corner == "tc" then return "TOP" end
   if corner == "bl" then return "BOTTOMLEFT" end
   if corner == "br" then return "BOTTOMRIGHT" end
+  if corner == "bc" then return "BOTTOM" end
   return nil
 end
 
 local function PointToAnchorCorner(point)
   point = tostring(point or ""):upper()
+  if point == "TOP" then return "tc" end
+  if point == "BOTTOM" then return "bc" end
   local vert = point:find("BOTTOM", 1, true) and "b" or "t"
   local horiz = point:find("RIGHT", 1, true) and "r" or "l"
   return vert .. horiz
@@ -2723,19 +2823,9 @@ ns.ApplyFAOBackdrop = ApplyFAOBackdrop
 local function EnsureAnchorLabel(frame)
   if not frame then return nil end
   if frame._anchorLabel then return frame._anchorLabel end
-  if not frame.CreateFontString then return nil end
-
-  local fs = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  if fs.SetJustifyH then fs:SetJustifyH("LEFT") end
-  if fs.SetJustifyV then fs:SetJustifyV("MIDDLE") end
-  fs:SetText("|cff00ccff[FQT]|r")
-  fs:Hide()
-
-  frame._anchorLabel = fs
-
   local btn = CreateFrame("Button", nil, frame)
   btn:EnableMouse(true)
-  btn:SetSize(80, 14)
+  btn:SetSize(92, 16)
   btn:RegisterForDrag("LeftButton")
   btn:SetScript("OnDragStart", function(self)
     if not editMode then return end
@@ -2751,8 +2841,18 @@ local function EnsureAnchorLabel(frame)
     end
   end)
   btn:Hide()
-  frame._anchorBtn = btn
 
+  if not btn.CreateFontString then return nil end
+  local fs = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  if fs.SetJustifyH then fs:SetJustifyH("LEFT") end
+  if fs.SetJustifyV then fs:SetJustifyV("MIDDLE") end
+  fs:SetPoint("LEFT", 6, 0)
+  fs:SetPoint("RIGHT", -6, 0)
+  fs:SetText("|cff00ccff[FQT]|r")
+  fs:Hide()
+
+  frame._anchorLabel = fs
+  frame._anchorBtn = btn
   return fs
 end
 
@@ -2781,65 +2881,76 @@ UpdateAnchorLabel = function(frame, frameDef)
     local p = frame:GetPoint(1)
     corner = PointToAnchorCorner(p)
   end
-  if corner ~= "tl" and corner ~= "tr" and corner ~= "bl" and corner ~= "br" then corner = "tl" end
+  if corner ~= "tl" and corner ~= "tr" and corner ~= "tc" and corner ~= "bl" and corner ~= "br" and corner ~= "bc" then corner = "tl" end
 
   fs:ClearAllPoints()
   if corner == "tr" then
     if fs.SetJustifyH then fs:SetJustifyH("RIGHT") end
-    fs:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, 2)
+    if btn then
+      btn:ClearAllPoints()
+      btn:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, 0)
+    end
+  elseif corner == "tc" then
+    if fs.SetJustifyH then fs:SetJustifyH("CENTER") end
+    if btn then
+      btn:ClearAllPoints()
+      btn:SetPoint("BOTTOM", frame, "TOP", 0, 0)
+    end
   elseif corner == "bl" then
     if fs.SetJustifyH then fs:SetJustifyH("LEFT") end
-    fs:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, -2)
+    if btn then
+      btn:ClearAllPoints()
+      btn:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, 0)
+    end
   elseif corner == "br" then
     if fs.SetJustifyH then fs:SetJustifyH("RIGHT") end
-    fs:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, -2)
+    if btn then
+      btn:ClearAllPoints()
+      btn:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+    end
+  elseif corner == "bc" then
+    if fs.SetJustifyH then fs:SetJustifyH("CENTER") end
+    if btn then
+      btn:ClearAllPoints()
+      btn:SetPoint("TOP", frame, "BOTTOM", 0, 0)
+    end
   else
     if fs.SetJustifyH then fs:SetJustifyH("LEFT") end
-    fs:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 2)
+    if btn then
+      btn:ClearAllPoints()
+      btn:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 0)
+    end
   end
 
-  fs:Show()
-
   if btn then
-    btn:ClearAllPoints()
-    btn:SetAllPoints(fs)
+    fs:ClearAllPoints()
+    fs:SetPoint("LEFT", btn, "LEFT", 6, 0)
+    fs:SetPoint("RIGHT", btn, "RIGHT", -6, 0)
     btn:SetFrameLevel((frame.GetFrameLevel and frame:GetFrameLevel() or 1) + 20)
     btn:Show()
   end
+
+  fs:Show()
 
   -- Keep the bar "List" inspect button attached to the bar's actual anchor corner.
   if frame and frame._barInspectBtn then
     -- Map TL/TR/BL/BR to the button side:
     -- TL + down-right => right, TR + down-left => left, BL + up-right => right, BR + up-left => left.
     local c = tostring(corner or "tl")
-    if c ~= "tl" and c ~= "tr" and c ~= "bl" and c ~= "br" then c = "tl" end
-    local vert = (c:sub(1, 1) == "t") and "TOP" or "BOTTOM"
-    local horiz = (c:sub(2, 2) == "l") and "RIGHT" or "LEFT"
-    local p = vert .. horiz
+    local p
+    if c == "tc" then
+      p = "TOPRIGHT"
+    elseif c == "bc" then
+      p = "BOTTOMRIGHT"
+    else
+      if c ~= "tl" and c ~= "tr" and c ~= "bl" and c ~= "br" then c = "tl" end
+      local vert = (c:sub(1, 1) == "t") and "TOP" or "BOTTOM"
+      local horiz = (c:sub(2, 2) == "l") and "RIGHT" or "LEFT"
+      p = vert .. horiz
+    end
     frame._barInspectBtn:ClearAllPoints()
     frame._barInspectBtn:SetPoint(p, frame, p, (p:find("LEFT", 1, true) and 6 or -6), (p:find("TOP", 1, true) and -6 or 6))
   end
-end
-
-local _dragState = nil
-
-local function FindOwningTrackerFrame(widget)
-  local w = widget
-  while w do
-    if w._isTrackerFrame then
-      return w
-    end
-    local id = w._id
-    if id ~= nil and framesByID and framesByID[tostring(id)] == w then
-      return w
-    end
-    if w.GetParent then
-      w = w:GetParent()
-    else
-      w = nil
-    end
-  end
-  return nil
 end
 
 local function AssignRuleToFrame(rule, frameID)
@@ -2865,68 +2976,143 @@ ns.AssignRuleToFrame = AssignRuleToFrame
 
 local function ReorderCustomRulesInFrame(frame, movedRule, destAbsIndex)
   if type(movedRule) ~= "table" then return false end
-  if not frame or type(frame._lastEntries) ~= "table" then return false end
+  if not frame then return false end
 
-  if not FindCustomRuleIndex(movedRule) then
-    Print("That rule isn't custom; can't reorder it.")
+  local function GetEntriesForOrdering(f)
+    if type(f._lastAllEntries) == "table" then return f._lastAllEntries end
+    if type(f._lastEntries) == "table" then return f._lastEntries end
+    return nil
+  end
+
+  local entries = GetEntriesForOrdering(frame)
+  if type(entries) ~= "table" then return false end
+
+  local visibleRules = {}
+  for i = 1, #entries do
+    local r = entries[i] and entries[i].rule
+    if type(r) == "table" then
+      visibleRules[#visibleRules + 1] = r
+    end
+  end
+
+  return (type(ns.ReorderRulesInFrameByID) == "function")
+    and ns.ReorderRulesInFrameByID(frame._id, movedRule, destAbsIndex, visibleRules)
+    or false
+end
+
+-- Reorder rules within a specific frame id.
+--
+-- This is used by both:
+--   1) Edit-mode move buttons in actual frames (bar/list contents)
+--   2) Options UI (Rules tab) where we don't have a rendered frame object
+--
+-- Parameters:
+--   frameID (string)
+--   movedRule (table)
+--   destIndex (number)              -- index into `visibleRules`
+--   visibleRules (table[] of rule)  -- the rules currently considered "visible" for ordering
+local function ReorderRulesInFrameByID(frameID, movedRule, destIndex, visibleRules)
+  frameID = tostring(frameID or "")
+  if frameID == "" then return false end
+  if type(movedRule) ~= "table" then return false end
+  if type(visibleRules) ~= "table" then return false end
+
+  local movedKey = RuleKey and RuleKey(movedRule) or nil
+  if not movedKey then
+    Print("That rule can't be reordered.")
     return false
   end
 
-  local entries = frame._lastEntries
+  destIndex = tonumber(destIndex) or 1
+  if destIndex < 1 then destIndex = 1 end
+  if destIndex > #visibleRules then destIndex = #visibleRules end
+  if destIndex < 1 then return false end
 
-  local function IsCustomRule(r)
-    return FindCustomRuleIndex(r) ~= nil
+  local destRule = visibleRules[destIndex]
+  local destKey = (type(destRule) == "table") and (RuleKey and RuleKey(destRule) or nil) or nil
+  if not destKey then return false end
+
+  -- Per-frame ordering is stored on the custom frame def as `ruleOrder`.
+  local function FindOrCreateCustomFrameDefLocal(id)
+    id = tostring(id or "")
+    if id == "" then return nil end
+    local list = GetCustomFrames()
+    for _, d in ipairs(list) do
+      if type(d) == "table" and tostring(d.id or "") == id then
+        return d
+      end
+    end
+    local d = { id = id }
+    list[#list + 1] = d
+    return d
   end
 
-  local customRules = {}
-  for _, st in ipairs(entries) do
-    local r = st and st.rule
-    if IsCustomRule(r) then
-      customRules[#customRules + 1] = r
+  local def = FindOrCreateCustomFrameDefLocal(frameID)
+  if type(def) ~= "table" then return false end
+
+  -- Build the visible key sequence.
+  local keys = {}
+  for i = 1, #visibleRules do
+    local r = visibleRules[i]
+    local k = (type(r) == "table") and (RuleKey and RuleKey(r) or nil) or nil
+    if k then keys[#keys + 1] = tostring(k) end
+  end
+  if #keys == 0 then return false end
+
+  -- Ensure the stored order list contains all currently visible keys (keep existing order, append new).
+  if type(def.ruleOrder) ~= "table" then def.ruleOrder = {} end
+  local seen = {}
+  for _, k in ipairs(def.ruleOrder) do
+    seen[tostring(k)] = true
+  end
+  for _, k in ipairs(keys) do
+    local kk = tostring(k)
+    if not seen[kk] then
+      def.ruleOrder[#def.ruleOrder + 1] = kk
+      seen[kk] = true
     end
   end
 
-  local fromPos = nil
-  for i = 1, #customRules do
-    if customRules[i] == movedRule then
-      fromPos = i
-      break
+  -- Create a current-order slice of ruleOrder for this frame's visible keys.
+  local current = {}
+  local currentIndex = {}
+  for _, k in ipairs(def.ruleOrder) do
+    local kk = tostring(k)
+    if seen[kk] and not currentIndex[kk] then
+      current[#current + 1] = kk
+      currentIndex[kk] = #current
     end
   end
-  if not fromPos then return false end
 
-  destAbsIndex = tonumber(destAbsIndex) or 1
-  if destAbsIndex < 1 then destAbsIndex = 1 end
-  if destAbsIndex > #entries then destAbsIndex = #entries end
-
-  local seen = 0
-  local destPos = 1
-  for i = 1, destAbsIndex do
-    local r = entries[i] and entries[i].rule
-    if IsCustomRule(r) then
-      seen = seen + 1
-      destPos = seen
-    end
-  end
-  if seen == 0 then
-    destPos = 1
-  elseif destAbsIndex >= #entries then
-    destPos = #customRules
-  end
-  if destPos < 1 then destPos = 1 end
-  if destPos > #customRules then destPos = #customRules end
-
+  local fromPos = currentIndex[tostring(movedKey)]
+  local destPos = currentIndex[tostring(destKey)]
+  if not fromPos or not destPos then return false end
   if fromPos == destPos then return true end
 
-  table.remove(customRules, fromPos)
-  table.insert(customRules, destPos, movedRule)
+  table.remove(current, fromPos)
+  table.insert(current, destPos, tostring(movedKey))
 
-  for i = 1, #customRules do
-    customRules[i].order = i
+  -- Rewrite the stored order list so it matches the new current order for visible keys,
+  -- while preserving any keys not currently visible (kept at the end).
+  do
+    local keep = {}
+    local vis = {}
+    for _, k in ipairs(current) do vis[k] = true end
+    for _, k in ipairs(def.ruleOrder) do
+      local kk = tostring(k)
+      if not vis[kk] then
+        keep[#keep + 1] = kk
+      end
+    end
+    def.ruleOrder = {}
+    for _, k in ipairs(current) do def.ruleOrder[#def.ruleOrder + 1] = k end
+    for _, k in ipairs(keep) do def.ruleOrder[#def.ruleOrder + 1] = k end
   end
 
   return true
 end
+
+ns.ReorderRulesInFrameByID = ReorderRulesInFrameByID
 
 local function CreateContainerFrame(def)
   local parent = UIParent
@@ -2952,6 +3138,98 @@ local function CreateContainerFrame(def)
   f.title:Hide()
 
   return f
+end
+
+local function ResolveNamedFrame(name)
+  name = tostring(name or "")
+  name = name:gsub("^%s+", ""):gsub("%s+$", "")
+  if name == "" then return nil end
+  return _G and _G[name] or nil
+end
+
+local function NormalizeVisLinkMode(def)
+  if type(def) ~= "table" then return "off" end
+  local mode = tostring(def.visibilityLinkMode or ""):lower():gsub("%s+", "")
+  if mode == "reparent" then mode = "parent" end
+  if mode ~= "parent" and mode ~= "hook" then
+    -- Back-compat: old configs could have parentFrame set.
+    if type(def.parentFrame) == "string" and def.parentFrame ~= "" then
+      mode = "parent"
+    else
+      mode = "off"
+    end
+  end
+  return mode
+end
+
+local function GetVisLinkFrameName(def)
+  if type(def) ~= "table" then return "" end
+  local nm = def.visibilityLinkFrame
+  if (nm == nil or nm == "") and type(def.parentFrame) == "string" then
+    nm = def.parentFrame
+  end
+  nm = tostring(nm or "")
+  nm = nm:gsub("^%s+", ""):gsub("%s+$", "")
+  return nm
+end
+
+local function ApplyVisLink(frame, def, baseScale)
+  if not frame then return false end
+  if editMode then
+    -- In edit mode, always show and keep frames under UIParent; apply base scale.
+    frame._visLinkForceHide = nil
+    if frame.GetParent and frame.SetParent and frame:GetParent() ~= UIParent then
+      frame:SetParent(UIParent)
+    end
+    if frame.SetScale then frame:SetScale(tonumber(baseScale) or 1) end
+    return false
+  end
+
+  local mode = NormalizeVisLinkMode(def)
+  local nm = GetVisLinkFrameName(def)
+  local target = (nm ~= "") and ResolveNamedFrame(nm) or nil
+
+  -- Parent mode: re-parent live frames so hide/show propagates.
+  if mode == "parent" and target and frame.SetParent and frame.GetParent then
+    if frame:GetParent() ~= target then
+      frame:SetParent(target)
+    end
+
+    -- Compensate scale so the frame stays the same size even if the target parent is scaled.
+    if frame.SetScale and target.GetEffectiveScale and UIParent and UIParent.GetEffectiveScale then
+      local parentEff = target:GetEffectiveScale() or 1
+      if parentEff == 0 then parentEff = 1 end
+      local uiEff = UIParent:GetEffectiveScale() or 1
+      if uiEff == 0 then uiEff = 1 end
+      local base = tonumber(baseScale) or 1
+      frame:SetScale(base * (uiEff / parentEff))
+    end
+  elseif frame.SetParent and frame.GetParent then
+    -- If we previously re-parented, put it back.
+    if frame:GetParent() ~= UIParent then
+      frame:SetParent(UIParent)
+    end
+    if frame.SetScale then frame:SetScale(tonumber(baseScale) or 1) end
+  end
+
+  if mode == "hook" and target and target.HookScript and target.IsShown then
+    if frame._visLinkHookTarget ~= target then
+      frame._visLinkHookTarget = target
+      local function Sync()
+        if not frame then return end
+        -- Force a re-eval of visibility with the new target state.
+        RefreshAll()
+      end
+      frame._visLinkHookFn = Sync
+      target:HookScript("OnShow", Sync)
+      target:HookScript("OnHide", Sync)
+    end
+    frame._visLinkForceHide = (target:IsShown() ~= true) and true or nil
+    return frame._visLinkForceHide and true or false
+  end
+
+  frame._visLinkForceHide = nil
+  return false
 end
 
 local function HideExtraFrameRows(frame, fromIndex)
@@ -2987,6 +3265,23 @@ local function HideExtraFrameRows(frame, fromIndex)
     end
   end
 
+  if type(frame._moveButtons) == "table" then
+    local up = frame._moveButtons.up
+    local down = frame._moveButtons.down
+    if type(up) == "table" then
+      for i = fromIndex, #up do
+        local b = up[i]
+        if b and b.Hide then b:Hide() end
+      end
+    end
+    if type(down) == "table" then
+      for i = fromIndex, #down do
+        local b = down[i]
+        if b and b.Hide then b:Hide() end
+      end
+    end
+  end
+
   if type(frame._indicatorRows) == "table" then
     for i = fromIndex, #frame._indicatorRows do
       local row = frame._indicatorRows[i]
@@ -3011,7 +3306,7 @@ local function CreateBarFrame(def)
   f._wheelEnabled = (editMode and true) or ((IsShiftKeyDown and IsShiftKeyDown()) and true or false)
   f:EnableMouseWheel(f._wheelEnabled)
   f:SetScript("OnMouseWheel", function(self, delta)
-    if not (IsShiftKeyDown and IsShiftKeyDown()) then return end
+    if not (editMode or (IsShiftKeyDown and IsShiftKeyDown())) then return end
     local id = tostring(self._id or "")
     if id == "" then return end
     local offset = GetFrameScrollOffset(id)
@@ -3051,7 +3346,7 @@ local function CreateListFrame(def)
   f._wheelEnabled = (editMode and true) or ((IsShiftKeyDown and IsShiftKeyDown()) and true or false)
   f:EnableMouseWheel(f._wheelEnabled)
   f:SetScript("OnMouseWheel", function(self, delta)
-    if not (IsShiftKeyDown and IsShiftKeyDown()) then return end
+    if not (editMode or (IsShiftKeyDown and IsShiftKeyDown())) then return end
     local id = tostring(self._id or "")
     if id == "" then return end
     local offset = GetFrameScrollOffset(id)
@@ -3079,72 +3374,35 @@ local function EnsureRowButton(frame, idx)
   frame.buttons = frame.buttons or {}
   local b = CreateFrame("Button", nil, frame)
   b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  b:RegisterForDrag("LeftButton")
-  b:SetScript("OnDragStart", function(self)
+  -- Drag/drop reordering is intentionally disabled (it was unreliable).
+  -- Use the per-row up/down buttons next to X instead.
+  b:SetScript("OnEnter", function(self)
     if not editMode then return end
-    local e = self._entry
-    if not (e and e.rule) then return end
-    _dragState = {
-      srcFrame = frame,
-      srcFrameID = frame and (frame._targetID or frame._id),
-      rule = e.rule,
-      srcAbsIndex = tonumber(self._entryAbsIndex) or nil,
-    }
-    if self.SetAlpha then self:SetAlpha(0.6) end
+    local e = self and self._entry
+    local r = e and e.rule
+    if not r then return end
+
+    local lbl = (r.label ~= nil) and tostring(r.label) or ""
+    if lbl == "" then
+      lbl = tostring(e.rawTitle or e.title or "")
+    end
+    if lbl == "" then return end
+
+    if GameTooltip and GameTooltip.SetOwner and GameTooltip.SetText then
+      GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+      GameTooltip:SetText(lbl, 1, 1, 1)
+      if GameTooltip.AddLine then
+        local key = RuleKey(r)
+        local qid = tonumber(r.questID)
+        if key or qid then
+          GameTooltip:AddLine(string.format("%s  questID=%s", tostring(key or "(no key)"), tostring(qid or "")), 0.7, 0.7, 0.7)
+        end
+      end
+      if GameTooltip.Show then GameTooltip:Show() end
+    end
   end)
-  b:SetScript("OnDragStop", function(self)
-    if self.SetAlpha then self:SetAlpha(1) end
-    if not (editMode and _dragState and _dragState.rule) then
-      _dragState = nil
-      return
-    end
-
-    local movedRule = _dragState.rule
-    local srcFrame = _dragState.srcFrame
-
-    _dragState = nil
-
-    local GMF = _G and rawget(_G, "GetMouseFocus")
-    local focus = (type(GMF) == "function") and GMF() or nil
-    local targetFrame = FindOwningTrackerFrame(focus)
-    if not (srcFrame and targetFrame and srcFrame._id and targetFrame._id) then return end
-
-    local srcID = tostring(srcFrame._targetID or srcFrame._id)
-    local targetID = tostring(targetFrame._targetID or targetFrame._id)
-
-    -- Destination index in target frame, based on cursor position.
-    local def = targetFrame._lastFrameDef or {}
-    local rowH = tonumber(def.rowHeight) or 16
-    local padTop = 8
-    local offset = GetFrameScrollOffset(targetFrame._id)
-
-    local destAbsIndex = 1
-    if GetCursorPosition and targetFrame.GetScale and targetFrame.GetTop then
-      local _, y = GetCursorPosition()
-      local s = targetFrame:GetScale() or 1
-      if s == 0 then s = 1 end
-      local cursorY = y / s
-      local top = targetFrame:GetTop()
-      if top then
-        local rel = (top - cursorY) - padTop
-        local row = math.floor(rel / rowH) + 1
-        if row < 1 then row = 1 end
-        destAbsIndex = offset + row
-      end
-    end
-
-    if targetFrame ~= srcFrame then
-      if not FindCustomRuleIndex(movedRule) then
-        Print("That rule isn't custom; can't move it.")
-        return
-      end
-      UnassignRuleFromFrame(movedRule, srcID)
-      AssignRuleToFrame(movedRule, targetID)
-    end
-
-    ReorderCustomRulesInFrame(targetFrame, movedRule, destAbsIndex)
-    RefreshAll()
-    if optionsFrame then RefreshActiveTab() end
+  b:SetScript("OnLeave", function()
+    if GameTooltip and GameTooltip.Hide then GameTooltip:Hide() end
   end)
   b:SetScript("OnClick", function(self, button)
     if not editMode then return end
@@ -3168,8 +3426,8 @@ local function EnsureRowButton(frame, idx)
       Print(string.format("Rule: %s  questID=%s", key, tostring(r.questID)))
       return
     end
-    ToggleRuleDisabled(e.rule)
-    RefreshAll()
+    -- Left-click in edit mode should NOT disable items; that's what the X is for.
+    return
   end)
   frame.buttons[idx] = b
   return b
@@ -3183,6 +3441,35 @@ local function EnsureRemoveButton(frame, idx)
   b:SetFrameLevel((frame.GetFrameLevel and frame:GetFrameLevel() or 1) + 30)
   b:Hide()
   frame._removeButtons[idx] = b
+  return b
+end
+
+local function EnsureMoveButton(frame, idx, dir)
+  if not frame then return nil end
+  frame._moveButtons = frame._moveButtons or { up = {}, down = {} }
+  dir = (dir == "down") and "down" or "up"
+  if frame._moveButtons[dir] and frame._moveButtons[dir][idx] then
+    return frame._moveButtons[dir][idx]
+  end
+
+  local b = CreateFrame("Button", nil, frame)
+  b:SetSize(16, 16)
+  b:SetFrameLevel((frame.GetFrameLevel and frame:GetFrameLevel() or 1) + 30)
+  if dir == "up" then
+    b:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Up")
+    b:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Down")
+    b:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Highlight")
+    b:SetDisabledTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Disabled")
+  else
+    b:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Up")
+    b:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Down")
+    b:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Highlight")
+    b:SetDisabledTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Disabled")
+  end
+  b:Hide()
+
+  if not frame._moveButtons[dir] then frame._moveButtons[dir] = {} end
+  frame._moveButtons[dir][idx] = b
   return b
 end
 
@@ -3224,15 +3511,34 @@ ns.UnassignRuleFromFrame = UnassignRuleFromFrame
 
 local function RenderBar(frameDef, frame, entries)
   local maxItems = tonumber(frameDef.maxItems) or 6
-  local pad = 8
+  local uiPad = ClampPadPx((type(frameDef) == "table") and frameDef.pad or nil)
+  if uiPad == nil and type(GetUISetting) == "function" then
+    local v = GetUISetting("pad", nil)
+    if v == nil then v = GetUISetting("listPadding", 0) end
+    uiPad = ClampPadPx(v) or 0
+  end
+  uiPad = uiPad or 0
+
+  local pad = 8 + uiPad
   local y = -2
   if type(entries) ~= "table" then entries = {} end
 
   if frame.title then frame.title:Hide() end
 
-  -- Bars: default left->right; optional reverse order ignores growDir.
+  -- Bars: align to the side their anchor is on; reverse order only affects which entries
+  -- appear left-to-right (it should not force a different alignment).
   local reverse = GetUISetting("reverseOrder", false) and true or false
-  local grow = reverse and "left" or "right"
+  local corner = (type(frameDef) == "table") and NormalizeAnchorCorner(frameDef.anchorCorner) or nil
+  if not corner and frame and frame.GetPoint then
+    local p = frame:GetPoint(1)
+    corner = PointToAnchorCorner(p)
+  end
+  local align
+  if corner == "tc" or corner == "bc" then
+    align = "center"
+  else
+    align = (corner == "tr" or corner == "br") and "right" or "left"
+  end
 
   local offset = GetFrameScrollOffset(frame and frame._id)
   local maxOffset = 0
@@ -3242,6 +3548,18 @@ local function RenderBar(frameDef, frame, entries)
   if offset > maxOffset then
     offset = maxOffset
     SetFrameScrollOffset(frame and frame._id, offset)
+  end
+
+  local function EntryForSlot(i)
+    i = tonumber(i) or 1
+    if i < 1 then return nil end
+    local idx
+    if reverse then
+      idx = offset + (maxItems - i + 1)
+    else
+      idx = offset + i
+    end
+    return entries[idx]
   end
 
   if frame.prefix then
@@ -3254,19 +3572,19 @@ local function RenderBar(frameDef, frame, entries)
   local tempIndicatorsByIndex = {}
   local tempIndicatorsWByIndex = {}
   for i = 1, maxItems do
-    local e = entries[i + offset]
+    local e = EntryForSlot(i)
     if e then
-      local text = (editMode and e.editText) or e.title
-      if (not editMode) and e.extra then text = text .. "  " .. e.extra .. " " end
-      tempTextByIndex[i] = " " .. text .. " "
+      local text = (editMode and e.title) or e.title
+      if e.extra then text = text .. "  " .. e.extra end
+      tempTextByIndex[i] = text
       tempIndicatorsByIndex[i] = e.indicators
       tempIndicatorsWByIndex[i] = 0
     end
   end
 
   -- Compute total width if centered.
-  local spacingPrefix = 12
-  local spacingItem = 16
+  local spacingPrefix = 12 + uiPad
+  local spacingItem = 16 + uiPad
   local total = 0
   local prefixW = (frame.prefix and frame.prefix:GetStringWidth()) or 0
   if prefixW > 0 then
@@ -3279,7 +3597,7 @@ local function RenderBar(frameDef, frame, entries)
       ApplyFontStyle(fs, frameDef and frameDef.font)
       fs:SetText(txt)
       fs:Show()
-      local indW = GetIndicatorsWidth(fs, tempIndicatorsByIndex[i])
+      local indW = GetIndicatorsWidth(fs, tempIndicatorsByIndex[i], uiPad)
       tempIndicatorsWByIndex[i] = indW
       total = total + (fs:GetStringWidth() or 0) + indW
     end
@@ -3305,79 +3623,22 @@ local function RenderBar(frameDef, frame, entries)
 
   local frameW = (frame and frame.GetWidth and frame:GetWidth()) or 0
   local start = pad
-  if grow == "center" and frameW and frameW > 0 then
-    start = math.max(pad, (frameW - total) / 2)
+  if frameW and frameW > 0 then
+    if align == "right" then
+      start = math.max(pad, frameW - pad - total)
+    elseif align == "center" then
+      local desired = math.floor((frameW - total) / 2 + 0.5)
+      local minStart = pad
+      local maxStart = math.max(pad, frameW - pad - total)
+      if desired < minStart then desired = minStart end
+      if desired > maxStart then desired = maxStart end
+      start = desired
+    end
   end
 
   local cursor = start
-  local cursorR = start
 
-  if grow == "left" then
-    cursorR = pad
-    if frame.prefix and prefixW > 0 then
-      frame.prefix:ClearAllPoints()
-      frame.prefix:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -cursorR, y)
-      cursorR = cursorR + prefixW + spacingPrefix
-    end
-
-    for i = 1, maxItems do
-      local txt = tempTextByIndex[i]
-      local fs = EnsureFontString(frame, i, frameDef and frameDef.font)
-      fs:ClearAllPoints()
-      if fs.SetWordWrap then fs:SetWordWrap(false) end
-      ApplyFontStyle(fs, frameDef and frameDef.font)
-      if txt then
-        fs:SetText(txt)
-        fs:Show()
-        fs:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -cursorR, y)
-        local indW = tempIndicatorsWByIndex[i] or 0
-        RenderIndicators(frame, i, fs, tempIndicatorsByIndex[i])
-
-        local btn = EnsureRowButton(frame, i)
-        btn:ClearAllPoints()
-        btn:SetPoint("TOPLEFT", fs, "TOPLEFT", -2 - indW, 2)
-        btn:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 2, -2)
-        btn._entry = entries[i + offset]
-        btn:EnableMouse(editMode and true or false)
-        if editMode then btn:Show() else btn:Hide() end
-
-        local rm = EnsureRemoveButton(frame, i)
-        rm:ClearAllPoints()
-        rm:SetPoint("TOPRIGHT", fs, "TOPRIGHT", 2, 2)
-        rm:SetScript("OnClick", function()
-          local e = entries[i + offset]
-          if not (e and e.rule) then return end
-          local ok = UnassignRuleFromFrame(e.rule, frame and frame._id)
-          if not ok then
-            Print("That rule isn't custom; use disable toggle instead.")
-            ToggleRuleDisabled(e.rule)
-          end
-          RefreshAll()
-          if optionsFrame then RefreshActiveTab() end
-        end)
-        rm:SetShown(editMode and true or false)
-
-        cursorR = cursorR + (fs:GetStringWidth() or 0) + indW + spacingItem
-      else
-        fs:SetText("")
-        fs:Hide()
-        RenderIndicators(frame, i, fs, nil)
-
-        local btn = EnsureRowButton(frame, i)
-        btn._entry = nil
-        btn:Hide()
-
-        local rm = EnsureRemoveButton(frame, i)
-        rm:Hide()
-      end
-    end
-
-    -- If this bar was previously rendered as a list, hide leftover rows.
-    HideExtraFrameRows(frame, maxItems + 1)
-    return
-  end
-
-  -- grow == "right" or "center": left-to-right placement
+  -- Left-to-right placement; start position handles alignment.
   if frame.prefix and prefixW > 0 then
     frame.prefix:ClearAllPoints()
     frame.prefix:SetPoint("TOPLEFT", frame, "TOPLEFT", cursor, y)
@@ -3397,41 +3658,25 @@ local function RenderBar(frameDef, frame, entries)
       fs:SetText(txt)
       fs:Show()
       local indW = tempIndicatorsWByIndex[i] or 0
-      RenderIndicators(frame, i, fs, tempIndicatorsByIndex[i])
+      RenderIndicators(frame, i, fs, tempIndicatorsByIndex[i], uiPad)
 
       local btn = EnsureRowButton(frame, i)
       btn:ClearAllPoints()
       btn:SetPoint("TOPLEFT", fs, "TOPLEFT", -2, 2)
       btn:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 2 + indW, -2)
-      btn._entry = entries[i + offset]
+      btn._entry = EntryForSlot(i)
       btn:EnableMouse(editMode and true or false)
       if editMode then btn:Show() else btn:Hide() end
 
+      -- Remove buttons (X) are list-only; hide on bars.
       local rm = EnsureRemoveButton(frame, i)
-      rm:ClearAllPoints()
-      rm:SetPoint("TOPRIGHT", fs, "TOPRIGHT", 2, 2)
-      rm:SetScript("OnClick", function()
-        if not (IsShiftKeyDown and IsShiftKeyDown()) then
-          Print("Hold SHIFT and click X to remove from this frame.")
-          return
-        end
-        local e = entries[i + offset]
-        if not (e and e.rule) then return end
-        local ok = UnassignRuleFromFrame(e.rule, frame and frame._id)
-        if not ok then
-          Print("That rule isn't custom; use disable toggle instead.")
-          ToggleRuleDisabled(e.rule)
-        end
-        RefreshAll()
-        if optionsFrame then RefreshActiveTab() end
-      end)
-      rm:SetShown(editMode and true or false)
+      rm:Hide()
 
       cursor = cursor + (fs:GetStringWidth() or 0) + indW + spacingItem
     else
       fs:SetText("")
       fs:Hide()
-      RenderIndicators(frame, i, fs, nil)
+      RenderIndicators(frame, i, fs, nil, uiPad)
 
       local btn = EnsureRowButton(frame, i)
       btn._entry = nil
@@ -3494,16 +3739,21 @@ local function RenderList(frameDef, frame, entries)
   local rowH = tonumber(frameDef.rowHeight) or 16
   if type(entries) ~= "table" then entries = {} end
 
-  local zebra = (type(frameDef) == "table" and frameDef.zebra == true) and true or false
+  -- Always allow zebra in edit mode so list editing is readable.
+  local zebra = (editMode and true) or ((type(frameDef) == "table" and frameDef.zebra == true) and true or false)
   local zebraA = tonumber(GetUISetting("zebraAlpha", 0.05) or 0.05) or 0.05
   if zebraA < 0 then zebraA = 0 elseif zebraA > 0.20 then zebraA = 0.20 end
 
-  local listPad = 0
-  if not editMode then
-    listPad = tonumber(GetUISetting("listPadding", 0) or 0) or 0
-    if listPad < 0 then listPad = 0 end
-    if listPad > 50 then listPad = 50 end
+  local uiPad = ClampPadPx((type(frameDef) == "table") and frameDef.pad or nil)
+  if uiPad == nil and type(GetUISetting) == "function" then
+    local v = GetUISetting("pad", nil)
+    if v == nil then v = GetUISetting("listPadding", 0) end
+    uiPad = ClampPadPx(v) or 0
   end
+  uiPad = uiPad or 0
+
+  -- Lists: extra vertical gap only outside edit mode.
+  local listPad = editMode and 0 or uiPad
 
   if frame.title then
     frame.title:Hide()
@@ -3538,9 +3788,22 @@ local function RenderList(frameDef, frame, entries)
     SetFrameScrollOffset(frame and frame._id, offset)
   end
 
+  -- If prior versions created per-frame scroll buttons, keep them hidden.
+  if frame and frame._listScrollUp and frame._listScrollUp.Hide then frame._listScrollUp:Hide() end
+  if frame and frame._listScrollDown and frame._listScrollDown.Hide then frame._listScrollDown:Hide() end
+
   local shown = 0
 
   local wrapText = not editMode
+
+  -- If zebra striping was enabled in a previous render (e.g. edit mode), ensure it
+  -- can't remain visible when zebra is not active in the current render.
+  local wantZebra = (zebra and (not wrapText) and zebraA > 0) and true or false
+  if frame and type(frame._zebraRows) == "table" and (not wantZebra) then
+    for _, t in pairs(frame._zebraRows) do
+      if t and t.Hide then t:Hide() end
+    end
+  end
   -- Lists always render in their natural order, top->bottom.
   local growY = "down"
   local yCursor = 0
@@ -3552,7 +3815,8 @@ local function RenderList(frameDef, frame, entries)
 
   local function GetTextWidth()
     local w = (frame and frame.GetWidth and frame:GetWidth()) or (frameDef and frameDef.width) or 300
-    local rightPad = editMode and 28 or 12
+    -- Edit mode needs room for: [up][down][X] on the right.
+    local rightPad = editMode and 62 or 12
     local leftPad = 16
     local tw = w - leftPad - rightPad
     if tw < 50 then tw = 50 end
@@ -3621,6 +3885,7 @@ local function RenderList(frameDef, frame, entries)
     btn:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 2, -2)
     btn._entry = e
     btn._entryAbsIndex = i + offset
+    -- Keep the row button for drag-and-drop, but never allow it to toggle disable on click.
     btn:EnableMouse(editMode and true or false)
     if editMode then
       btn:Show()
@@ -3650,12 +3915,76 @@ local function RenderList(frameDef, frame, entries)
     end)
     rm:SetShown(editMode and e ~= nil)
 
+    -- Move up/down buttons sit to the left of X.
+    local mvDown = EnsureMoveButton(frame, i, "down")
+    local mvUp = EnsureMoveButton(frame, i, "up")
+    if mvDown and mvUp then
+      mvDown:ClearAllPoints()
+      mvUp:ClearAllPoints()
+      mvDown:SetPoint("RIGHT", rm, "LEFT", -2, 0)
+      mvUp:SetPoint("RIGHT", mvDown, "LEFT", -2, 0)
+
+      local absIdx = i + offset
+      local entriesCount = (type(entries) == "table") and #entries or 0
+
+      mvUp._entry = entry
+      mvUp._entryAbsIndex = absIdx
+      mvDown._entry = entry
+      mvDown._entryAbsIndex = absIdx
+
+      mvUp:SetShown(editMode and entry ~= nil)
+      mvDown:SetShown(editMode and entry ~= nil)
+      if editMode and entry ~= nil then
+        mvUp:SetEnabled(absIdx > 1)
+        mvDown:SetEnabled(absIdx < entriesCount)
+      end
+
+      local function DoMove(selfBtn, delta)
+        if not editMode then return end
+        local ent = selfBtn and selfBtn._entry
+        local r = ent and ent.rule
+        if type(r) ~= "table" then return end
+
+        local realFrame = frame
+        if frame and frame._targetID and framesByID then
+          realFrame = framesByID[tostring(frame._targetID)] or realFrame
+        end
+        if not (realFrame and realFrame._lastEntries) then return end
+
+        local curAbs = tonumber(selfBtn and selfBtn._entryAbsIndex) or 1
+        local destAbs = curAbs + (tonumber(delta) or 0)
+        if destAbs < 1 then destAbs = 1 end
+
+        local ok = ReorderCustomRulesInFrame(realFrame, r, destAbs)
+        if not ok then return end
+        RefreshAll()
+        if optionsFrame then RefreshActiveTab() end
+      end
+
+      mvUp:SetScript("OnClick", function(selfBtn) DoMove(selfBtn, -1) end)
+      mvDown:SetScript("OnClick", function(selfBtn) DoMove(selfBtn, 1) end)
+    end
+
     if e then
-      local text = (editMode and e.editText) or e.title
+      local text
+      if editMode then
+        if tostring(frame and frame._id or ""):find("^inspect:") then
+          local lbl = (e.rule and e.rule.label ~= nil) and tostring(e.rule.label) or ""
+          if lbl ~= "" then
+            text = lbl
+          else
+            text = e.rawTitle or e.editText or e.title
+          end
+        else
+          text = e.editText or e.title
+        end
+      else
+        text = e.title
+      end
       if (not editMode) and e.extra then text = text .. "  " .. e.extra .. " " end
       fs:SetText(" " .. text .. " ")
       fs:Show()
-      RenderIndicators(frame, i, fs, e.indicators)
+      RenderIndicators(frame, i, fs, e.indicators, uiPad)
       shown = shown + 1
 
       local h = rowH
@@ -3677,7 +4006,7 @@ local function RenderList(frameDef, frame, entries)
           local fs2 = EnsureFontString(frame, j, frameDef and frameDef.font)
           fs2:SetText("")
           fs2:Hide()
-          RenderIndicators(frame, j, fs2, nil)
+          RenderIndicators(frame, j, fs2, nil, uiPad)
           local btn2 = EnsureRowButton(frame, j)
           btn2._entry = nil
           btn2:Hide()
@@ -3689,7 +4018,7 @@ local function RenderList(frameDef, frame, entries)
     else
       fs:SetText("")
       fs:Hide()
-      RenderIndicators(frame, i, fs, nil)
+      RenderIndicators(frame, i, fs, nil, uiPad)
 
       local zb = frame and frame._zebraRows and frame._zebraRows[i]
       if zb then zb:Hide() end
@@ -3700,7 +4029,7 @@ local function RenderList(frameDef, frame, entries)
     local fs = EnsureFontString(frame, i, frameDef and frameDef.font)
     fs:SetText("")
     fs:Hide()
-    RenderIndicators(frame, i, fs, nil)
+    RenderIndicators(frame, i, fs, nil, uiPad)
     local btn = EnsureRowButton(frame, i)
     btn._entry = nil
     btn:Hide()
@@ -3778,14 +4107,22 @@ local function EnsureBarContentsFrame()
   close:SetPoint("TOPRIGHT", f, "TOPRIGHT", 2, 2)
 
   local up = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-  up:SetSize(32, 18)
-  up:SetText("Up")
+  up:SetSize(16, 16)
+  up:SetText("")
+  up:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Up")
+  up:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Down")
+  up:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Highlight")
+  up:SetDisabledTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Disabled")
   up:SetPoint("TOPRIGHT", close, "BOTTOMRIGHT", 0, -2)
   up:Hide()
 
   local down = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-  down:SetSize(32, 18)
-  down:SetText("Dn")
+  down:SetSize(16, 16)
+  down:SetText("")
+  down:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Up")
+  down:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Down")
+  down:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Highlight")
+  down:SetDisabledTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Disabled")
   down:SetPoint("TOPRIGHT", up, "BOTTOMRIGHT", 0, -2)
   down:Hide()
 
@@ -3800,7 +4137,7 @@ local function EnsureBarContentsFrame()
 
   host:EnableMouseWheel(true)
   host:SetScript("OnMouseWheel", function(_, delta)
-    if not (editMode and IsShiftKeyDown and IsShiftKeyDown()) then return end
+    if not editMode then return end
     local off = GetFrameScrollOffset(host and host._id)
     off = off + ((delta and delta < 0) and 1 or -1)
     if off < 0 then off = 0 end
@@ -3822,10 +4159,11 @@ RefreshBarContentsFrame = function()
   if targetID == "" then return end
 
   local target = framesByID and framesByID[targetID]
-  local entries = (target and target._lastEntries) or {}
+  local entries = (target and (target._lastAllEntries or target._lastEntries)) or {}
 
   local host = barContentsFrame._host
   if not host then return end
+  if host.EnableMouseWheel then host:EnableMouseWheel(editMode and true or false) end
   host._targetID = targetID
   host._id = "inspect:" .. targetID
 
@@ -3841,40 +4179,12 @@ RefreshBarContentsFrame = function()
     zebra = true,
   }
 
-  -- Inspector scroll buttons (edit-mode only)
+  -- No dedicated scroll buttons; edit-mode uses mousewheel.
   if barContentsFrame._scrollUp and barContentsFrame._scrollDown then
-    local entriesCount = (type(entries) == "table") and #entries or 0
-    local maxOffset = math.max(0, entriesCount - (tmp.maxItems or 24))
-    local off = GetFrameScrollOffset(host and host._id)
-    if off > maxOffset then
-      off = maxOffset
-      SetFrameScrollOffset(host and host._id, off)
-    end
-
-    local show = editMode and maxOffset > 0
-    barContentsFrame._scrollUp:SetShown(show)
-    barContentsFrame._scrollDown:SetShown(show)
-    if show then
-      barContentsFrame._scrollUp:SetEnabled(off > 0)
-      barContentsFrame._scrollDown:SetEnabled(off < maxOffset)
-    end
-
-    barContentsFrame._scrollUp:SetScript("OnClick", function()
-      if not editMode then return end
-      local o = GetFrameScrollOffset(host and host._id)
-      o = o - 1
-      if o < 0 then o = 0 end
-      SetFrameScrollOffset(host and host._id, o)
-      RefreshBarContentsFrame()
-    end)
-    barContentsFrame._scrollDown:SetScript("OnClick", function()
-      if not editMode then return end
-      local o = GetFrameScrollOffset(host and host._id)
-      o = o + 1
-      if o > maxOffset then o = maxOffset end
-      SetFrameScrollOffset(host and host._id, o)
-      RefreshBarContentsFrame()
-    end)
+    barContentsFrame._scrollUp:Hide()
+    barContentsFrame._scrollDown:Hide()
+    barContentsFrame._scrollUp:SetScript("OnClick", nil)
+    barContentsFrame._scrollDown:SetScript("OnClick", nil)
   end
 
   RenderList(tmp, host, entries)
@@ -3923,6 +4233,7 @@ RefreshAll = function()
   local frames = GetEffectiveFrames()
   local frameDefsByID = {}
   local entriesByFrameID = {}
+  local entriesByFrameIDActive = nil
   local frameIDsByType = { bar = {}, list = {} }
 
   for _, def in ipairs(frames) do
@@ -3939,6 +4250,11 @@ RefreshAll = function()
   local function AddToFrame(frameID, status)
     if not (frameID and entriesByFrameID[frameID]) then return end
     entriesByFrameID[frameID][#entriesByFrameID[frameID] + 1] = status
+  end
+
+  local function AddToFrameActive(frameID, status)
+    if not (entriesByFrameIDActive and frameID and entriesByFrameIDActive[frameID]) then return end
+    entriesByFrameIDActive[frameID][#entriesByFrameIDActive[frameID] + 1] = status
   end
 
   local staged = {}
@@ -3962,6 +4278,66 @@ RefreshAll = function()
           Stage(frameID, rule, status)
         end
       end
+    end
+  end
+
+  -- In edit mode, bars should render only what's actually active (same as normal mode),
+  -- but the bar "List" inspector should still show everything assigned to the bar.
+  if editMode then
+    entriesByFrameIDActive = {}
+    for _, def in ipairs(frames) do
+      local id = tostring(def.id or "")
+      if id ~= "" then
+        entriesByFrameIDActive[id] = entriesByFrameIDActive[id] or {}
+      end
+    end
+
+    local stagedActive = {}
+    local function StageActive(frameID, rule, status)
+      stagedActive[#stagedActive + 1] = { frameID = frameID, rule = rule, status = status }
+    end
+
+    for _, rule in ipairs(rules) do
+      local status = BuildRuleStatus(rule, evalCtx, { forceNormalVisibility = true })
+      if status then
+        if type(rule.targets) == "table" then
+          for _, frameID in ipairs(rule.targets) do
+            StageActive(tostring(frameID), rule, status)
+          end
+        elseif rule.frameID then
+          StageActive(tostring(rule.frameID), rule, status)
+        else
+          local display = tostring(rule.display or "list"):lower()
+          if display ~= "bar" then display = "list" end
+          for _, frameID in ipairs(frameIDsByType[display]) do
+            StageActive(frameID, rule, status)
+          end
+        end
+      end
+    end
+
+    -- Apply normal (non-edit) sequential group collapsing for the active view.
+    local winnersByGroup = {}
+    for _, row in ipairs(stagedActive) do
+      local frameID = row.frameID
+      local rule = row.rule
+      local status = row.status
+      local group = rule and rule.group
+      local order = tonumber(rule and rule.order) or 0
+
+      if group ~= nil then
+        local key = frameID .. "|" .. tostring(group)
+        local current = winnersByGroup[key]
+        if not current or order < current.order then
+          winnersByGroup[key] = { order = order, status = status, frameID = frameID }
+        end
+      else
+        AddToFrameActive(frameID, status)
+      end
+    end
+
+    for _, win in pairs(winnersByGroup) do
+      AddToFrameActive(win.frameID, win.status)
     end
   end
 
@@ -3996,6 +4372,58 @@ RefreshAll = function()
     end
   end
 
+  -- Apply per-frame rule ordering overrides (after entries are built).
+  do
+    -- `ruleOrder` is stored on the custom frame def (SavedVariables), even when the
+    -- frame being ordered is one of the built-in/default frames. Build a quick lookup
+    -- so ordering works everywhere.
+    local customOrderByID = {}
+    do
+      local custom = GetCustomFrames()
+      if type(custom) == "table" then
+        for _, cd in ipairs(custom) do
+          local id = (type(cd) == "table") and tostring(cd.id or "") or ""
+          if id ~= "" and type(cd.ruleOrder) == "table" then
+            customOrderByID[id] = cd.ruleOrder
+          end
+        end
+      end
+    end
+
+    for _, def in ipairs(frames) do
+      local id = tostring(def and def.id or "")
+      local ruleOrder = (type(def) == "table" and type(def.ruleOrder) == "table") and def.ruleOrder or customOrderByID[id]
+      if id ~= "" and type(ruleOrder) == "table" then
+        local orderIndex = {}
+        for i, k in ipairs(ruleOrder) do
+          orderIndex[tostring(k)] = i
+        end
+        local function SortFrameEntries(list)
+          if type(list) ~= "table" or not list[1] then return end
+          local orig = {}
+          for i = 1, #list do orig[list[i]] = i end
+          table.sort(list, function(a, b)
+            local ra = a and a.rule
+            local rb = b and b.rule
+            local ka = ra and (RuleKey and RuleKey(ra) or nil)
+            local kb = rb and (RuleKey and RuleKey(rb) or nil)
+            local pa = ka and orderIndex[tostring(ka)] or nil
+            local pb = kb and orderIndex[tostring(kb)] or nil
+            if pa and pb and pa ~= pb then return pa < pb end
+            if pa and not pb then return true end
+            if pb and not pa then return false end
+            return (orig[a] or 0) < (orig[b] or 0)
+          end)
+        end
+
+        SortFrameEntries(entriesByFrameID[id])
+        if entriesByFrameIDActive then
+          SortFrameEntries(entriesByFrameIDActive[id])
+        end
+      end
+    end
+  end
+
   for _, def in ipairs(frames) do
     local id = tostring(def.id or "")
     local f = framesByID[id]
@@ -4018,14 +4446,32 @@ RefreshAll = function()
       end
 
       local t = tostring(def.type or "list"):lower()
-      local entries = entriesByFrameID[id] or {}
+      local allEntries = entriesByFrameID[id] or {}
+      local entries = allEntries
+      if editMode and t == "bar" and entriesByFrameIDActive then
+        entries = entriesByFrameIDActive[id] or {}
+      end
       local hasAny = entries[1] ~= nil
 
       -- Used by edit-mode drag/drop.
       f._lastFrameDef = def
       f._lastEntries = entries
+      f._lastAllEntries = (editMode and allEntries) or nil
 
-      if editMode then
+      local baseScale = (type(def) == "table") and tonumber(def.scale) or nil
+      if baseScale == nil then baseScale = 1 end
+      if baseScale < 0.50 then baseScale = 0.50 end
+      if baseScale > 2.00 then baseScale = 2.00 end
+      if f.SetScale then f:SetScale(baseScale) end
+
+      local forceHide = ApplyVisLink(f, def, baseScale)
+
+      if forceHide then
+        f:Hide()
+      elseif type(def) == "table" and def.hideFrame == true then
+        -- Explicitly hidden frames stay hidden even in edit mode.
+        f:Hide()
+      elseif editMode then
         -- Edit mode should always show frames, even if the addon is toggled off.
         f:Show()
       elseif not framesEnabled then
