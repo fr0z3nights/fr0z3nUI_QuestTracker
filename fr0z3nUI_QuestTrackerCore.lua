@@ -632,9 +632,11 @@ RuleKey = function(rule)
     end
   end
 
-  if rule.spellKnown ~= nil or rule.notSpellKnown ~= nil then
-    local a = tonumber(rule.spellKnown or 0) or 0
-    local b = tonumber(rule.notSpellKnown or 0) or 0
+  local spellKnownGate = (rule.spellKnown ~= nil) and rule.spellKnown or rule.SpellKnown
+  local notSpellKnownGate = (rule.notSpellKnown ~= nil) and rule.notSpellKnown or rule.NotSpellKnown
+  if spellKnownGate ~= nil or notSpellKnownGate ~= nil then
+    local a = tonumber(spellKnownGate or 0) or 0
+    local b = tonumber(notSpellKnownGate or 0) or 0
     if a > 0 or b > 0 then
       return "spellKnown:" .. tostring(a) .. ":" .. tostring(b)
     end
@@ -1201,8 +1203,40 @@ local function GetCalendarEventText(monthOffset, day, index)
   return nil
 end
 
+local function IsHolidayDayEvent(monthOffset, day, index)
+  if not (C_Calendar and C_Calendar.GetDayEvent) then return false end
+  local ok, ev = pcall(C_Calendar.GetDayEvent, monthOffset, day, index)
+  if not ok or type(ev) ~= "table" then return false end
+
+  local eventType = rawget(ev, "eventType")
+  do
+    local et = Enum and Enum.CalendarEventType
+    local holidayEnum = et and (rawget(et, "Holiday") or rawget(et, "HOLIDAY"))
+    if holidayEnum ~= nil and eventType == holidayEnum then
+      return true
+    end
+  end
+  if type(eventType) == "string" and tostring(eventType):lower() == "holiday" then
+    return true
+  end
+
+  local calendarType = rawget(ev, "calendarType")
+  if type(calendarType) == "string" and tostring(calendarType):lower() == "holiday" then
+    return true
+  end
+
+  return false
+end
+
 local function GetCalendarHolidayText(monthOffset, day, index)
   if not (C_Calendar and C_Calendar.GetHolidayInfo) then return nil end
+  -- IMPORTANT: holiday indices are not the same as day-event indices.
+  -- Only query holiday info for day-events that are actually holiday-type;
+  -- otherwise we can accidentally attach unrelated holiday text to normal events
+  -- and get false positives (e.g., stale bonus events / wrong Timewalking kind).
+  if not IsHolidayDayEvent(monthOffset, day, index) then
+    return nil
+  end
   local ok, info = pcall(C_Calendar.GetHolidayInfo, monthOffset, day, index)
   if not ok or type(info) ~= "table" then return nil end
   local name = rawget(info, "name")
@@ -1237,8 +1271,8 @@ local function IsAnyTimewalkingEventActive()
   end
 
   local numDays = GetCurrentMonthNumDays()
-  local startDay = today - 1
-  local endDay = today + 7
+  local startDay = today
+  local endDay = today
   if startDay < 1 then startDay = 1 end
   if endDay > numDays then endDay = numDays end
 
@@ -1320,8 +1354,8 @@ local function IsCalendarEventActiveByKeywords(keywords)
   end
 
   local numDays = GetCurrentMonthNumDays()
-  local startDay = today - 1
-  local endDay = today + 7
+  local startDay = today
+  local endDay = today
   if startDay < 1 then startDay = 1 end
   if endDay > numDays then endDay = numDays end
 
@@ -1483,7 +1517,9 @@ local function GetWeeklyResetAt()
   local now = GetServerTimeSafe()
   if C_DateAndTime and C_DateAndTime.GetSecondsUntilWeeklyReset then
     local s = tonumber(C_DateAndTime.GetSecondsUntilWeeklyReset())
-    if s and s > 0 then
+    -- Sanity clamp: weekly resets should never be weeks/months away.
+    -- If Blizzard returns bogus values, don't persist remembered weekly state.
+    if s and s > 0 and s < (60 * 60 * 24 * 10) then
       return now + s
     end
   end
@@ -1498,7 +1534,8 @@ local function GetDailyResetAt()
   elseif GetQuestResetTime then
     s = tonumber(GetQuestResetTime())
   end
-  if s and s > 0 then
+  -- Sanity clamp: daily reset should be within ~48 hours.
+  if s and s > 0 and s < (60 * 60 * 48) then
     return now + s
   end
   return 0
@@ -1519,6 +1556,11 @@ local function HasRememberedWeeklyAura(spellID)
   local now = GetServerTimeSafe()
   local exp = fr0z3nUI_QuestTracker_Acc.cache.weeklyAuras[tostring(spellID)]
   exp = tonumber(exp) or 0
+  -- If expiration is absurdly far in the future, treat as corrupt/stale.
+  if exp > (now + (60 * 60 * 24 * 10)) then
+    fr0z3nUI_QuestTracker_Acc.cache.weeklyAuras[tostring(spellID)] = nil
+    return false
+  end
   if exp > now then
     return true
   end
@@ -1543,6 +1585,11 @@ local function HasRememberedDailyAura(spellID)
   local now = GetServerTimeSafe()
   local exp = fr0z3nUI_QuestTracker_Acc.cache.dailyAuras[tostring(spellID)]
   exp = tonumber(exp) or 0
+  -- If expiration is absurdly far in the future, treat as corrupt/stale.
+  if exp > (now + (60 * 60 * 48)) then
+    fr0z3nUI_QuestTracker_Acc.cache.dailyAuras[tostring(spellID)] = nil
+    return false
+  end
   if exp > now then
     return true
   end
@@ -1569,6 +1616,12 @@ local function HasRememberedWeeklyTimewalkingKind(kind)
   local cache = fr0z3nUI_QuestTracker_Acc.cache.twWeekly
   if type(cache) ~= "table" then return false end
   local exp = tonumber(cache.exp) or 0
+  -- If expiration is absurdly far in the future, treat as corrupt/stale.
+  if exp > (now + (60 * 60 * 24 * 10)) then
+    cache.kind = nil
+    cache.exp = nil
+    return false
+  end
   if exp <= now then
     if exp ~= 0 then
       cache.kind = nil
@@ -1583,6 +1636,47 @@ local function HasRememberedWeeklyTimewalkingKind(kind)
   if kind == "" then return false end
   return tostring(cache.kind or "") == kind
 end
+
+local function ClearRememberedTimewalkingKind()
+  NormalizeSV()
+  if fr0z3nUI_QuestTracker_Acc and type(fr0z3nUI_QuestTracker_Acc.cache) == "table" then
+    local cache = fr0z3nUI_QuestTracker_Acc.cache.twWeekly
+    if type(cache) == "table" then
+      cache.kind = nil
+      cache.exp = nil
+    end
+  end
+end
+
+local function ClearRememberedEventState()
+  NormalizeSV()
+  if not (fr0z3nUI_QuestTracker_Acc and type(fr0z3nUI_QuestTracker_Acc.cache) == "table") then return end
+  local cache = fr0z3nUI_QuestTracker_Acc.cache
+
+  if type(cache.weeklyAuras) == "table" then
+    for k in pairs(cache.weeklyAuras) do
+      if type(k) == "string" and k:find("^event:") then
+        cache.weeklyAuras[k] = nil
+      end
+    end
+  end
+
+  if type(cache.dailyAuras) == "table" then
+    for k in pairs(cache.dailyAuras) do
+      if type(k) == "string" and k:find("^event:") then
+        cache.dailyAuras[k] = nil
+      end
+    end
+  end
+
+  if type(cache.twWeekly) == "table" then
+    cache.twWeekly.kind = nil
+    cache.twWeekly.exp = nil
+  end
+end
+
+ns.ClearRememberedTimewalkingKind = ClearRememberedTimewalkingKind
+ns.ClearRememberedEventState = ClearRememberedEventState
 
 local function ColorHex(r, g, b)
   r = math.floor((tonumber(r) or 1) * 255 + 0.5)
@@ -2194,8 +2288,7 @@ local function BuildRuleStatus(rule, ctx, opts)
 
   -- Spell gates (optional)
   if applyGates and type(rule) == "table" then
-    local function CheckList(field, shouldKnow)
-      local v = rule[field]
+    local function CheckValue(v, shouldKnow)
       if v == nil then return true end
       local list = {}
       if type(v) == "table" then
@@ -2211,8 +2304,13 @@ local function BuildRuleStatus(rule, ctx, opts)
       return true
     end
 
-    if not CheckList("spellKnown", true) then return nil end
-    if not CheckList("notSpellKnown", false) then return nil end
+    -- Support legacy/capitalized DB keys.
+    -- IMPORTANT: these are aliases, not fallbacks-on-failure.
+    local spellKnownGate = (rule.spellKnown ~= nil) and rule.spellKnown or rule.SpellKnown
+    local notSpellKnownGate = (rule.notSpellKnown ~= nil) and rule.notSpellKnown or rule.NotSpellKnown
+
+    if not CheckValue(spellKnownGate, true) then return nil end
+    if not CheckValue(notSpellKnownGate, false) then return nil end
   end
 
   -- Rested-area gate (optional)
@@ -2483,7 +2581,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     else
       title = itemName
     end
-  elseif type(rule) == "table" and (rule.spellKnown or rule.notSpellKnown) then
+  elseif type(rule) == "table" and (rule.spellKnown or rule.notSpellKnown or rule.SpellKnown or rule.NotSpellKnown) then
     local function PickSpellID(v)
       if type(v) == "table" then
         for _, x in ipairs(v) do
@@ -2496,7 +2594,7 @@ local function BuildRuleStatus(rule, ctx, opts)
       return (n and n > 0) and n or nil
     end
 
-    local spellID = PickSpellID(rule.spellKnown) or PickSpellID(rule.notSpellKnown)
+    local spellID = PickSpellID(rule.spellKnown) or PickSpellID(rule.SpellKnown) or PickSpellID(rule.notSpellKnown) or PickSpellID(rule.NotSpellKnown)
     local name = nil
     if spellID then
       local CS = _G and rawget(_G, "C_Spell")
@@ -2556,7 +2654,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     if qid and qid > 0 then
       return "Q"
     end
-    if type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup) then
+    if type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.SpellKnown or r.NotSpellKnown or r.locationID or r.class or r.notInGroup) then
       return "S"
     end
     return "T"
@@ -2620,12 +2718,20 @@ local optionsFrame
 local RefreshRulesList
 local RefreshFramesList
 local RefreshActiveTab
+local frame
 
 local UpdateAnchorLabel
 local FindCustomRuleIndex
 local UnassignRuleFromFrame
 
 ApplyTrackerInteractivity = function()
+  if InCombatLockdown and InCombatLockdown() then
+    if frame then
+      frame._pendingInteractivity = true
+    end
+    return
+  end
+
   local clickThrough = not editMode
   local wantWheel = (editMode and true) or ((IsShiftKeyDown and IsShiftKeyDown()) and true or false)
 
@@ -3115,13 +3221,7 @@ end
 ns.ReorderRulesInFrameByID = ReorderRulesInFrameByID
 
 local function CreateContainerFrame(def)
-  local parent = UIParent
-  if type(def) == "table" and def.parentFrame then
-    local p = _G and _G[tostring(def.parentFrame)]
-    if p then parent = p end
-  end
-
-  local f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+  local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
   f:SetClampedToScreen(true)
   f:SetFrameStrata("MEDIUM")
   f:SetMovable(true)
@@ -3150,11 +3250,12 @@ end
 local function NormalizeVisLinkMode(def)
   if type(def) ~= "table" then return "off" end
   local mode = tostring(def.visibilityLinkMode or ""):lower():gsub("%s+", "")
-  if mode == "reparent" then mode = "parent" end
-  if mode ~= "parent" and mode ~= "hook" then
-    -- Back-compat: old configs could have parentFrame set.
+  -- Re-parent mode removed; map any legacy values to hook.
+  if mode == "parent" or mode == "reparent" then mode = "hook" end
+  if mode ~= "hook" then
+    -- Back-compat: old configs could have parentFrame set; treat as hook.
     if type(def.parentFrame) == "string" and def.parentFrame ~= "" then
-      mode = "parent"
+      mode = "hook"
     else
       mode = "off"
     end
@@ -3189,28 +3290,11 @@ local function ApplyVisLink(frame, def, baseScale)
   local nm = GetVisLinkFrameName(def)
   local target = (nm ~= "") and ResolveNamedFrame(nm) or nil
 
-  -- Parent mode: re-parent live frames so hide/show propagates.
-  if mode == "parent" and target and frame.SetParent and frame.GetParent then
-    if frame:GetParent() ~= target then
-      frame:SetParent(target)
-    end
-
-    -- Compensate scale so the frame stays the same size even if the target parent is scaled.
-    if frame.SetScale and target.GetEffectiveScale and UIParent and UIParent.GetEffectiveScale then
-      local parentEff = target:GetEffectiveScale() or 1
-      if parentEff == 0 then parentEff = 1 end
-      local uiEff = UIParent:GetEffectiveScale() or 1
-      if uiEff == 0 then uiEff = 1 end
-      local base = tonumber(baseScale) or 1
-      frame:SetScale(base * (uiEff / parentEff))
-    end
-  elseif frame.SetParent and frame.GetParent then
-    -- If we previously re-parented, put it back.
-    if frame:GetParent() ~= UIParent then
-      frame:SetParent(UIParent)
-    end
-    if frame.SetScale then frame:SetScale(tonumber(baseScale) or 1) end
+  -- Re-parent mode removed: always keep frames under UIParent.
+  if frame.SetParent and frame.GetParent and frame:GetParent() ~= UIParent then
+    frame:SetParent(UIParent)
   end
+  if frame.SetScale then frame:SetScale(tonumber(baseScale) or 1) end
 
   if mode == "hook" and target and target.HookScript and target.IsShown then
     if frame._visLinkHookTarget ~= target then
@@ -4530,7 +4614,7 @@ end
 ns.DestroyFrameByID = DestroyFrameByID
 
 -- Events
-local frame = CreateFrame("Frame")
+frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("QUEST_LOG_UPDATE")
@@ -4547,6 +4631,10 @@ frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 
 frame:SetScript("OnEvent", function(_, event, ...)
   if event == "MODIFIER_STATE_CHANGED" then
+    if InCombatLockdown and InCombatLockdown() then
+      frame._pendingInteractivity = true
+      return
+    end
     if ApplyTrackerInteractivity then ApplyTrackerInteractivity() end
     return
   end
@@ -4577,6 +4665,15 @@ frame:SetScript("OnEvent", function(_, event, ...)
     end
     frame._refreshTimer = C_Timer.NewTimer(1.5, RefreshAll)
     return
+  end
+
+  if event == "PLAYER_REGEN_ENABLED" then
+    if frame._pendingInteractivity then
+      frame._pendingInteractivity = nil
+      if ApplyTrackerInteractivity then
+        C_Timer.After(0, ApplyTrackerInteractivity)
+      end
+    end
   end
 
   -- debounce rapid spam
@@ -4637,8 +4734,8 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     end
 
     local numDays = GetCurrentMonthNumDays()
-    local startDay = today - 1
-    local endDay = today + 7
+    local startDay = today
+    local endDay = today
     if startDay < 1 then startDay = 1 end
     if endDay > numDays then endDay = numDays end
 
@@ -4669,19 +4766,23 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
   end
 
   if cmd == "twclear" then
-    NormalizeSV()
-    if fr0z3nUI_QuestTracker_Acc and type(fr0z3nUI_QuestTracker_Acc.cache) == "table" then
-      local cache = fr0z3nUI_QuestTracker_Acc.cache.twWeekly
-      if type(cache) == "table" then
-        cache.kind = nil
-        cache.exp = nil
-      end
+    if type(ns) == "table" and type(ns.ClearRememberedTimewalkingKind) == "function" then
+      ns.ClearRememberedTimewalkingKind()
     end
     RefreshAll()
     Print("Cleared remembered Timewalking weekly kind.")
     return
   end
 
-  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt twdebug, /fqt twclear")
+  if cmd == "evclear" then
+    if type(ns) == "table" and type(ns.ClearRememberedEventState) == "function" then
+      ns.ClearRememberedEventState()
+    end
+    RefreshAll()
+    Print("Cleared remembered calendar/timewalking event state.")
+    return
+  end
+
+  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt twdebug, /fqt twclear, /fqt evclear")
   end)
 end

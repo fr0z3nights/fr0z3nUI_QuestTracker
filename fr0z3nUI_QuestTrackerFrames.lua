@@ -193,6 +193,12 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
   reorderBtn:SetText("ReOrder")
   optionsFrame._reorderBtn = reorderBtn
 
+  local clearEventBtn = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
+  clearEventBtn:SetSize(90, 22)
+  clearEventBtn:SetPoint("BOTTOMRIGHT", reorderBtn, "TOPRIGHT", 0, 6)
+  clearEventBtn:SetText("Clear Event")
+  optionsFrame._clearEventBtn = clearEventBtn
+
   local resetFrameBtn = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
   resetFrameBtn:SetSize(90, 22)
   resetFrameBtn:SetPoint("RIGHT", reorderBtn, "LEFT", -6, 0)
@@ -209,6 +215,30 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
     GameTooltip:Show()
   end)
   resetFrameBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
+  clearEventBtn:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Clear Event")
+    GameTooltip:AddLine("Clears remembered calendar event state (bonus events etc).", 1, 1, 1, true)
+    GameTooltip:AddLine("Use if an event is incorrectly shown as active.", 0.85, 0.85, 0.85, true)
+    GameTooltip:AddLine("Reloads the UI after clearing.", 0.85, 0.85, 0.85, true)
+    GameTooltip:Show()
+  end)
+  clearEventBtn:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+
+  clearEventBtn:SetScript("OnClick", function()
+    if type(ns) == "table" and type(ns.ClearRememberedEventState) == "function" then
+      ns.ClearRememberedEventState()
+      SafeCall(RefreshAll)
+      SafeCall(RefreshRulesList)
+      Print("Cleared remembered event state. Reloading UI...")
+      local r = _G and _G["ReloadUI"]
+      if r then r() end
+    else
+      Print("Clear Event unavailable (core not loaded).")
+    end
+  end)
 
   local RefreshFramesList
 
@@ -590,7 +620,7 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
   scaleValue:Hide()
   optionsFrame._frameScaleValue = scaleValue
 
-  -- External visibility linking: Off / Re-Parent / Hook
+  -- External visibility linking: Off / Hook
   local linkLabel = panels.frames:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   linkLabel:SetPoint("BOTTOMLEFT", frameHideFrame, "TOPLEFT", 4, 10)
   linkLabel:SetText("External Link")
@@ -1054,13 +1084,14 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
     do
       local mode = tostring((type(def) == "table" and def.visibilityLinkMode) or "")
       mode = mode:lower():gsub("%s+", "")
-      if mode ~= "hook" and mode ~= "parent" then mode = "off" end
+      if mode == "parent" or mode == "reparent" then mode = "hook" end
+      if mode ~= "hook" then mode = "off" end
       local nm = (type(def) == "table" and def.visibilityLinkFrame ~= nil) and tostring(def.visibilityLinkFrame) or ""
       nm = nm:gsub("^%s+", ""):gsub("%s+$", "")
 
       if optionsFrame._frameVisLinkLabel then optionsFrame._frameVisLinkLabel:Show() end
       if optionsFrame._frameVisLinkModeBtn then
-        optionsFrame._frameVisLinkModeBtn:SetText((mode == "parent") and "Re-Parent" or ((mode == "hook") and "Hook" or "Off"))
+        optionsFrame._frameVisLinkModeBtn:SetText((mode == "hook") and "Hook" or "Off")
         optionsFrame._frameVisLinkModeBtn:Show()
       end
       if optionsFrame._frameVisLinkNameBox then
@@ -1167,8 +1198,8 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
 
     local function NormalizeLinkMode(v)
       v = tostring(v or ""):lower():gsub("%s+", "")
-      if v == "parent" or v == "reparent" then return "parent" end
       if v == "hook" then return "hook" end
+      if v == "parent" or v == "reparent" then return "hook" end
       return "off"
     end
 
@@ -1177,16 +1208,9 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
       if mode == "off" then
         def.visibilityLinkMode = nil
         def.visibilityLinkFrame = nil
-        def.parentFrame = nil
         return
       end
       def.visibilityLinkMode = mode
-      local nm = tostring(def.visibilityLinkFrame or ""):gsub("^%s+", ""):gsub("%s+$", "")
-      if mode == "parent" then
-        def.parentFrame = (nm ~= "") and nm or nil
-      else
-        def.parentFrame = nil
-      end
     end
 
     if optionsFrame._frameVisLinkModeBtn then
@@ -1194,7 +1218,7 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
         local def = GetOrCreateSelectedCustomDef()
         if not def then return end
         local cur = NormalizeLinkMode(def.visibilityLinkMode)
-        local nextMode = (cur == "off") and "parent" or ((cur == "parent") and "hook" or "off")
+        local nextMode = (cur == "off") and "hook" or "off"
         SetLinkMode(def, nextMode)
         SafeCall(CreateAllFrames)
         SafeCall(RefreshAll)
@@ -1209,9 +1233,6 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
         if not def then return end
         local nm = tostring(self:GetText() or ""):gsub("^%s+", ""):gsub("%s+$", "")
         def.visibilityLinkFrame = (nm ~= "") and nm or nil
-        if NormalizeLinkMode(def.visibilityLinkMode) == "parent" then
-          def.parentFrame = (nm ~= "") and nm or nil
-        end
         SafeCall(CreateAllFrames)
         SafeCall(RefreshAll)
         UpdateFrameEditor()
@@ -1321,9 +1342,6 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
             local def = GetOrCreateSelectedCustomDef()
             if not def then StopPick(); return end
             def.visibilityLinkFrame = nm
-            if NormalizeLinkMode(def.visibilityLinkMode) == "parent" then
-              def.parentFrame = nm
-            end
             if optionsFrame._frameVisLinkNameBox then
               optionsFrame._frameVisLinkNameBox:SetText(nm)
             end

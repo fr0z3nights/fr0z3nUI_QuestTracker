@@ -4110,7 +4110,7 @@ local function EnsureOptionsFrame()
     if type(r) ~= "table" then return "text" end
     if tonumber(r.questID) and tonumber(r.questID) > 0 then return "quest" end
     if type(r.item) == "table" and tonumber(r.item.itemID) and tonumber(r.item.itemID) > 0 then return "item" end
-    if r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup then return "spell" end
+    if r.spellKnown or r.notSpellKnown or r.SpellKnown or r.NotSpellKnown or r.locationID or r.class or r.notInGroup or r.restedOnly or r.missingPrimaryProfessions then return "spell" end
     return "text"
   end
 
@@ -4292,8 +4292,8 @@ local function EnsureOptionsFrame()
       if panels.spells._cancelEditBtn then panels.spells._cancelEditBtn:Show() end
 
       do
-        local knownID = tonumber(rule.spellKnown) or 0
-        local notKnownID = tonumber(rule.notSpellKnown) or 0
+        local knownID = tonumber(rule.spellKnown or rule.SpellKnown) or 0
+        local notKnownID = tonumber(rule.notSpellKnown or rule.NotSpellKnown) or 0
         local pick = (knownID and knownID > 0) and knownID or ((notKnownID and notKnownID > 0) and notKnownID or nil)
         local resolver = panels.spells and panels.spells._getSpellNameSafe
         local resolved = (pick and resolver) and resolver(pick) or nil
@@ -4328,8 +4328,8 @@ local function EnsureOptionsFrame()
           panels.spells._spellInfoScroll:SetVerticalScroll(0)
         end
       end
-      if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown) or 0)) end
-      if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown) or 0)) end
+      if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown or rule.SpellKnown) or 0)) end
+      if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown or rule.NotSpellKnown) or 0)) end
       if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.locationID or "0")) end
       if panels.spells._notInGroup then panels.spells._notInGroup:SetChecked(rule.notInGroup and true or false) end
 
@@ -4592,8 +4592,8 @@ local function EnsureOptionsFrame()
       if panels.spells._cancelEditBtn then panels.spells._cancelEditBtn:Show() end
 
       do
-        local knownID = tonumber(rule.spellKnown) or 0
-        local notKnownID = tonumber(rule.notSpellKnown) or 0
+        local knownID = tonumber(rule.spellKnown or rule.SpellKnown) or 0
+        local notKnownID = tonumber(rule.notSpellKnown or rule.NotSpellKnown) or 0
         local pick = (knownID and knownID > 0) and knownID or ((notKnownID and notKnownID > 0) and notKnownID or nil)
         local resolver = panels.spells and panels.spells._getSpellNameSafe
         local resolved = (pick and resolver) and resolver(pick) or nil
@@ -4628,8 +4628,8 @@ local function EnsureOptionsFrame()
           panels.spells._spellInfoScroll:SetVerticalScroll(0)
         end
       end
-      if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown) or 0)) end
-      if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown) or 0)) end
+      if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown or rule.SpellKnown) or 0)) end
+      if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown or rule.NotSpellKnown) or 0)) end
       if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.locationID or "0")) end
       if panels.spells._notInGroup then panels.spells._notInGroup:SetChecked(rule.notInGroup and true or false) end
 

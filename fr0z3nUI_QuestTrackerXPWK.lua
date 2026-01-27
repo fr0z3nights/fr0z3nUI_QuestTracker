@@ -69,6 +69,7 @@ ns.rules = {
     frameID = "bar1",
     label = "Timewalking Reminder",
     questInfo = "Timewalking",
+    preferQuestInfoForTitle = true,
     aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true },
     hideIfRememberedTimewalkingKind = true,
     hideIfAnyQuestInLog = {
