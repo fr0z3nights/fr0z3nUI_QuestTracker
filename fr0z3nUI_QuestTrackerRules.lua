@@ -484,10 +484,23 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
     local function LevelSuffix(rr)
       if type(rr) ~= "table" then return "" end
-      local op = rr.playerLevelOp
-      local lvl = tonumber(rr.playerLevel)
+
+      local function NormalizeOp(op)
+        return (op == "<" or op == "<=" or op == "=" or op == ">=" or op == ">" or op == "!=") and op or nil
+      end
+
+      local op, lvl
+      if type(rr.playerLevel) == "table" then
+        op = rr.playerLevel[1]
+        lvl = tonumber(rr.playerLevel[2])
+      else
+        op = rr.playerLevelOp
+        lvl = tonumber(rr.playerLevel)
+      end
+
+      op = NormalizeOp(op)
       if op and lvl and lvl > 0 then
-        return string.format(" [Lvl %s %d]", tostring(op), lvl)
+        return string.format(" [Lvl %s %d]", op, lvl)
       end
       return ""
     end

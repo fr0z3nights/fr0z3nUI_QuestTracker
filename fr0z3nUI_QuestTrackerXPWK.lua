@@ -1,5 +1,7 @@
 local addonName, ns = ...
 
+local Y, N = true, false
+
 -- Rules define WHAT you want tracked.
 -- Each rule can appear in a "bar" or a "list" frame (or both by duplicating the rule).
 --
@@ -103,8 +105,7 @@ ns.rules = {
     label = "Pet Battle Bonus Event",
     questInfo = "Pets",
     aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true },
-    playerLevelOp = ">=",
-    playerLevel = 20,
+    playerLevel = { ">=", 20 },
     hideWhenCompleted = false,
   },
 
@@ -114,8 +115,7 @@ ns.rules = {
     label = "World Quest Bonus Event",
     questInfo = "WQ",
     aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true },
-    playerLevelOp = ">=",
-    playerLevel = 80,
+    playerLevel = { ">=", 80 },
     requireInLog = false,
     progress = { objectiveIndex = 1 },
     hideWhenCompleted = false,

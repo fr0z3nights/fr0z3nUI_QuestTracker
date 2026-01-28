@@ -88,6 +88,35 @@ local function SetCheckButtonLabel(btn, text)
   end
 end
 
+local function NormalizePlayerLevelOpLite(op)
+  op = tostring(op or ""):gsub("%s+", "")
+  if op == "" then return nil end
+  if op == "==" then op = "=" end
+  if op == "~=" then op = "!=" end
+  if op == "<" or op == "<=" or op == "=" or op == ">=" or op == ">" or op == "!=" then
+    return op
+  end
+  return nil
+end
+
+local function GetPlayerLevelGateFromRule(rule)
+  if type(rule) ~= "table" then return nil, nil end
+
+  local op, lvl
+  if type(rule.playerLevel) == "table" then
+    op = rule.playerLevel[1]
+    lvl = rule.playerLevel[2]
+  else
+    op = rule.playerLevelOp
+    lvl = rule.playerLevel
+  end
+
+  op = NormalizePlayerLevelOpLite(op)
+  lvl = tonumber(lvl)
+  if not op or not lvl or lvl <= 0 then return nil, nil end
+  return op, lvl
+end
+
 local function GetFrameDisplayNameByID(frameID)
   frameID = tostring(frameID or "")
   if frameID == "" then return "" end
@@ -439,12 +468,14 @@ local function EnsureOptionsFrame()
       CPF.opacityFunc = nil
       CPF.previousValues = prev
 
+      ---@diagnostic disable-next-line: duplicate-set-field
       CPF.func = function()
         local r, g, b = CPF:GetColorRGB()
         r, g, b = NormalizeRGB(r, g, b)
         if onChanged then onChanged(r, g, b) end
       end
 
+      ---@diagnostic disable-next-line: duplicate-set-field
       CPF.cancelFunc = function(restored)
         local rv = restored or prev
         local r, g, b = NormalizeRGB(rv[1], rv[2], rv[3])
@@ -787,6 +818,83 @@ local function EnsureOptionsFrame()
     local UDDM_CreateInfo = _G and rawget(_G, "UIDropDownMenu_CreateInfo")
     local UDDM_AddButton = _G and rawget(_G, "UIDropDownMenu_AddButton")
 
+    local function LibStubGetLibrary(major, silent)
+      if type(major) ~= "string" then return nil end
+      local ls = _G and rawget(_G, "LibStub")
+      if not ls then return nil end
+
+      if type(ls) == "table" and type(ls.GetLibrary) == "function" then
+        local ok, lib = pcall(ls.GetLibrary, ls, major, silent)
+        if ok and lib ~= nil then return lib end
+      end
+
+      local mt = (type(ls) == "table") and getmetatable(ls) or nil
+      if type(ls) == "function" or (mt and type(mt.__call) == "function") then
+        local ok, lib = pcall(ls, major, silent)
+        if ok and lib ~= nil then return lib end
+      end
+      return nil
+    end
+
+    local function GetLibSharedMedia()
+      do
+        local la = _G and rawget(_G, "LoadAddOn")
+        if type(la) == "function" then
+          pcall(la, "LibSharedMedia-3.0")
+        end
+      end
+      local lib = LibStubGetLibrary("LibSharedMedia-3.0", true)
+      if type(lib) == "table" then return lib end
+      return nil
+    end
+
+    local function GetFontChoiceLabel(key)
+      key = tostring(key or "inherit")
+      if key == "" or key:lower() == "inherit" then
+        return "Inherit"
+      end
+      local lsmName = key:match("^lsm:(.+)$")
+      if lsmName and lsmName ~= "" then
+        return "LSM: " .. lsmName
+      end
+      return key
+    end
+
+    local function GetFontChoices()
+      local out = {}
+      out[#out + 1] = { key = "inherit", label = "Inherit" }
+
+      -- Common Blizzard font objects (only include those that exist).
+      for _, name in ipairs({
+        "GameFontNormal",
+        "GameFontHighlight",
+        "GameFontNormalLarge",
+        "GameFontNormalSmall",
+        "GameFontDisableSmall",
+        "ChatFontNormal",
+      }) do
+        local obj = _G and rawget(_G, name)
+        if obj and obj.GetFont then
+          out[#out + 1] = { key = name, label = name }
+        end
+      end
+
+      local lsm = GetLibSharedMedia()
+      if lsm and lsm.List then
+        local ok, list = pcall(lsm.List, lsm, "font")
+        if ok and type(list) == "table" then
+          table.sort(list)
+          for _, n in ipairs(list) do
+            if type(n) == "string" and n ~= "" then
+              out[#out + 1] = { key = "lsm:" .. n, label = "LSM: " .. n }
+            end
+          end
+        end
+      end
+
+      return out
+    end
+
     optionsCtx = {
       optionsFrame = f,
       panels = panels,
@@ -858,6 +966,9 @@ local function EnsureOptionsFrame()
       HideInputBoxTemplateArt = HideInputBoxTemplateArt,
       HideDropDownMenuArt = HideDropDownMenuArt,
       AttachLocationIDTooltip = AttachLocationIDTooltip,
+
+      GetFontChoices = GetFontChoices,
+      GetFontChoiceLabel = GetFontChoiceLabel,
 
       UDDM_SetWidth = UDDM_SetWidth,
       UDDM_SetText = UDDM_SetText,
@@ -1394,12 +1505,11 @@ local function EnsureOptionsFrame()
       local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevel = { op, lvl }
       else
-        rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
+      rule.playerLevelOp = nil
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = true end
 
       panels.quest._editingCustomIndex = nil
@@ -1428,12 +1538,11 @@ local function EnsureOptionsFrame()
       local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevel = { op, lvl }
       else
-        rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
+      rule.playerLevelOp = nil
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = true end
 
       if base and base.key ~= nil then rule.key = tostring(base.key) end
@@ -1463,8 +1572,7 @@ local function EnsureOptionsFrame()
         faction = panels.quest._questFaction,
         color = panels.quest._questColor,
         locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
+        playerLevel = (op and lvl) and { op, lvl } or nil,
         hideWhenCompleted = true,
       }
 
@@ -2260,21 +2368,24 @@ local function EnsureOptionsFrame()
       local lvl = itemsLevelBox and tonumber(itemsLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevel = { op, lvl }
       else
-        rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
+      rule.playerLevelOp = nil
 
       rule.item = rule.item or {}
       rule.item.itemID = itemID
-      rule.item.required = tonumber(rule.item.required) or 1
-      rule.item.hideWhenAcquired = hideAcquired:GetChecked() and true or false
+      local req = tonumber(rule.item.required)
+      if type(rule.item.required) == "table" then req = tonumber(rule.item.required[1]) end
+      req = req or 1
+      local hide = hideAcquired:GetChecked() and true or false
+      rule.item.required = hide and { req, true } or req
+      rule.item.hideWhenAcquired = nil
       rule.item.questID = questIDGate
       rule.item.afterQuestID = afterQuestIDGate
-      rule.item.currencyID = currencyIDGate
-      rule.item.currencyRequired = currencyReqGate
+      rule.item.currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil
+      rule.item.currencyRequired = nil
       rule.item.showWhenBelow = showWhenBelow
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
 
@@ -2304,21 +2415,24 @@ local function EnsureOptionsFrame()
       local lvl = itemsLevelBox and tonumber(itemsLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevel = { op, lvl }
       else
-        rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
+      rule.playerLevelOp = nil
 
       rule.item = rule.item or {}
       rule.item.itemID = itemID
-      rule.item.required = tonumber(rule.item.required) or 1
-      rule.item.hideWhenAcquired = hideAcquired:GetChecked() and true or false
+      local req2 = tonumber(rule.item.required)
+      if type(rule.item.required) == "table" then req2 = tonumber(rule.item.required[1]) end
+      req2 = req2 or 1
+      local hide2 = hideAcquired:GetChecked() and true or false
+      rule.item.required = hide2 and { req2, true } or req2
+      rule.item.hideWhenAcquired = nil
       rule.item.questID = questIDGate
       rule.item.afterQuestID = afterQuestIDGate
-      rule.item.currencyID = currencyIDGate
-      rule.item.currencyRequired = currencyReqGate
+      rule.item.currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil
+      rule.item.currencyRequired = nil
       rule.item.showWhenBelow = showWhenBelow
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
 
@@ -2347,16 +2461,13 @@ local function EnsureOptionsFrame()
         itemInfo = itemInfo,
         rep = rep,
         locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
+        playerLevel = (op and lvl) and { op, lvl } or nil,
         item = {
           itemID = itemID,
-          required = 1,
-          hideWhenAcquired = hideAcquired:GetChecked() and true or false,
+          required = (hideAcquired:GetChecked() and true or false) and { 1, true } or 1,
           questID = questIDGate,
           afterQuestID = afterQuestIDGate,
-          currencyID = currencyIDGate,
-          currencyRequired = currencyReqGate,
+          currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil,
           showWhenBelow = showWhenBelow,
         },
         hideWhenCompleted = false,
@@ -3091,12 +3202,11 @@ local function EnsureOptionsFrame()
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevel = { op, lvl }
       else
-        rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
+      rule.playerLevelOp = nil
 
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
 
@@ -3126,12 +3236,11 @@ local function EnsureOptionsFrame()
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevel = { op, lvl }
       else
-        rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
+      rule.playerLevelOp = nil
 
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
       if base and base.key ~= nil then rule.key = tostring(base.key) end
@@ -3159,8 +3268,7 @@ local function EnsureOptionsFrame()
         rep = rep,
         restedOnly = textRestedOnly:GetChecked() and true or false,
         locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
+        playerLevel = (op and lvl) and { op, lvl } or nil,
         hideWhenCompleted = false,
       }
 
@@ -3924,12 +4032,11 @@ local function EnsureOptionsFrame()
       local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevel = { op, lvl }
       else
-        rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
+      rule.playerLevelOp = nil
 
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
 
@@ -3972,12 +4079,11 @@ local function EnsureOptionsFrame()
       local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevel = { op, lvl }
       else
-        rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
+      rule.playerLevelOp = nil
 
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
       if base and base.key ~= nil then rule.key = tostring(base.key) end
@@ -4009,8 +4115,7 @@ local function EnsureOptionsFrame()
         restedOnly = spellsRestedOnlyCheck:GetChecked() and true or false,
         missingPrimaryProfessions = spellsMissingProfCheck:GetChecked() and true or false,
         locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
+        playerLevel = (op and lvl) and { op, lvl } or nil,
         hideWhenCompleted = false,
       }
       do
@@ -4096,6 +4201,18 @@ local function EnsureOptionsFrame()
     return "Custom"
   end
 
+  local function FontKeyToLabelLite(key)
+    key = tostring(key or "inherit")
+    if key == "" or key:lower() == "inherit" then
+      return "Inherit"
+    end
+    local lsmName = key:match("^lsm:(.+)$")
+    if lsmName and lsmName ~= "" then
+      return "LSM: " .. lsmName
+    end
+    return key
+  end
+
   local function RepStandingLabelLite(standing)
     standing = tonumber(standing)
     if not standing then return "Off" end
@@ -4155,16 +4272,33 @@ local function EnsureOptionsFrame()
         UDDM_SetText(panels.quest._questFactionDrop, FactionLabel(panels.quest._questFaction))
       end
 
-      panels.quest._questColor = rule.color
+      local qc = (type(rule.color) == "table") and rule.color or nil
+      panels.quest._questColor = qc
+      panels.quest._questColorName = ColorToNameLite(qc)
       if UDDM_SetText and panels.quest._questColorDrop and ColorLabel then
-        local name = ColorToNameLite(rule.color)
+        local name = ColorToNameLite(qc)
         if name == "Custom" then name = ColorLabel("Custom") end
         UDDM_SetText(panels.quest._questColorDrop, ColorLabel(name == "Custom" and "Custom" or name))
       end
 
-      panels.quest._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and panels.quest._qLevelOpDrop then UDDM_SetText(panels.quest._qLevelOpDrop, panels.quest._playerLevelOp or "Off") end
-      if panels.quest._qLevelBox then panels.quest._qLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+      if panels.quest._fontDrop then
+        local key = tostring(rule.font or "inherit")
+        if key == "" then key = "inherit" end
+        panels.quest._fontKey = key
+        if UDDM_SetText then UDDM_SetText(panels.quest._fontDrop, FontKeyToLabelLite(key)) end
+      end
+      if panels.quest._sizeBox and panels.quest._sizeBox.SetText then
+        local sz = tonumber(rule.size) or 0
+        if sz < 0 then sz = 0 end
+        panels.quest._sizeBox:SetText(tostring(sz))
+      end
+
+      do
+        local op, lvl = GetPlayerLevelGateFromRule(rule)
+        panels.quest._playerLevelOp = op
+        if UDDM_SetText and panels.quest._qLevelOpDrop then UDDM_SetText(panels.quest._qLevelOpDrop, op or "Off") end
+        if panels.quest._qLevelBox then panels.quest._qLevelBox:SetText(tostring(lvl or 0)) end
+      end
       return
     end
 
@@ -4227,11 +4361,35 @@ local function EnsureOptionsFrame()
       end
 
       if panels.items._itemCurrencyIDBox and type(rule.item) == "table" then
-        local cid = tonumber(rule.item.currencyID) or 0
+        local cid, creq
+        if type(ns) == "table" and type(ns.GetItemCurrencyGate) == "function" then
+          cid, creq = ns.GetItemCurrencyGate(rule.item)
+        else
+          if type(rule.item.currencyID) == "table" then
+            cid = tonumber(rule.item.currencyID[1])
+            creq = tonumber(rule.item.currencyID[2]) or tonumber(rule.item.currencyRequired)
+          else
+            cid = tonumber(rule.item.currencyID)
+            creq = tonumber(rule.item.currencyRequired)
+          end
+        end
+        cid = tonumber(cid) or 0
         panels.items._itemCurrencyIDBox:SetText((cid > 0) and tostring(cid) or "")
       end
       if panels.items._itemCurrencyReqBox and type(rule.item) == "table" then
-        local creq = tonumber(rule.item.currencyRequired) or 0
+        local cid, creq
+        if type(ns) == "table" and type(ns.GetItemCurrencyGate) == "function" then
+          cid, creq = ns.GetItemCurrencyGate(rule.item)
+        else
+          if type(rule.item.currencyID) == "table" then
+            cid = tonumber(rule.item.currencyID[1])
+            creq = tonumber(rule.item.currencyID[2]) or tonumber(rule.item.currencyRequired)
+          else
+            cid = tonumber(rule.item.currencyID)
+            creq = tonumber(rule.item.currencyRequired)
+          end
+        end
+        creq = tonumber(creq) or 0
         panels.items._itemCurrencyReqBox:SetText((creq > 0) and tostring(creq) or "")
       end
 
@@ -4249,15 +4407,36 @@ local function EnsureOptionsFrame()
         UDDM_SetText(panels.items._itemsFactionDrop, panels.items._faction and tostring(panels.items._faction) or "Both (Off)")
       end
 
-      panels.items._color = rule.color
+      panels.items._color = (type(rule.color) == "table") and rule.color or nil
       if UDDM_SetText and panels.items._itemsColorDrop then
         UDDM_SetText(panels.items._itemsColorDrop, ColorToNameLite(rule.color))
+      end
+
+      if panels.items._fontDrop then
+        local key = tostring(rule.font or "inherit")
+        if key == "" then key = "inherit" end
+        panels.items._fontKey = key
+        if UDDM_SetText then UDDM_SetText(panels.items._fontDrop, FontKeyToLabelLite(key)) end
+      end
+      if panels.items._sizeBox and panels.items._sizeBox.SetText then
+        local sz = tonumber(rule.size) or 0
+        if sz < 0 then sz = 0 end
+        panels.items._sizeBox:SetText(tostring(sz))
       end
 
       if panels.items._restedOnly then panels.items._restedOnly:SetChecked(rule.restedOnly and true or false) end
       if panels.items._locBox then panels.items._locBox:SetText(tostring(rule.locationID or "0")) end
       if panels.items._hideAcquired and type(rule.item) == "table" then
-        panels.items._hideAcquired:SetChecked(rule.item.hideWhenAcquired and true or false)
+        local hide = false
+        if type(ns) == "table" and type(ns.GetItemRequiredGate) == "function" then
+          local _, h = ns.GetItemRequiredGate(rule.item)
+          hide = (h == true)
+        elseif type(rule.item.required) == "table" then
+          hide = (rule.item.required[2] == true)
+        else
+          hide = (rule.item.hideWhenAcquired == true)
+        end
+        panels.items._hideAcquired:SetChecked(hide and true or false)
       end
 
       local repFactionID = 0
@@ -4276,11 +4455,13 @@ local function EnsureOptionsFrame()
       if panels.items._hideExalted then panels.items._hideExalted:SetChecked(repHideEx and true or false) end
       if panels.items._sellExalted then panels.items._sellExalted:SetChecked(repSellEx and true or false) end
 
-      panels.items._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and panels.items._itemsLevelOpDrop then UDDM_SetText(panels.items._itemsLevelOpDrop, panels.items._playerLevelOp or "Off") end
-      if panels.items._itemsLevelBox then
-        local n = tonumber(rule.playerLevel) or 0
-        panels.items._itemsLevelBox:SetText((n > 0) and tostring(n) or "")
+      do
+        local op, lvl = GetPlayerLevelGateFromRule(rule)
+        panels.items._playerLevelOp = op
+        if UDDM_SetText and panels.items._itemsLevelOpDrop then UDDM_SetText(panels.items._itemsLevelOpDrop, op or "Off") end
+        if panels.items._itemsLevelBox then
+          panels.items._itemsLevelBox:SetText((lvl and lvl > 0) and tostring(lvl) or "")
+        end
       end
       return
     end
@@ -4344,14 +4525,29 @@ local function EnsureOptionsFrame()
         UDDM_SetText(panels.spells._spellsFactionDrop, panels.spells._faction and tostring(panels.spells._faction) or "Both (Off)")
       end
 
-      panels.spells._color = rule.color
+      panels.spells._color = (type(rule.color) == "table") and rule.color or nil
       if UDDM_SetText and panels.spells._spellsColorDrop then
         UDDM_SetText(panels.spells._spellsColorDrop, ColorToNameLite(rule.color))
       end
 
-      panels.spells._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and panels.spells._spellsLevelOpDrop then UDDM_SetText(panels.spells._spellsLevelOpDrop, panels.spells._playerLevelOp or "Off") end
-      if panels.spells._spellsLevelBox then panels.spells._spellsLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+      if panels.spells._fontDrop then
+        local key = tostring(rule.font or "inherit")
+        if key == "" then key = "inherit" end
+        panels.spells._fontKey = key
+        if UDDM_SetText then UDDM_SetText(panels.spells._fontDrop, FontKeyToLabelLite(key)) end
+      end
+      if panels.spells._sizeBox and panels.spells._sizeBox.SetText then
+        local sz = tonumber(rule.size) or 0
+        if sz < 0 then sz = 0 end
+        panels.spells._sizeBox:SetText(tostring(sz))
+      end
+
+      do
+        local op, lvl = GetPlayerLevelGateFromRule(rule)
+        panels.spells._playerLevelOp = op
+        if UDDM_SetText and panels.spells._spellsLevelOpDrop then UDDM_SetText(panels.spells._spellsLevelOpDrop, op or "Off") end
+        if panels.spells._spellsLevelBox then panels.spells._spellsLevelBox:SetText(tostring(lvl or 0)) end
+      end
 
       if panels.spells._restedOnly then panels.spells._restedOnly:SetChecked(rule.restedOnly and true or false) end
       if panels.spells._missingPrimaryProf then panels.spells._missingPrimaryProf:SetChecked(rule.missingPrimaryProfessions and true or false) end
@@ -4382,9 +4578,21 @@ local function EnsureOptionsFrame()
       UDDM_SetText(panels.text._textFactionDrop, panels.text._faction and tostring(panels.text._faction) or "Both (Off)")
     end
 
-    panels.text._color = rule.color
+    panels.text._color = (type(rule.color) == "table") and rule.color or nil
     if UDDM_SetText and panels.text._textColorDrop then
       UDDM_SetText(panels.text._textColorDrop, ColorToNameLite(rule.color))
+    end
+
+    if panels.text._fontDrop then
+      local key = tostring(rule.font or "inherit")
+      if key == "" then key = "inherit" end
+      panels.text._fontKey = key
+      if UDDM_SetText then UDDM_SetText(panels.text._fontDrop, FontKeyToLabelLite(key)) end
+    end
+    if panels.text._sizeBox and panels.text._sizeBox.SetText then
+      local sz = tonumber(rule.size) or 0
+      if sz < 0 then sz = 0 end
+      panels.text._sizeBox:SetText(tostring(sz))
     end
 
     local repFactionID = 0
@@ -4399,9 +4607,12 @@ local function EnsureOptionsFrame()
     if panels.text._restedOnly then panels.text._restedOnly:SetChecked(rule.restedOnly and true or false) end
     if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.locationID or "0")) end
 
-    panels.text._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-    if UDDM_SetText and panels.text._textLevelOpDrop then UDDM_SetText(panels.text._textLevelOpDrop, panels.text._playerLevelOp or "Off") end
-    if panels.text._textLevelBox then panels.text._textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+    do
+      local op, lvl = GetPlayerLevelGateFromRule(rule)
+      panels.text._playerLevelOp = op
+      if UDDM_SetText and panels.text._textLevelOpDrop then UDDM_SetText(panels.text._textLevelOpDrop, op or "Off") end
+      if panels.text._textLevelBox then panels.text._textLevelBox:SetText(tostring(lvl or 0)) end
+    end
   end
 
   ns.OpenCustomRuleInTab = OpenCustomRuleInTab
@@ -4453,16 +4664,33 @@ local function EnsureOptionsFrame()
         UDDM_SetText(panels.quest._questFactionDrop, FactionLabel(panels.quest._questFaction))
       end
 
-      panels.quest._questColor = rule.color
+      local qc2 = (type(rule.color) == "table") and rule.color or nil
+      panels.quest._questColor = qc2
+      panels.quest._questColorName = ColorToNameLite(qc2)
       if UDDM_SetText and panels.quest._questColorDrop and ColorLabel then
-        local name = ColorToNameLite(rule.color)
+        local name = ColorToNameLite(qc2)
         if name == "Custom" then name = ColorLabel("Custom") end
         UDDM_SetText(panels.quest._questColorDrop, ColorLabel(name == "Custom" and "Custom" or name))
       end
 
-      panels.quest._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and panels.quest._qLevelOpDrop then UDDM_SetText(panels.quest._qLevelOpDrop, panels.quest._playerLevelOp or "Off") end
-      if panels.quest._qLevelBox then panels.quest._qLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+      if panels.quest._fontDrop then
+        local key2 = tostring(rule.font or "inherit")
+        if key2 == "" then key2 = "inherit" end
+        panels.quest._fontKey = key2
+        if UDDM_SetText then UDDM_SetText(panels.quest._fontDrop, FontKeyToLabelLite(key2)) end
+      end
+      if panels.quest._sizeBox and panels.quest._sizeBox.SetText then
+        local sz2 = tonumber(rule.size) or 0
+        if sz2 < 0 then sz2 = 0 end
+        panels.quest._sizeBox:SetText(tostring(sz2))
+      end
+
+      do
+        local op, lvl = GetPlayerLevelGateFromRule(rule)
+        panels.quest._playerLevelOp = op
+        if UDDM_SetText and panels.quest._qLevelOpDrop then UDDM_SetText(panels.quest._qLevelOpDrop, op or "Off") end
+        if panels.quest._qLevelBox then panels.quest._qLevelBox:SetText(tostring(lvl or 0)) end
+      end
       return
     end
 
@@ -4526,11 +4754,35 @@ local function EnsureOptionsFrame()
       end
 
       if panels.items._itemCurrencyIDBox and type(rule.item) == "table" then
-        local cid = tonumber(rule.item.currencyID) or 0
+        local cid, creq
+        if type(ns) == "table" and type(ns.GetItemCurrencyGate) == "function" then
+          cid, creq = ns.GetItemCurrencyGate(rule.item)
+        else
+          if type(rule.item.currencyID) == "table" then
+            cid = tonumber(rule.item.currencyID[1])
+            creq = tonumber(rule.item.currencyID[2]) or tonumber(rule.item.currencyRequired)
+          else
+            cid = tonumber(rule.item.currencyID)
+            creq = tonumber(rule.item.currencyRequired)
+          end
+        end
+        cid = tonumber(cid) or 0
         panels.items._itemCurrencyIDBox:SetText((cid > 0) and tostring(cid) or "")
       end
       if panels.items._itemCurrencyReqBox and type(rule.item) == "table" then
-        local creq = tonumber(rule.item.currencyRequired) or 0
+        local cid, creq
+        if type(ns) == "table" and type(ns.GetItemCurrencyGate) == "function" then
+          cid, creq = ns.GetItemCurrencyGate(rule.item)
+        else
+          if type(rule.item.currencyID) == "table" then
+            cid = tonumber(rule.item.currencyID[1])
+            creq = tonumber(rule.item.currencyID[2]) or tonumber(rule.item.currencyRequired)
+          else
+            cid = tonumber(rule.item.currencyID)
+            creq = tonumber(rule.item.currencyRequired)
+          end
+        end
+        creq = tonumber(creq) or 0
         panels.items._itemCurrencyReqBox:SetText((creq > 0) and tostring(creq) or "")
       end
 
@@ -4548,15 +4800,36 @@ local function EnsureOptionsFrame()
         UDDM_SetText(panels.items._itemsFactionDrop, panels.items._faction and tostring(panels.items._faction) or "Both (Off)")
       end
 
-      panels.items._color = rule.color
+      panels.items._color = (type(rule.color) == "table") and rule.color or nil
       if UDDM_SetText and panels.items._itemsColorDrop then
         UDDM_SetText(panels.items._itemsColorDrop, ColorToNameLite(rule.color))
+      end
+
+      if panels.items._fontDrop then
+        local key2 = tostring(rule.font or "inherit")
+        if key2 == "" then key2 = "inherit" end
+        panels.items._fontKey = key2
+        if UDDM_SetText then UDDM_SetText(panels.items._fontDrop, FontKeyToLabelLite(key2)) end
+      end
+      if panels.items._sizeBox and panels.items._sizeBox.SetText then
+        local sz2 = tonumber(rule.size) or 0
+        if sz2 < 0 then sz2 = 0 end
+        panels.items._sizeBox:SetText(tostring(sz2))
       end
 
       if panels.items._restedOnly then panels.items._restedOnly:SetChecked(rule.restedOnly and true or false) end
       if panels.items._locBox then panels.items._locBox:SetText(tostring(rule.locationID or "0")) end
       if panels.items._hideAcquired and type(rule.item) == "table" then
-        panels.items._hideAcquired:SetChecked(rule.item.hideWhenAcquired and true or false)
+        local hide2 = false
+        if type(ns) == "table" and type(ns.GetItemRequiredGate) == "function" then
+          local _, h2 = ns.GetItemRequiredGate(rule.item)
+          hide2 = (h2 == true)
+        elseif type(rule.item.required) == "table" then
+          hide2 = (rule.item.required[2] == true)
+        else
+          hide2 = (rule.item.hideWhenAcquired == true)
+        end
+        panels.items._hideAcquired:SetChecked(hide2 and true or false)
       end
 
       local repFactionID = 0
@@ -4575,11 +4848,13 @@ local function EnsureOptionsFrame()
       if panels.items._hideExalted then panels.items._hideExalted:SetChecked(repHideEx and true or false) end
       if panels.items._sellExalted then panels.items._sellExalted:SetChecked(repSellEx and true or false) end
 
-      panels.items._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and panels.items._itemsLevelOpDrop then UDDM_SetText(panels.items._itemsLevelOpDrop, panels.items._playerLevelOp or "Off") end
-      if panels.items._itemsLevelBox then
-        local n = tonumber(rule.playerLevel) or 0
-        panels.items._itemsLevelBox:SetText((n > 0) and tostring(n) or "")
+      do
+        local op, lvl = GetPlayerLevelGateFromRule(rule)
+        panels.items._playerLevelOp = op
+        if UDDM_SetText and panels.items._itemsLevelOpDrop then UDDM_SetText(panels.items._itemsLevelOpDrop, op or "Off") end
+        if panels.items._itemsLevelBox then
+          panels.items._itemsLevelBox:SetText((lvl and lvl > 0) and tostring(lvl) or "")
+        end
       end
       return
     end
@@ -4644,14 +4919,29 @@ local function EnsureOptionsFrame()
         UDDM_SetText(panels.spells._spellsFactionDrop, panels.spells._faction and tostring(panels.spells._faction) or "Both (Off)")
       end
 
-      panels.spells._color = rule.color
+      panels.spells._color = (type(rule.color) == "table") and rule.color or nil
       if UDDM_SetText and panels.spells._spellsColorDrop then
         UDDM_SetText(panels.spells._spellsColorDrop, ColorToNameLite(rule.color))
       end
 
-      panels.spells._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-      if UDDM_SetText and panels.spells._spellsLevelOpDrop then UDDM_SetText(panels.spells._spellsLevelOpDrop, panels.spells._playerLevelOp or "Off") end
-      if panels.spells._spellsLevelBox then panels.spells._spellsLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+      if panels.spells._fontDrop then
+        local key2 = tostring(rule.font or "inherit")
+        if key2 == "" then key2 = "inherit" end
+        panels.spells._fontKey = key2
+        if UDDM_SetText then UDDM_SetText(panels.spells._fontDrop, FontKeyToLabelLite(key2)) end
+      end
+      if panels.spells._sizeBox and panels.spells._sizeBox.SetText then
+        local sz2 = tonumber(rule.size) or 0
+        if sz2 < 0 then sz2 = 0 end
+        panels.spells._sizeBox:SetText(tostring(sz2))
+      end
+
+      do
+        local op, lvl = GetPlayerLevelGateFromRule(rule)
+        panels.spells._playerLevelOp = op
+        if UDDM_SetText and panels.spells._spellsLevelOpDrop then UDDM_SetText(panels.spells._spellsLevelOpDrop, op or "Off") end
+        if panels.spells._spellsLevelBox then panels.spells._spellsLevelBox:SetText(tostring(lvl or 0)) end
+      end
 
       if panels.spells._restedOnly then panels.spells._restedOnly:SetChecked(rule.restedOnly and true or false) end
       if panels.spells._missingPrimaryProf then panels.spells._missingPrimaryProf:SetChecked(rule.missingPrimaryProfessions and true or false) end
@@ -4683,9 +4973,21 @@ local function EnsureOptionsFrame()
       UDDM_SetText(panels.text._textFactionDrop, panels.text._faction and tostring(panels.text._faction) or "Both (Off)")
     end
 
-    panels.text._color = rule.color
+    panels.text._color = (type(rule.color) == "table") and rule.color or nil
     if UDDM_SetText and panels.text._textColorDrop then
       UDDM_SetText(panels.text._textColorDrop, ColorToNameLite(rule.color))
+    end
+
+    if panels.text._fontDrop then
+      local key2 = tostring(rule.font or "inherit")
+      if key2 == "" then key2 = "inherit" end
+      panels.text._fontKey = key2
+      if UDDM_SetText then UDDM_SetText(panels.text._fontDrop, FontKeyToLabelLite(key2)) end
+    end
+    if panels.text._sizeBox and panels.text._sizeBox.SetText then
+      local sz2 = tonumber(rule.size) or 0
+      if sz2 < 0 then sz2 = 0 end
+      panels.text._sizeBox:SetText(tostring(sz2))
     end
 
     local repFactionID = 0
@@ -4700,9 +5002,12 @@ local function EnsureOptionsFrame()
     if panels.text._restedOnly then panels.text._restedOnly:SetChecked(rule.restedOnly and true or false) end
     if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.locationID or "0")) end
 
-    panels.text._playerLevelOp = (rule.playerLevelOp == "<" or rule.playerLevelOp == "<=" or rule.playerLevelOp == "=" or rule.playerLevelOp == ">=" or rule.playerLevelOp == ">" or rule.playerLevelOp == "!=") and rule.playerLevelOp or nil
-    if UDDM_SetText and panels.text._textLevelOpDrop then UDDM_SetText(panels.text._textLevelOpDrop, panels.text._playerLevelOp or "Off") end
-    if panels.text._textLevelBox then panels.text._textLevelBox:SetText(tostring(tonumber(rule.playerLevel) or 0)) end
+    do
+      local op, lvl = GetPlayerLevelGateFromRule(rule)
+      panels.text._playerLevelOp = op
+      if UDDM_SetText and panels.text._textLevelOpDrop then UDDM_SetText(panels.text._textLevelOpDrop, op or "Off") end
+      if panels.text._textLevelBox then panels.text._textLevelBox:SetText(tostring(lvl or 0)) end
+    end
   end
 
   ns.OpenDefaultRuleInTab = OpenDefaultRuleInTab
@@ -5523,12 +5828,13 @@ local function EnsureOptionsFrame()
     ed._restedOnly:SetChecked((mode == "edit" and r.restedOnly == true) and true or false)
     ed._hideDone:SetChecked((mode == "edit" and r.hideWhenCompleted == true) and true or false)
 
-    ed._playerLevelOp = (mode == "edit") and r.playerLevelOp or nil
+    local plOp, plLvl = (mode == "edit") and GetPlayerLevelGateFromRule(r) or nil, nil
+    ed._playerLevelOp = plOp
     if UDDM_SetText and ed._playerLevelOpDrop then
       UDDM_SetText(ed._playerLevelOpDrop, ed._playerLevelOp and tostring(ed._playerLevelOp) or "Off")
     end
     if ed._playerLevelBox then
-      ed._playerLevelBox:SetText(tostring((mode == "edit" and tonumber(r.playerLevel)) or 0))
+      ed._playerLevelBox:SetText(tostring(plLvl or 0))
     end
 
     local repFactionID = 0
@@ -5557,7 +5863,20 @@ local function EnsureOptionsFrame()
     elseif t == "item" then
       local itemID = (mode == "edit" and type(r.item) == "table" and tonumber(r.item.itemID)) or 0
       ed._itemIDBox:SetText(tostring(itemID or 0))
-      ed._hideAcquired:SetChecked((mode == "edit" and type(r.item) == "table" and r.item.hideWhenAcquired == true) and true or false)
+      do
+        local hide = false
+        if mode == "edit" and type(r.item) == "table" then
+          if type(ns) == "table" and type(ns.GetItemRequiredGate) == "function" then
+            local _, h = ns.GetItemRequiredGate(r.item)
+            hide = (h == true)
+          elseif type(r.item.required) == "table" then
+            hide = (r.item.required[2] == true)
+          else
+            hide = (r.item.hideWhenAcquired == true)
+          end
+        end
+        ed._hideAcquired:SetChecked(hide and true or false)
+      end
       if mode ~= "edit" then
         ed._hideDone:SetChecked(false)
       end
@@ -5646,12 +5965,11 @@ local function EnsureOptionsFrame()
           local lvl = ed._playerLevelBox and tonumber(ed._playerLevelBox:GetText() or "") or nil
           if lvl and lvl <= 0 then lvl = nil end
           if op and lvl then
-            rule.playerLevelOp = op
-            rule.playerLevel = lvl
+            rule.playerLevel = { op, lvl }
           else
-            rule.playerLevelOp = nil
             rule.playerLevel = nil
           end
+          rule.playerLevelOp = nil
         end
 
         local rule
@@ -5663,6 +5981,8 @@ local function EnsureOptionsFrame()
         end
 
         ApplyCommon(rule)
+
+  local prevItem = rule.item
 
         -- Clear type-specific fields first.
         rule.questID = nil
@@ -5696,10 +6016,21 @@ local function EnsureOptionsFrame()
             Print("Enter an itemID > 0.")
             return
           end
+          local req = 1
+          if ed._mode == "edit" and type(prevItem) == "table" then
+            if type(ns) == "table" and type(ns.GetItemRequiredGate) == "function" then
+              local rreq = ns.GetItemRequiredGate(prevItem)
+              req = tonumber(rreq) or 1
+            elseif type(prevItem.required) == "table" then
+              req = tonumber(prevItem.required[1]) or 1
+            else
+              req = tonumber(prevItem.required) or 1
+            end
+          end
+          local hide = ed._hideAcquired:GetChecked() and true or false
           rule.item = {
             itemID = itemID,
-            required = 1,
-            hideWhenAcquired = ed._hideAcquired:GetChecked() and true or false,
+            required = hide and { req, true } or req,
           }
         elseif t == "spell" then
           local known = tonumber(ed._spellKnownBox:GetText() or "")
@@ -6645,6 +6976,7 @@ local function EnsureOptionsFrame()
       CPF.opacity = 1 - a0
       CPF.previousValues = prev
 
+      ---@diagnostic disable-next-line: duplicate-set-field
       CPF.func = function()
         local r, g, b = CPF:GetColorRGB()
         local a = Clamp01Local(CurrentOpacity())
@@ -6657,6 +6989,7 @@ local function EnsureOptionsFrame()
         if onChanged then onChanged(r, g, b, a) end
       end
 
+      ---@diagnostic disable-next-line: duplicate-set-field
       CPF.cancelFunc = function(restored)
         local rv = restored or prev
         if onChanged then onChanged(rv[1], rv[2], rv[3], rv[4]) end
@@ -7329,9 +7662,8 @@ local function EnsureOptionsFrame()
 
       local function LevelSuffix(rr)
         if type(rr) ~= "table" then return "" end
-        local op = rr.playerLevelOp
-        local lvl = tonumber(rr.playerLevel)
-        if op and lvl and lvl > 0 then
+        local op, lvl = GetPlayerLevelGateFromRule(rr)
+        if op and lvl then
           return string.format(" [Lvl %s %d]", tostring(op), lvl)
         end
         return ""

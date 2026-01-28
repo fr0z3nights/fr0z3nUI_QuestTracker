@@ -8,6 +8,8 @@ ns.rules = ns.rules or {}
 local EXPANSION_ID = 0
 local EXPANSION_NAME = "Unclassified"
 
+local Y, N = true, false
+
 local bakedRules = {
 }
 

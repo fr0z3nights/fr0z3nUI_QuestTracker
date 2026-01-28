@@ -1450,6 +1450,7 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
       CPF.opacity = 1 - a0
       CPF.previousValues = prev
 
+      ---@diagnostic disable-next-line: duplicate-set-field
       CPF.func = function()
         local r, g, b = CPF:GetColorRGB()
         local a = Clamp01Local(CurrentOpacity())
@@ -1462,6 +1463,7 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
         if onChanged then onChanged(r, g, b, a) end
       end
 
+      ---@diagnostic disable-next-line: duplicate-set-field
       CPF.cancelFunc = function(restored)
         local rv = restored or prev
         if onChanged then onChanged(rv[1], rv[2], rv[3], rv[4]) end

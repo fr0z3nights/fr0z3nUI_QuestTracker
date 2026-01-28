@@ -36,6 +36,9 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
   local HideDropDownMenuArt = ctx.HideDropDownMenuArt
   local AttachLocationIDTooltip = ctx.AttachLocationIDTooltip
 
+  local GetFontChoices = ctx.GetFontChoices
+  local GetFontChoiceLabel = ctx.GetFontChoiceLabel
+
   local UDDM_SetWidth = ctx.UDDM_SetWidth
   local UDDM_SetText = ctx.UDDM_SetText
   local UDDM_Initialize = ctx.UDDM_Initialize
@@ -329,6 +332,31 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
   pItems._color = nil
   if HideDropDownMenuArt then HideDropDownMenuArt(itemsColorDrop) end
 
+  local itemsFontLabel = pItems:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  itemsFontLabel:SetPoint("TOPLEFT", 500, -146)
+  itemsFontLabel:SetText("Font")
+
+  local itemsFontDrop = CreateFrame("Frame", nil, pItems, "UIDropDownMenuTemplate")
+  itemsFontDrop:SetPoint("TOPLEFT", 485, -174)
+  if UDDM_SetWidth then UDDM_SetWidth(itemsFontDrop, 170) end
+  if UDDM_SetText then UDDM_SetText(itemsFontDrop, "Inherit") end
+  pItems._fontDrop = itemsFontDrop
+  pItems._fontKey = "inherit"
+  if HideDropDownMenuArt then HideDropDownMenuArt(itemsFontDrop) end
+
+  local itemsSizeLabel = pItems:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  itemsSizeLabel:SetPoint("TOPLEFT", 500, -210)
+  itemsSizeLabel:SetText("Size")
+
+  local itemsSizeBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
+  itemsSizeBox:SetSize(50, 20)
+  itemsSizeBox:SetPoint("TOPLEFT", 500, -226)
+  itemsSizeBox:SetAutoFocus(false)
+  itemsSizeBox:SetNumeric(true)
+  itemsSizeBox:SetText("0")
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(itemsSizeBox) end
+  pItems._sizeBox = itemsSizeBox
+
   -- Quick color palette for item text color
   if CreateQuickColorPalette then
     CreateQuickColorPalette(pItems, itemsColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 12, {
@@ -526,6 +554,14 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       if UDDM_SetText then UDDM_SetText(pItems._itemsColorDrop, name) end
     end
 
+    local function SetFontKey(key)
+      key = tostring(key or "inherit")
+      if key == "" then key = "inherit" end
+      pItems._fontKey = key
+      local label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
+      if UDDM_SetText then UDDM_SetText(pItems._fontDrop, label) end
+    end
+
     local modernItemsFrame = UseModernMenuDropDown and UseModernMenuDropDown(itemsFrameDrop, function(root)
       if root and root.CreateTitle then root:CreateTitle("Bar / List") end
       for _, def in ipairs(GetEffectiveFrames()) do
@@ -592,6 +628,22 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
           root:CreateRadio(name, IsSelected, SetSelected)
         elseif root and root.CreateButton then
           root:CreateButton(name, SetSelected)
+        end
+      end
+    end)
+
+    local modernItemsFont = UseModernMenuDropDown and UseModernMenuDropDown(itemsFontDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Font") end
+      local choices = (type(GetFontChoices) == "function") and GetFontChoices() or { { key = "inherit", label = "Inherit" } }
+      for _, opt in ipairs(choices) do
+        if type(opt) == "table" and opt.key and root then
+          local key = tostring(opt.key)
+          local label = tostring(opt.label or opt.key)
+          if root.CreateRadio then
+            root:CreateRadio(label, function() return (pItems._fontKey == key) end, function() SetFontKey(key) end)
+          elseif root.CreateButton then
+            root:CreateButton(label, function() SetFontKey(key) end)
+          end
         end
       end
     end)
@@ -710,6 +762,22 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       end)
     end
 
+    if not modernItemsFont then
+      UDDM_Initialize(itemsFontDrop, function(self, level)
+        local choices = (type(GetFontChoices) == "function") and GetFontChoices() or { { key = "inherit", label = "Inherit" } }
+        for _, opt in ipairs(choices) do
+          if type(opt) == "table" and opt.key then
+            local key = tostring(opt.key)
+            local info = UDDM_CreateInfo()
+            info.text = tostring(opt.label or opt.key)
+            info.checked = (pItems._fontKey == key) and true or false
+            info.func = function() SetFontKey(key) end
+            UDDM_AddButton(info)
+          end
+        end
+      end)
+    end
+
     if not modernItemsRepMin then
       UDDM_Initialize(repMinDrop, function(self, level)
         local function Add(name, standing)
@@ -807,6 +875,10 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
     pItems._color = nil
     if UDDM_SetText and itemsColorDrop then UDDM_SetText(itemsColorDrop, "None") end
 
+    pItems._fontKey = "inherit"
+    if UDDM_SetText and itemsFontDrop then UDDM_SetText(itemsFontDrop, "Inherit") end
+    if itemsSizeBox then itemsSizeBox:SetText("0") end
+
     pItems._repMinStanding = nil
     if repFactionBox then repFactionBox:SetText("") end
     if UDDM_SetText and repMinDrop then UDDM_SetText(repMinDrop, "Off") end
@@ -891,6 +963,11 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
     local locText = tostring(itemsLocBox:GetText() or ""):gsub("%s+", "")
     local locationID = (locText ~= "" and locText ~= "0") and locText or nil
 
+    local fontKey = tostring(pItems._fontKey or "inherit")
+    if fontKey == "" then fontKey = "inherit" end
+    local fontSize = (itemsSizeBox and tonumber(itemsSizeBox:GetText() or "")) or 0
+    if not fontSize or fontSize < 0 then fontSize = 0 end
+
     local rules = GetCustomRules()
     local expID, expName = nil, nil
     if type(GetRuleCreateExpansion) == "function" then
@@ -905,6 +982,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       rule.frameID = targetFrame
       rule.faction = pItems._faction
       rule.color = pItems._color
+      rule.font = fontKey
+      rule.size = fontSize
       rule.restedOnly = restedOnly:GetChecked() and true or false
       rule.label = label
       rule.itemInfo = itemInfo
@@ -917,8 +996,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       local lvl = itemsLevelBox and tonumber(itemsLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevelOp = nil
+        rule.playerLevel = { op, lvl }
       else
         rule.playerLevelOp = nil
         rule.playerLevel = nil
@@ -926,12 +1005,16 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
 
       rule.item = rule.item or {}
       rule.item.itemID = itemID
-      rule.item.required = tonumber(rule.item.required) or 1
-      rule.item.hideWhenAcquired = hideAcquired:GetChecked() and true or false
+      local req = tonumber(rule.item.required)
+      if type(rule.item.required) == "table" then req = tonumber(rule.item.required[1]) end
+      req = req or 1
+      local hide = hideAcquired:GetChecked() and true or false
+      rule.item.required = hide and { req, true } or req
+      rule.item.hideWhenAcquired = nil
       rule.item.questID = questIDGate
       rule.item.afterQuestID = afterQuestIDGate
-      rule.item.currencyID = currencyIDGate
-      rule.item.currencyRequired = currencyReqGate
+      rule.item.currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil
+      rule.item.currencyRequired = nil
       rule.item.showWhenBelow = showWhenBelow
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
 
@@ -951,6 +1034,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       rule.frameID = targetFrame
       rule.faction = pItems._faction
       rule.color = pItems._color
+      rule.font = fontKey
+      rule.size = fontSize
       rule.restedOnly = restedOnly:GetChecked() and true or false
       rule.label = label
       rule.itemInfo = itemInfo
@@ -963,8 +1048,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       local lvl = itemsLevelBox and tonumber(itemsLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevelOp = nil
+        rule.playerLevel = { op, lvl }
       else
         rule.playerLevelOp = nil
         rule.playerLevel = nil
@@ -972,12 +1057,16 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
 
       rule.item = rule.item or {}
       rule.item.itemID = itemID
-      rule.item.required = tonumber(rule.item.required) or 1
-      rule.item.hideWhenAcquired = hideAcquired:GetChecked() and true or false
+      local req2 = tonumber(rule.item.required)
+      if type(rule.item.required) == "table" then req2 = tonumber(rule.item.required[1]) end
+      req2 = req2 or 1
+      local hide2 = hideAcquired:GetChecked() and true or false
+      rule.item.required = hide2 and { req2, true } or req2
+      rule.item.hideWhenAcquired = nil
       rule.item.questID = questIDGate
       rule.item.afterQuestID = afterQuestIDGate
-      rule.item.currencyID = currencyIDGate
-      rule.item.currencyRequired = currencyReqGate
+      rule.item.currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil
+      rule.item.currencyRequired = nil
       rule.item.showWhenBelow = showWhenBelow
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
 
@@ -1001,6 +1090,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
         frameID = targetFrame,
         faction = pItems._faction,
         color = pItems._color,
+        font = fontKey,
+        size = fontSize,
         restedOnly = restedOnly:GetChecked() and true or false,
         label = label,
         itemInfo = itemInfo,
@@ -1008,16 +1099,13 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
         locationID = locationID,
         _expansionID = expID,
         _expansionName = expName,
-        playerLevelOp = op,
-        playerLevel = lvl,
+        playerLevel = (op and lvl) and { op, lvl } or nil,
         item = {
           itemID = itemID,
-          required = 1,
-          hideWhenAcquired = hideAcquired:GetChecked() and true or false,
+          required = (hideAcquired:GetChecked() and true or false) and { 1, true } or 1,
           questID = questIDGate,
           afterQuestID = afterQuestIDGate,
-          currencyID = currencyIDGate,
-          currencyRequired = currencyReqGate,
+          currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil,
           showWhenBelow = showWhenBelow,
         },
         hideWhenCompleted = false,

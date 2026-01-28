@@ -8,6 +8,8 @@ ns.rules = ns.rules or {}
 local EXPANSION_ID = 6
 local EXPANSION_NAME = "Warlords of Draenor"
 
+local Y, N = true, false
+
 local bakedRules = {
 
 {["label"] = "SU  06  Garrison 01 A", ["frameID"] = "list1", ["key"] = "custom:q:36941:list1:17",
@@ -50,10 +52,7 @@ local bakedRules = {
 ["questInfo"] = "Frostfire Ridge\n + Wiggling Egg",
 ["locationID"] = 525, },
 
-{["label"] = "+ Goblin Gliders  %s", ["frameID"] = "list1", ["key"] = "custom:item:109076:list1:125",
-["hideWhenCompleted"] = false,
-["restedOnly"] = true,
-["item"] = { ["hideWhenAcquired"] = true, ["itemID"] = 109076, ["required"] = 1, }, },
+
 
 }
 

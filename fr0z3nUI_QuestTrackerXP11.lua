@@ -8,6 +8,8 @@ ns.rules = ns.rules or {}
 local EXPANSION_ID = 11
 local EXPANSION_NAME = "The War Within"
 
+local Y, N = true, false
+
 local bakedRules = {
 
 {["label"] = "TD 3.01  11  Q-82520  Pet - Mind Slurp", ["frameID"] = "list1", ["key"] = "custom:q:82520:list1:68",
@@ -61,7 +63,7 @@ local bakedRules = {
 {["frameID"] = "list1", ["key"] = "custom:item:230728:list1:129",
 ["hideWhenCompleted"] = false,
 ["locationID"] = "2369",
-["item"] = { ["hideWhenAcquired"] = true, ["itemID"] = 230728, ["required"] = 1, },
+["item"] = { ["itemID"] = 230728, ["required"] = { 1, true }, },
 ["restedOnly"] = false, },
 
 {["label"] = "Khaz Algar Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:118",
@@ -106,6 +108,13 @@ local bakedRules = {
 ["locationID"] = 6666666,
 ["notInGroup"] = false, },
 
+{["label"] = "Lucky Tortollan Charm\n      Near Azj-Kahet Portal", ["frameID"] = "list1", ["key"] = "custom:item:202046:list1:72",
+["hideWhenCompleted"] = false,
+["playerLevel"] = { ">", 70 },
+["faction"] = "Horde",
+["restedOnly"] = true,
+["item"] = { ["itemID"] = 202046, ["required"] = { 1, true }, }, },
+
 {["label"] = "Khaz Algar Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:124",
 ["hideWhenCompleted"] = false,
 ["spellKnown"] = 264622,
@@ -115,12 +124,13 @@ local bakedRules = {
 
 {["label"] = "Delvez", ["frameID"] = "bar1", ["key"] = "wk:delves:bran",
 ["questID"] = 82706, ["requireInLog"] = false, ["hideWhenCompleted"] = true,
-["playerLevelOp"] = ">=", ["playerLevel"] = 70,
+["playerLevel"] = { ">=", 70, },
 ["progress"] = { ["objectiveIndex"] = 1 },},
 
 {["label"] = "Reshii Wraps", ["frameID"] = "bar1", ["key"] = "custom:q:90938:bar1:1",
 ["questID"] = 90938, ["requireInLog"] = false, ["hideWhenCompleted"] = true,
-["playerLevelOp"] = ">=", ["playerLevel"] = 80, ["color"] = { 0.2, 0.6, 1, },
+["hideIfAnyQuestCompleted"] = { 90938, 84856, 84910 },
+["playerLevel"] = { ">=", 80, }, ["color"] = { 0.2, 0.6, 1, },
 ["questInfo"] = "Reshii",},
 
 

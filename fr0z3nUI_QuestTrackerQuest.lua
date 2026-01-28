@@ -31,6 +31,9 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
   local AddPlaceholder = ctx.AddPlaceholder
   local AttachLocationIDTooltip = ctx.AttachLocationIDTooltip
 
+  local GetFontChoices = ctx.GetFontChoices
+  local GetFontChoiceLabel = ctx.GetFontChoiceLabel
+
   local UDDM_SetWidth = ctx.UDDM_SetWidth
   local UDDM_SetText = ctx.UDDM_SetText
   local UDDM_Initialize = ctx.UDDM_Initialize
@@ -219,6 +222,37 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
   qLocBox:SetText("0")
   if AttachLocationIDTooltip then AttachLocationIDTooltip(qLocBox) end
 
+  local fontLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  fontLabel:SetPoint("TOPLEFT", 12, -318)
+  fontLabel:SetText("Font")
+
+  local fontDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
+  fontDrop:SetPoint("TOPLEFT", -8, -346)
+  if UDDM_SetWidth then UDDM_SetWidth(fontDrop, 240) end
+  if UDDM_SetText then UDDM_SetText(fontDrop, "Inherit") end
+  pQuest._fontDrop = fontDrop
+  pQuest._fontKey = "inherit"
+
+  local sizeLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  sizeLabel:SetPoint("TOPLEFT", 260, -318)
+  sizeLabel:SetText("Size")
+
+  local sizeBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
+  sizeBox:SetSize(50, 20)
+  sizeBox:SetPoint("TOPLEFT", 260, -342)
+  sizeBox:SetAutoFocus(false)
+  sizeBox:SetNumeric(true)
+  sizeBox:SetText("0")
+  pQuest._sizeBox = sizeBox
+
+  local function SetFontKey(key)
+    key = tostring(key or "inherit")
+    if key == "" then key = "inherit" end
+    pQuest._fontKey = key
+    local label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
+    if UDDM_SetText then UDDM_SetText(fontDrop, label) end
+  end
+
   local function SetQuestColor(name)
     if name == "None" then
       pQuest._questColor = nil
@@ -370,6 +404,22 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       end
     end)
 
+    local modernFont = UseModernMenuDropDown and UseModernMenuDropDown(fontDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Font") end
+      local choices = (type(GetFontChoices) == "function") and GetFontChoices() or { { key = "inherit", label = "Inherit" } }
+      for _, opt in ipairs(choices) do
+        if type(opt) == "table" and opt.key and root then
+          local key = tostring(opt.key)
+          local label = tostring(opt.label or opt.key)
+          if root.CreateRadio then
+            root:CreateRadio(label, function() return (pQuest._fontKey == key) end, function() SetFontKey(key) end)
+          elseif root.CreateButton then
+            root:CreateButton(label, function() SetFontKey(key) end)
+          end
+        end
+      end
+    end)
+
     local modernLevelOp = UseModernMenuDropDown and UseModernMenuDropDown(qLevelOpDrop, function(root)
       if root and root.CreateTitle then root:CreateTitle("Player level") end
       local function Add(name, op)
@@ -480,6 +530,22 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       end)
     end
 
+    if not modernFont then
+      UDDM_Initialize(fontDrop, function(self, level)
+        local choices = (type(GetFontChoices) == "function") and GetFontChoices() or { { key = "inherit", label = "Inherit" } }
+        for _, opt in ipairs(choices) do
+          if type(opt) == "table" and opt.key then
+            local key = tostring(opt.key)
+            local info = UDDM_CreateInfo()
+            info.text = tostring(opt.label or opt.key)
+            info.checked = (pQuest._fontKey == key) and true or false
+            info.func = function() SetFontKey(key) end
+            UDDM_AddButton(info)
+          end
+        end
+      end)
+    end
+
     if not modernLevelOp then
       UDDM_Initialize(qLevelOpDrop, function(self, level)
         local function Add(name, op)
@@ -574,7 +640,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
 
   local addQuestBtn = CreateFrame("Button", nil, pQuest, "UIPanelButtonTemplate")
   addQuestBtn:SetSize(140, 22)
-  addQuestBtn:SetPoint("TOPLEFT", 12, -340)
+  addQuestBtn:SetPoint("TOPLEFT", 12, -390)
   addQuestBtn:SetText("Add Quest Rule")
 
   pQuest._questIDBox = questIDBox
@@ -613,6 +679,10 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     pQuest._playerLevelOp = nil
     if UDDM_SetText and qLevelOpDrop then UDDM_SetText(qLevelOpDrop, "Off") end
     if qLevelBox then qLevelBox:SetText("0") end
+
+    pQuest._fontKey = "inherit"
+    if UDDM_SetText and fontDrop then UDDM_SetText(fontDrop, "Inherit") end
+    if sizeBox then sizeBox:SetText("0") end
   end
 
   local cancelQuestEditBtn = CreateFrame("Button", nil, pQuest, "UIPanelButtonTemplate")
@@ -670,6 +740,11 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     local locText = tostring(qLocBox:GetText() or ""):gsub("%s+", "")
     local locationID = (locText ~= "" and locText ~= "0") and locText or nil
 
+    local fontKey = tostring(pQuest._fontKey or "inherit")
+    if fontKey == "" then fontKey = "inherit" end
+    local fontSize = (sizeBox and tonumber(sizeBox:GetText() or "")) or 0
+    if not fontSize or fontSize < 0 then fontSize = 0 end
+
     local rules = GetCustomRules()
     local expID, expName = (type(GetRuleCreateExpansion) == "function") and GetRuleCreateExpansion() or nil, nil
     if type(GetRuleCreateExpansion) == "function" then
@@ -689,6 +764,8 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       rule.faction = pQuest._questFaction
       rule.color = pQuest._questColor
       rule.locationID = locationID
+      rule.font = fontKey
+      rule.size = fontSize
       rule._expansionID = expID
       rule._expansionName = expName
 
@@ -696,8 +773,8 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevelOp = nil
+        rule.playerLevel = { op, lvl }
       else
         rule.playerLevelOp = nil
         rule.playerLevel = nil
@@ -725,6 +802,8 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       rule.faction = pQuest._questFaction
       rule.color = pQuest._questColor
       rule.locationID = locationID
+      rule.font = fontKey
+      rule.size = fontSize
       rule._expansionID = expID
       rule._expansionName = expName
 
@@ -732,8 +811,8 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevelOp = nil
+        rule.playerLevel = { op, lvl }
       else
         rule.playerLevelOp = nil
         rule.playerLevel = nil
@@ -767,10 +846,11 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
         faction = pQuest._questFaction,
         color = pQuest._questColor,
         locationID = locationID,
+        font = fontKey,
+        size = fontSize,
         _expansionID = expID,
         _expansionName = expName,
-        playerLevelOp = op,
-        playerLevel = lvl,
+        playerLevel = (op and lvl) and { op, lvl } or nil,
         hideWhenCompleted = true,
       }
 

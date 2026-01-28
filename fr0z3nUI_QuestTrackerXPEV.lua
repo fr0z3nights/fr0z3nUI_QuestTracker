@@ -8,6 +8,8 @@ ns.rules = ns.rules or {}
 local EXPANSION_ID = -2
 local EXPANSION_NAME = "Events"
 
+local Y, N = true, false
+
 local bakedRules = {
   {
     ["frameID"] = "list2",
@@ -15,8 +17,7 @@ local bakedRules = {
     label = "PvP Brawl: Southshore vs. Tarren Mill",
     questInfo = "PvP: SS vs TM",
     aura = { eventKind = "calendar", keywords = { "PvP Brawl: Southshore vs. Tarren Mill" }, mustHave = true, rememberWeekly = true },
-    playerLevelOp = ">=",
-    playerLevel = 20,
+    playerLevel = { ">=", 20 },
     noAutoDisplay = true,
   },
 
@@ -26,8 +27,7 @@ local bakedRules = {
     label = "PvP Brawl: Classic Ashran",
     questInfo = "PvP: Ashran",
     aura = { eventKind = "calendar", keywords = { "PvP Brawl: Classic Ashran" }, mustHave = true, rememberWeekly = true },
-    playerLevelOp = ">=",
-    playerLevel = 20,
+    playerLevel = { ">=", 20 },
     noAutoDisplay = true,
   },
 
@@ -37,8 +37,7 @@ local bakedRules = {
     label = "PvP Brawl: Packed House",
     questInfo = "PvP: Packed House",
     aura = { eventKind = "calendar", keywords = { "PvP Brawl: Packed House" }, mustHave = true, rememberWeekly = true },
-    playerLevelOp = ">=",
-    playerLevel = 20,
+    playerLevel = { ">=", 20 },
     noAutoDisplay = true,
   },
 
@@ -48,8 +47,7 @@ local bakedRules = {
     label = "PvP Brawl: Deep Six",
     questInfo = "PvP: Deep Six",
     aura = { eventKind = "calendar", keywords = { "PvP Brawl: Deep Six" }, mustHave = true, rememberWeekly = true },
-    playerLevelOp = ">=",
-    playerLevel = 20,
+    playerLevel = { ">=", 20 },
     noAutoDisplay = true,
   },
 
@@ -69,8 +67,7 @@ local bakedRules = {
     label = "Darkmoon Faire",
     questInfo = "Darkmoon",
     aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, mustHave = true, rememberDaily = true },
-    playerLevelOp = ">=",
-    playerLevel = 20,
+    playerLevel = { ">=", 20 },
     hideWhenCompleted = false,
   },
 
@@ -80,8 +77,7 @@ local bakedRules = {
     label = "Love is in the Air",
     questInfo = "Valentines",
     aura = { eventKind = "calendar", keywords = { "Love is in the Air" }, mustHave = true, rememberDaily = true },
-    playerLevelOp = ">=",
-    playerLevel = 20,
+    playerLevel = { ">=", 20 },
     hideWhenCompleted = false,
   },
 

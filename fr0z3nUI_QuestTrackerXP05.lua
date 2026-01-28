@@ -8,6 +8,8 @@ ns.rules = ns.rules or {}
 local EXPANSION_ID = 5
 local EXPANSION_NAME = "Mists of Pandaria"
 
+local Y, N = true, false
+
 local bakedRules = {
 
 {["label"] = "SU  05  Jade Forest  A", ["frameID"] = "list1", ["key"] = "custom:q:29562:list1:13",
@@ -34,19 +36,7 @@ local bakedRules = {
 ["questID"] = 31412, ["prereq"] = { 29562, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n07N", },
 
-{["frameID"] = "list1", ["key"] = "custom:item:83080:list1:131",
-["hideWhenCompleted"] = false,
-["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1352, },
-["faction"] = "Horde",
-["item"] = { ["hideWhenAcquired"] = true, ["itemID"] = 83080, ["required"] = 1, },
-["restedOnly"] = true, },
 
-{["frameID"] = "list1", ["key"] = "custom:item:83079:list1:138",
-["hideWhenCompleted"] = false,
-["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1353, },
-["faction"] = "Alliance",
-["item"] = { ["hideWhenAcquired"] = true, ["itemID"] = 83079, ["required"] = 1, },
-["restedOnly"] = true, },
 
 {["label"] = "Pandaria Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:94",
 ["hideWhenCompleted"] = false,

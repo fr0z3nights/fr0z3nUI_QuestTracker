@@ -38,6 +38,9 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   local HideInputBoxTemplateArt = ctx.HideInputBoxTemplateArt
   local AttachLocationIDTooltip = ctx.AttachLocationIDTooltip
 
+  local GetFontChoices = ctx.GetFontChoices
+  local GetFontChoiceLabel = ctx.GetFontChoiceLabel
+
   local UDDM_SetWidth = ctx.UDDM_SetWidth
   local UDDM_SetText = ctx.UDDM_SetText
   local UDDM_Initialize = ctx.UDDM_Initialize
@@ -368,6 +371,30 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   if UDDM_SetText then UDDM_SetText(textColorDrop, "None") end
   panels.text._color = nil
 
+  local textFontLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  textFontLabel:SetPoint("TOPLEFT", 500, -146)
+  textFontLabel:SetText("Font")
+
+  local textFontDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
+  textFontDrop:SetPoint("TOPLEFT", 485, -164)
+  if UDDM_SetWidth then UDDM_SetWidth(textFontDrop, 170) end
+  if UDDM_SetText then UDDM_SetText(textFontDrop, "Inherit") end
+  panels.text._fontDrop = textFontDrop
+  panels.text._fontKey = "inherit"
+
+  local textSizeLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  textSizeLabel:SetPoint("TOPLEFT", 500, -246)
+  textSizeLabel:SetText("Size")
+
+  local textSizeBox = CreateFrame("EditBox", nil, panels.text, "InputBoxTemplate")
+  textSizeBox:SetSize(50, 20)
+  textSizeBox:SetPoint("TOPLEFT", 500, -262)
+  textSizeBox:SetAutoFocus(false)
+  textSizeBox:SetNumeric(true)
+  textSizeBox:SetText("0")
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(textSizeBox) end
+  panels.text._sizeBox = textSizeBox
+
   -- Quick color palette for text entry color
   if CreateQuickColorPalette then
     CreateQuickColorPalette(panels.text, textColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 12, {
@@ -455,6 +482,14 @@ function ns.FQTOptionsPanels.BuildText(ctx)
         name = "None"
       end
       if UDDM_SetText then UDDM_SetText(textColorDrop, name) end
+    end
+
+    local function SetFontKey(key)
+      key = tostring(key or "inherit")
+      if key == "" then key = "inherit" end
+      panels.text._fontKey = key
+      local label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
+      if UDDM_SetText then UDDM_SetText(textFontDrop, label) end
     end
 
     local modernTextExpansion = UseModernMenuDropDown and UseModernMenuDropDown(expDrop, function(root)
@@ -580,6 +615,22 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       end
     end)
 
+    local modernTextFont = UseModernMenuDropDown and UseModernMenuDropDown(textFontDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Font") end
+      local choices = (type(GetFontChoices) == "function") and GetFontChoices() or { { key = "inherit", label = "Inherit" } }
+      for _, opt in ipairs(choices) do
+        if type(opt) == "table" and opt.key and root then
+          local key = tostring(opt.key)
+          local label = tostring(opt.label or opt.key)
+          if root.CreateRadio then
+            root:CreateRadio(label, function() return (panels.text._fontKey == key) end, function() SetFontKey(key) end)
+          elseif root.CreateButton then
+            root:CreateButton(label, function() SetFontKey(key) end)
+          end
+        end
+      end
+    end)
+
     local modernTextRepMin = UseModernMenuDropDown and UseModernMenuDropDown(textRepMinDrop, function(root)
       if root and root.CreateTitle then root:CreateTitle("Min Rep") end
       local opts = {
@@ -694,6 +745,22 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       end)
     end
 
+    if not modernTextFont then
+      UDDM_Initialize(textFontDrop, function(self, level)
+        local choices = (type(GetFontChoices) == "function") and GetFontChoices() or { { key = "inherit", label = "Inherit" } }
+        for _, opt in ipairs(choices) do
+          if type(opt) == "table" and opt.key then
+            local key = tostring(opt.key)
+            local info = UDDM_CreateInfo()
+            info.text = tostring(opt.label or opt.key)
+            info.checked = (panels.text._fontKey == key) and true or false
+            info.func = function() SetFontKey(key) end
+            UDDM_AddButton(info)
+          end
+        end
+      end)
+    end
+
     if not modernTextRepMin then
       UDDM_Initialize(textRepMinDrop, function(self, level)
         local function Add(name, standing)
@@ -747,6 +814,8 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   panels.text._textFrameDrop = textFrameDrop
   panels.text._textFactionDrop = textFactionDrop
   panels.text._textColorDrop = textColorDrop
+  panels.text._fontDrop = textFontDrop
+  panels.text._sizeBox = textSizeBox
   panels.text._repFactionBox = textRepFactionBox
   panels.text._repMinDrop = textRepMinDrop
   panels.text._restedOnly = textRestedOnly
@@ -775,6 +844,10 @@ function ns.FQTOptionsPanels.BuildText(ctx)
 
     panels.text._color = nil
     if UDDM_SetText and textColorDrop then UDDM_SetText(textColorDrop, "None") end
+
+    panels.text._fontKey = "inherit"
+    if UDDM_SetText and textFontDrop then UDDM_SetText(textFontDrop, "Inherit") end
+    if textSizeBox then textSizeBox:SetText("0") end
 
     if textRepFactionBox then textRepFactionBox:SetText("0") end
     panels.text._repMinStanding = nil
@@ -819,6 +892,11 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     local locText = tostring(textLocBox:GetText() or ""):gsub("%s+", "")
     local locationID = (locText ~= "" and locText ~= "0") and locText or nil
 
+    local fontKey = tostring(panels.text._fontKey or "inherit")
+    if fontKey == "" then fontKey = "inherit" end
+    local fontSize = (textSizeBox and tonumber(textSizeBox:GetText() or "")) or 0
+    if not fontSize or fontSize < 0 then fontSize = 0 end
+
     -- Expansion selection (shared across all rule create tabs)
     local expID, expName = nil, nil
     if type(GetRuleCreateExpansion) == "function" then
@@ -834,6 +912,8 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       rule.textInfo = textInfo
       rule.faction = panels.text._faction
       rule.color = panels.text._color
+      rule.font = fontKey
+      rule.size = fontSize
       rule.rep = rep
       rule.restedOnly = textRestedOnly:GetChecked() and true or false
       rule.locationID = locationID
@@ -850,8 +930,8 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevelOp = nil
+        rule.playerLevel = { op, lvl }
       else
         rule.playerLevelOp = nil
         rule.playerLevel = nil
@@ -877,6 +957,8 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       rule.textInfo = textInfo
       rule.faction = panels.text._faction
       rule.color = panels.text._color
+      rule.font = fontKey
+      rule.size = fontSize
       rule.rep = rep
       rule.restedOnly = textRestedOnly:GetChecked() and true or false
       rule.locationID = locationID
@@ -893,8 +975,8 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevelOp = nil
+        rule.playerLevel = { op, lvl }
       else
         rule.playerLevelOp = nil
         rule.playerLevel = nil
@@ -923,11 +1005,12 @@ function ns.FQTOptionsPanels.BuildText(ctx)
         textInfo = textInfo,
         faction = panels.text._faction,
         color = panels.text._color,
+        font = fontKey,
+        size = fontSize,
         rep = rep,
         restedOnly = textRestedOnly:GetChecked() and true or false,
         locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
+        playerLevel = (op and lvl) and { op, lvl } or nil,
         hideWhenCompleted = false,
       }
 

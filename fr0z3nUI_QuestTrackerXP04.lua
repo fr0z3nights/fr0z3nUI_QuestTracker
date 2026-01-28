@@ -8,6 +8,8 @@ ns.rules = ns.rules or {}
 local EXPANSION_ID = 4
 local EXPANSION_NAME = "Cataclysm"
 
+local Y, N = true, false
+
 local bakedRules = {
 
 {["label"] = "SU  04  H1  Q-25929  Vashj'ir  Unlock Portal", ["frameID"] = "list1", ["key"] = "custom:q:25929:list1:82",
@@ -20,18 +22,7 @@ local bakedRules = {
 ["questInfo"] = "Cataclysm\n+ Vashj'ir (Zygor)\n+ Complete Quest\n      \"Sea Legs\"",
 ["faction"] = "Alliance", },
 
-{["frameID"] = "list1", ["key"] = "custom:item:64884:list1:132",
-["hideWhenCompleted"] = false,
-["faction"] = "Horde",
-["locationID"] = "1133",
-["item"] = { ["hideWhenAcquired"] = true, ["itemID"] = 64884, ["required"] = 1, },
-["restedOnly"] = true, },
 
-{["frameID"] = "list1", ["key"] = "custom:item:64882:list1:136",
-["hideWhenCompleted"] = false,
-["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1134, },
-["item"] = { ["hideWhenAcquired"] = true, ["itemID"] = 64882, ["required"] = 1, },
-["restedOnly"] = true, },
 
 {["label"] = "Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:87",
 ["hideWhenCompleted"] = false,

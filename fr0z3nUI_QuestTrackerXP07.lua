@@ -8,14 +8,20 @@ ns.rules = ns.rules or {}
 local EXPANSION_ID = 7
 local EXPANSION_NAME = "Legion"
 
+local Y, N = true, false
+
 local bakedRules = {
 
+{["label"] = "SU  07  Hearthstone Unlock", ["frameID"] = "list1", ["key"] = "custom:q:44184:list1:11",
+["questID"] = 44184, ["prereq"] = { 60151, 60150, 61874, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Legion\n + Chromie: Off\n + Warboard: Broken Shore\n + Set Hearth\n + Talk to Quest Guy\n     Orgirmmar - Out Front Gate\n     Stormwind - In the Harbor\n + Skip Scenario if you can\n       Quest Until Getting\n         %2.i %2.n\n07N", },
+
 {["label"] = "SU  07  Karazhan 01", ["frameID"] = "list1", ["key"] = "custom:q:45727:list1:1",
-["questID"] = 45727, ["prereq"] = {46931, }, ["hideWhenCompleted"] = true,
+["questID"] = 45727, ["prereq"] = { 60151, 60150, 46931, 30515, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Legion\n + Unlock Legion World Quests\n   - Khadgar \"Uniting the Isles\"", },
 
 {["label"] = "SU  07  Karazhan 02", ["frameID"] = "list1", ["key"] = "custom:q:44733:list1:2",
-["questID"] = 44733, ["prereq"] = { 45727, }, ["hideWhenCompleted"] = true,
+["questID"] = 44733, ["prereq"] = { 45727, 30515, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Legion\n + Karazhan Attunement (Zygor)\n      Skip to 12\n + Pickup !Waterlogged Journal\nNotes:\n    - Turn off Instance Reset", },
 
 {["label"] = "SU  07  Karazhan 03", ["frameID"] = "list1", ["key"] = "custom:q:44735:list1:3",
@@ -45,10 +51,6 @@ local bakedRules = {
 {["label"] = "SU  07  Karazhan 09", ["frameID"] = "list1", ["key"] = "custom:q:45296:list1:9",
 ["questID"] = 45296, ["prereq"] = { 45295, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Legion\n + %n\nNotes:\n    - Current Opera: Wikket\n    - Turn off Instance Reset\n    - Front of Karazhan Quest\n       (Centre Legion Dalaran)\nReturn to Karazhan\\n + Change to MYTHIC & Enter\\n + Get 5 CRYSTALS\\n    Opera, Maiden, Moroes (keys)\\n    Attuman (kill), Spiders, Curator\\n + Back Down Kill Nightbane", },
-
-{["label"] = "SU  07  Hearthstone Unlock", ["frameID"] = "list1", ["key"] = "custom:q:44184:list1:11",
-["questID"] = 44184, ["prereq"] = { 60151, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Legion\n + Chromie: Off\n + Warboard: Broken Shore\n + Set Hearth\n + Talk to Quest Guy\n     Orgirmmar - Out Front Gate\n     Stormwind - In the Harbor\n + Skip Scenario if you can\n       Quest Until Getting\n         %2.i %2.n\n07N", },
 
 }
 

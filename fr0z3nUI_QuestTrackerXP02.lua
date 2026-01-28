@@ -7,6 +7,8 @@ ns.rules = ns.rules or {}
 local EXPANSION_ID = 2
 local EXPANSION_NAME = "The Burning Crusade"
 
+local Y, N = true, false
+
 local bakedRules = {
 }
 

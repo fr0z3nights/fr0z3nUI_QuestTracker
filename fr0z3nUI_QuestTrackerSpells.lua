@@ -33,6 +33,9 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   local HideInputBoxTemplateArt = ctx.HideInputBoxTemplateArt
   local AttachLocationIDTooltip = ctx.AttachLocationIDTooltip
 
+  local GetFontChoices = ctx.GetFontChoices
+  local GetFontChoiceLabel = ctx.GetFontChoiceLabel
+
   local UDDM_SetWidth = ctx.UDDM_SetWidth
   local UDDM_SetText = ctx.UDDM_SetText
   local UDDM_Initialize = ctx.UDDM_Initialize
@@ -296,6 +299,29 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   if UDDM_SetText then UDDM_SetText(spellsColorDrop, "None") end
   panels.spells._color = nil
 
+  local spellsFontLabel = pSpells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  spellsFontLabel:SetPoint("TOPLEFT", 500, -222)
+  spellsFontLabel:SetText("Font")
+
+  local spellsFontDrop = CreateFrame("Frame", nil, pSpells, "UIDropDownMenuTemplate")
+  spellsFontDrop:SetPoint("TOPLEFT", 485, -238)
+  if UDDM_SetWidth then UDDM_SetWidth(spellsFontDrop, 170) end
+  if UDDM_SetText then UDDM_SetText(spellsFontDrop, "Inherit") end
+  panels.spells._fontDrop = spellsFontDrop
+  panels.spells._fontKey = "inherit"
+
+  local spellsSizeLabel = pSpells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  spellsSizeLabel:SetPoint("TOPLEFT", 500, -202)
+  spellsSizeLabel:SetText("Size")
+
+  local spellsSizeBox = CreateFrame("EditBox", nil, pSpells, "InputBoxTemplate")
+  spellsSizeBox:SetSize(50, 20)
+  spellsSizeBox:SetPoint("TOPLEFT", 500, -218)
+  spellsSizeBox:SetAutoFocus(false)
+  spellsSizeBox:SetNumeric(true)
+  spellsSizeBox:SetText("0")
+  panels.spells._sizeBox = spellsSizeBox
+
   -- Quick color palette for spell text color
   if CreateQuickColorPalette then
     CreateQuickColorPalette(pSpells, spellsColorDrop, "TOPLEFT", "BOTTOMLEFT", 26, 20, {
@@ -337,6 +363,14 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
         name = "None"
       end
       if UDDM_SetText then UDDM_SetText(spellsColorDrop, name) end
+    end
+
+    local function SetFontKey(key)
+      key = tostring(key or "inherit")
+      if key == "" then key = "inherit" end
+      panels.spells._fontKey = key
+      local label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
+      if UDDM_SetText then UDDM_SetText(spellsFontDrop, label) end
     end
 
     local modernSpellsExpansion = type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(expDrop, function(root)
@@ -465,6 +499,22 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
           root:CreateRadio(name, IsSelected, SetSelected)
         elseif root and root.CreateButton then
           root:CreateButton(name, SetSelected)
+        end
+      end
+    end)
+
+    local modernSpellsFont = type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(spellsFontDrop, function(root)
+      if root and root.CreateTitle then root:CreateTitle("Font") end
+      local choices = (type(GetFontChoices) == "function") and GetFontChoices() or { { key = "inherit", label = "Inherit" } }
+      for _, opt in ipairs(choices) do
+        if type(opt) == "table" and opt.key and root then
+          local key = tostring(opt.key)
+          local label = tostring(opt.label or opt.key)
+          if root.CreateRadio then
+            root:CreateRadio(label, function() return (panels.spells._fontKey == key) end, function() SetFontKey(key) end)
+          elseif root.CreateButton then
+            root:CreateButton(label, function() SetFontKey(key) end)
+          end
         end
       end
     end)
@@ -625,6 +675,22 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       end)
     end
 
+    if not modernSpellsFont then
+      UDDM_Initialize(spellsFontDrop, function(self, level)
+        local choices = (type(GetFontChoices) == "function") and GetFontChoices() or { { key = "inherit", label = "Inherit" } }
+        for _, opt in ipairs(choices) do
+          if type(opt) == "table" and opt.key then
+            local key = tostring(opt.key)
+            local info = UDDM_CreateInfo()
+            info.text = tostring(opt.label or opt.key)
+            info.checked = (panels.spells._fontKey == key) and true or false
+            info.func = function() SetFontKey(key) end
+            UDDM_AddButton(info)
+          end
+        end
+      end)
+    end
+
     if not modernSpellsLevelOp then
       UDDM_Initialize(spellsLevelOpDrop, function(self, level)
         local function Add(name, op)
@@ -667,6 +733,8 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   panels.spells._spellsFrameDrop = spellsFrameDrop
   panels.spells._spellsFactionDrop = spellsFactionDrop
   panels.spells._spellsColorDrop = spellsColorDrop
+  panels.spells._fontDrop = spellsFontDrop
+  panels.spells._sizeBox = spellsSizeBox
   panels.spells._spellsLevelOpDrop = spellsLevelOpDrop
   panels.spells._spellsLevelBox = spellsLevelBox
   panels.spells._addSpellBtn = addSpellBtn
@@ -708,6 +776,10 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
 
     panels.spells._color = nil
     if UDDM_SetText and spellsColorDrop then UDDM_SetText(spellsColorDrop, "None") end
+
+    panels.spells._fontKey = "inherit"
+    if UDDM_SetText and spellsFontDrop then UDDM_SetText(spellsFontDrop, "Inherit") end
+    if spellsSizeBox then spellsSizeBox:SetText("0") end
 
     panels.spells._playerLevelOp = nil
     if UDDM_SetText and spellsLevelOpDrop then UDDM_SetText(spellsLevelOpDrop, "Off") end
@@ -828,6 +900,11 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
     local locText = tostring(locBox and locBox:GetText() or ""):gsub("%s+", "")
     local locationID = (locText ~= "" and locText ~= "0") and locText or nil
 
+    local fontKey = tostring(panels.spells._fontKey or "inherit")
+    if fontKey == "" then fontKey = "inherit" end
+    local fontSize = (spellsSizeBox and tonumber(spellsSizeBox:GetText() or "")) or 0
+    if not fontSize or fontSize < 0 then fontSize = 0 end
+
     local pickedSpellID = (known and known > 0) and known or ((notKnown and notKnown > 0) and notKnown or nil)
     local resolvedName = pickedSpellID and GetSpellNameSafeLocal(pickedSpellID) or nil
 
@@ -868,6 +945,8 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       end
       rule.faction = panels.spells._faction
       rule.color = panels.spells._color
+      rule.font = fontKey
+      rule.size = fontSize
       rule.notInGroup = notInGroupCheck:GetChecked() and true or false
       rule.restedOnly = spellsRestedOnlyCheck:GetChecked() and true or false
       rule.missingPrimaryProfessions = spellsMissingProfCheck:GetChecked() and true or false
@@ -887,8 +966,8 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevelOp = nil
+        rule.playerLevel = { op, lvl }
       else
         rule.playerLevelOp = nil
         rule.playerLevel = nil
@@ -924,6 +1003,8 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       end
       rule.faction = panels.spells._faction
       rule.color = panels.spells._color
+      rule.font = fontKey
+      rule.size = fontSize
       rule.notInGroup = notInGroupCheck:GetChecked() and true or false
       rule.restedOnly = spellsRestedOnlyCheck:GetChecked() and true or false
       rule.missingPrimaryProfessions = spellsMissingProfCheck:GetChecked() and true or false
@@ -943,8 +1024,8 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
       if op and lvl then
-        rule.playerLevelOp = op
-        rule.playerLevel = lvl
+        rule.playerLevelOp = nil
+        rule.playerLevel = { op, lvl }
       else
         rule.playerLevelOp = nil
         rule.playerLevel = nil
@@ -976,12 +1057,13 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
         class = nil,
         faction = panels.spells._faction,
         color = panels.spells._color,
+        font = fontKey,
+        size = fontSize,
         notInGroup = notInGroupCheck:GetChecked() and true or false,
         restedOnly = spellsRestedOnlyCheck:GetChecked() and true or false,
         missingPrimaryProfessions = spellsMissingProfCheck:GetChecked() and true or false,
         locationID = locationID,
-        playerLevelOp = op,
-        playerLevel = lvl,
+        playerLevel = (op and lvl) and { op, lvl } or nil,
         hideWhenCompleted = false,
       }
       do

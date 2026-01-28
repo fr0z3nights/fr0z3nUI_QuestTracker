@@ -87,6 +87,75 @@ local function NormalizePlayerLevelOp(op)
   return nil
 end
 
+local function GetPlayerLevelGate(rule)
+  if type(rule) ~= "table" then return nil, nil end
+
+  local op, lvl
+  if type(rule.playerLevel) == "table" then
+    op = rule.playerLevel[1]
+    lvl = rule.playerLevel[2]
+  else
+    op = rule.playerLevelOp
+    lvl = rule.playerLevel
+  end
+
+  op = NormalizePlayerLevelOp(op)
+  lvl = tonumber(lvl)
+  if not op or not lvl or lvl <= 0 then return nil, nil end
+  return op, lvl
+end
+
+local function GetItemCurrencyGate(item)
+  if type(item) ~= "table" then return nil, nil end
+
+  local currencyID, currencyRequired
+  if type(item.currencyID) == "table" then
+    currencyID = tonumber(item.currencyID[1])
+    currencyRequired = tonumber(item.currencyID[2])
+    if not currencyRequired then
+      currencyRequired = tonumber(item.currencyRequired)
+    end
+  else
+    currencyID = tonumber(item.currencyID)
+    currencyRequired = tonumber(item.currencyRequired)
+  end
+
+  if not currencyID or currencyID <= 0 then return nil, nil end
+  if not currencyRequired or currencyRequired <= 0 then return nil, nil end
+  return currencyID, currencyRequired
+end
+
+ns.GetItemCurrencyGate = GetItemCurrencyGate
+
+local function GetItemRequiredGate(item)
+  if type(item) ~= "table" then return nil, nil end
+
+  local req = nil
+  local hide = nil
+
+  if type(item.required) == "table" then
+    req = tonumber(item.required[1])
+    hide = (item.required[2] == true)
+    if item.required[2] == nil then
+      hide = (item.hideWhenAcquired == true)
+    end
+  else
+    req = tonumber(item.required)
+    hide = (item.hideWhenAcquired == true)
+  end
+
+  if not req then
+    req = tonumber(item.count)
+  end
+
+  req = tonumber(req)
+  if not req or req <= 0 then req = 1 end
+
+  return req, (hide and true or false)
+end
+
+ns.GetItemRequiredGate = GetItemRequiredGate
+
 local function NormalizeLocationID(value)
   if value == nil then return nil end
   if type(value) == "number" then
@@ -147,20 +216,31 @@ local function NormalizeRuleInPlace(rule)
     rule.locationID = NormalizeLocationID(rule.locationID)
   end
 
-  if rule.playerLevelOp ~= nil then
-    rule.playerLevelOp = NormalizePlayerLevelOp(rule.playerLevelOp)
-    if rule.playerLevelOp == nil then
-      rule.playerLevel = nil
-    end
-  end
-
-  if rule.playerLevel ~= nil then
-    local n = tonumber(rule.playerLevel)
-    if n and n > 0 then
-      rule.playerLevel = n
+  do
+    local op, lvl = GetPlayerLevelGate(rule)
+    if op and lvl then
+      rule.playerLevel = { op, lvl }
     else
       rule.playerLevel = nil
-      rule.playerLevelOp = nil
+    end
+    rule.playerLevelOp = nil
+  end
+
+  if type(rule.item) == "table" then
+    local cid, creq = GetItemCurrencyGate(rule.item)
+    if cid and creq then
+      rule.item.currencyID = { cid, creq }
+      rule.item.currencyRequired = nil
+    end
+
+    local req, hide = GetItemRequiredGate(rule.item)
+    if req then
+      if hide then
+        rule.item.required = { req, true }
+      else
+        rule.item.required = req
+      end
+      rule.item.hideWhenAcquired = nil
     end
   end
 
@@ -196,6 +276,12 @@ local function NormalizeRuleInPlace(rule)
     end
     rule.prereq = out[1] and out or nil
   end
+
+  -- Per-rule text styling ("inherit"/0 means no override).
+  -- These are explicit so the DB + custom rules are consistent for manual edits.
+  if rule.font == nil then rule.font = "inherit" end
+  if rule.size == nil then rule.size = 0 end
+  if rule.color == nil then rule.color = "inherit" end
 end
 
 local _defaultRulesMigrated = false
@@ -619,7 +705,7 @@ RuleKey = function(rule)
   if type(rule.item) == "table" and rule.item.itemID ~= nil then
     local itemID = tonumber(rule.item.itemID)
     if itemID and itemID > 0 then
-      local required = tonumber(rule.item.required or rule.item.count or 0) or 0
+      local required = tonumber((select(1, GetItemRequiredGate(rule.item)))) or 0
       local mustHave = (rule.item.mustHave == true) and 1 or 0
       return "item:" .. tostring(itemID) .. ":" .. tostring(required) .. ":" .. tostring(mustHave)
     end
@@ -1045,9 +1131,8 @@ end
 
 local function IsPlayerLevelGateMet(rule, ctx)
   if type(rule) ~= "table" then return true end
-  local op = rule.playerLevelOp
-  local want = tonumber(rule.playerLevel)
-  if not op or not want or want <= 0 then return true end
+  local op, want = GetPlayerLevelGate(rule)
+  if not op or not want then return true end
   local have = (type(ctx) == "table" and tonumber(ctx.playerLevel)) or GetPlayerLevelSafe()
   if not have then return true end
   return CompareNumber(op, have, want)
@@ -1679,9 +1764,16 @@ ns.ClearRememberedTimewalkingKind = ClearRememberedTimewalkingKind
 ns.ClearRememberedEventState = ClearRememberedEventState
 
 local function ColorHex(r, g, b)
-  r = math.floor((tonumber(r) or 1) * 255 + 0.5)
-  g = math.floor((tonumber(g) or 1) * 255 + 0.5)
-  b = math.floor((tonumber(b) or 1) * 255 + 0.5)
+  local function Normalize01(v)
+    v = tonumber(v) or 1
+    if v > 1 then v = v / 255 end
+    if v < 0 then v = 0 elseif v > 1 then v = 1 end
+    return v
+  end
+
+  r = math.floor(Normalize01(r) * 255 + 0.5)
+  g = math.floor(Normalize01(g) * 255 + 0.5)
+  b = math.floor(Normalize01(b) * 255 + 0.5)
   if r < 0 then r = 0 elseif r > 255 then r = 255 end
   if g < 0 then g = 0 elseif g > 255 then g = 255 end
   if b < 0 then b = 0 elseif b > 255 then b = 255 end
@@ -1691,7 +1783,19 @@ end
 local function ColorText(rgb, text)
   if not text then return "" end
   if type(rgb) == "string" then
-    return "|cff" .. rgb .. text .. "|r"
+    local s = tostring(rgb or "")
+    s = s:gsub("^%s+", ""):gsub("%s+$", "")
+    -- Accept: "#rrggbb", "rrggbb", "|cffaarrggbb", "ffaarrggbb"
+    s = s:gsub("^#", "")
+    s = s:gsub("^0x", "")
+    s = s:gsub("^|c", "")
+    s = s:gsub("^|C", "")
+    s = s:gsub("^ff", "")
+    s = s:lower()
+    if s:match("^[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]$") then
+      return "|cff" .. s .. text .. "|r"
+    end
+    return text
   end
   if type(rgb) == "table" then
     local hex = ColorHex(rgb[1] or rgb.r, rgb[2] or rgb.g, rgb[3] or rgb.b)
@@ -1703,8 +1807,30 @@ end
 local function ResolveFontPath(fontNameOrPath)
   if not fontNameOrPath then return nil end
   local s = tostring(fontNameOrPath)
+  local forceLSM = false
+  do
+    local lsmName = s:match("^lsm:(.+)$")
+    if lsmName and lsmName ~= "" then
+      s = lsmName
+      forceLSM = true
+    end
+  end
   if s:find("\\") or s:find("/") then
     return s
+  end
+
+  -- Allow WoW font objects by global name (e.g. "GameFontHighlight").
+  if not forceLSM then
+    local obj = _G and rawget(_G, s)
+    if obj and obj.GetFont then
+      local ok, path = pcall(function()
+        -- GetFont() may return (path, size, flags)
+        return (select(1, obj:GetFont()))
+      end)
+      if ok and type(path) == "string" and path ~= "" then
+        return path
+      end
+    end
   end
   local ok, lib = pcall(function()
     return LibStub and LibStub("LibSharedMedia-3.0", true)
@@ -1714,6 +1840,29 @@ local function ResolveFontPath(fontNameOrPath)
     if p then return p end
   end
   return nil
+end
+
+local function GetRuleFontDef(rule)
+  if type(rule) ~= "table" then return nil end
+
+  local name = rule.font or rule.textFont or rule.fontName
+  if name ~= nil and tostring(name):lower() == "inherit" then name = nil end
+
+  local size = rule.size or rule.fontSize
+  size = tonumber(size)
+  if size ~= nil and size <= 0 then size = nil end
+
+  local flags = rule.fontFlags or rule.flags
+  if flags ~= nil and tostring(flags):lower() == "inherit" then flags = nil end
+
+  local color = rule.fontColor
+  if color ~= nil and tostring(color):lower() == "inherit" then color = nil end
+
+  if name == nil and size == nil and flags == nil and color == nil then
+    return nil
+  end
+
+  return { name = name, size = size, flags = flags, color = color }
 end
 
 local function ApplyFontStyle(fs, fontDef)
@@ -2434,9 +2583,8 @@ local function BuildRuleStatus(rule, ctx, opts)
     local itemID = tonumber(rule.item.itemID)
 
     if applyGates then
-      local currencyID = tonumber(rule.item.currencyID)
-      local currencyRequired = tonumber(rule.item.currencyRequired)
-      if currencyID and currencyRequired and currencyID > 0 and currencyRequired > 0 then
+      local currencyID, currencyRequired = GetItemCurrencyGate(rule.item)
+      if currencyID and currencyRequired then
         if GetCurrencyQuantitySafe(currencyID) < currencyRequired then
           return nil
         end
@@ -2465,7 +2613,8 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
 
     if applyGates then
-      if rule.item.hideWhenAcquired == true and count > 0 then
+      local req, hideWhenAcquired = GetItemRequiredGate(rule.item)
+      if hideWhenAcquired == true and count > 0 then
         return nil
       end
       if rule.item.mustHave and count <= 0 then
@@ -2473,14 +2622,17 @@ local function BuildRuleStatus(rule, ctx, opts)
       end
     end
 
-    if rule.item.required and tonumber(rule.item.required) then
-      extra = string.format("%d/%d", count, tonumber(rule.item.required))
-    else
-      local showBelow = tonumber(rule.item.showWhenBelow)
-      if showBelow and showBelow > 0 then
-        extra = string.format("%d/%d", count, showBelow)
+    do
+      local req = tonumber((select(1, GetItemRequiredGate(rule.item))))
+      if req and req > 0 then
+        extra = string.format("%d/%d", count, req)
       else
-        extra = tostring(count)
+        local showBelow = tonumber(rule.item.showWhenBelow)
+        if showBelow and showBelow > 0 then
+          extra = string.format("%d/%d", count, showBelow)
+        else
+          extra = tostring(count)
+        end
       end
     end
 
@@ -2681,10 +2833,9 @@ local function BuildRuleStatus(rule, ctx, opts)
       editText = editText .. " [H]"
     end
 
-    if rule.playerLevelOp and rule.playerLevel then
-      local op = tostring(rule.playerLevelOp)
-      local lvl = tonumber(rule.playerLevel)
-      if lvl and lvl > 0 and op ~= "" then
+    do
+      local op, lvl = GetPlayerLevelGate(rule)
+      if op and lvl then
         editText = editText .. string.format(" [Lvl %s %d]", op, lvl)
       end
     end
@@ -2693,7 +2844,10 @@ local function BuildRuleStatus(rule, ctx, opts)
   local indicators = BuildIndicators(rule)
 
   if type(rule) == "table" and rule.color ~= nil then
-    title = ColorText(rule.color, title)
+    local c = rule.color
+    if c ~= false and tostring(c):lower() ~= "inherit" then
+      title = ColorText(c, title)
+    end
   end
 
   return {
@@ -3679,6 +3833,10 @@ local function RenderBar(frameDef, frame, entries)
     if txt then
       local fs = EnsureFontString(frame, i, frameDef and frameDef.font)
       ApplyFontStyle(fs, frameDef and frameDef.font)
+      local e = EntryForSlot(i)
+      if e and e.rule then
+        ApplyFontStyle(fs, GetRuleFontDef(e.rule))
+      end
       fs:SetText(txt)
       fs:Show()
       local indW = GetIndicatorsWidth(fs, tempIndicatorsByIndex[i], uiPad)
@@ -3736,6 +3894,10 @@ local function RenderBar(frameDef, frame, entries)
     if fs.SetWordWrap then fs:SetWordWrap(false) end
 
     ApplyFontStyle(fs, frameDef and frameDef.font)
+    local e = EntryForSlot(i)
+    if e and e.rule then
+      ApplyFontStyle(fs, GetRuleFontDef(e.rule))
+    end
 
     local txt = tempTextByIndex[i]
     if txt then
@@ -4615,6 +4777,12 @@ ns.DestroyFrameByID = DestroyFrameByID
 
 -- Events
 frame = CreateFrame("Frame")
+
+local function SafeRegisterEvent(f, event)
+  if not f or not event then return end
+  pcall(f.RegisterEvent, f, event)
+end
+
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("QUEST_LOG_UPDATE")
@@ -4623,6 +4791,12 @@ frame:RegisterEvent("QUEST_TURNED_IN")
 frame:RegisterEvent("BAG_UPDATE_DELAYED")
 frame:RegisterEvent("UNIT_AURA")
 frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
+-- Refresh quickly when spells/professions update (e.g. learning a new profession skill line).
+frame:RegisterEvent("SPELLS_CHANGED")
+frame:RegisterEvent("SKILL_LINES_CHANGED")
+SafeRegisterEvent(frame, "LEARNED_SPELL_IN_TAB")
+SafeRegisterEvent(frame, "NEW_RECIPE_LEARNED")
+SafeRegisterEvent(frame, "TRADE_SKILL_LIST_UPDATE")
 frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("CALENDAR_UPDATE_EVENT_LIST")
@@ -4683,6 +4857,207 @@ frame:SetScript("OnEvent", function(_, event, ...)
   frame._refreshTimer = C_Timer.NewTimer(0.25, RefreshAll)
 end)
 
+-- /fqt rgb helper (standalone window to generate copyable colors)
+local rgbPickerFrame
+
+local function Clamp01(v)
+  v = tonumber(v)
+  if v == nil then return 0 end
+  if v < 0 then return 0 end
+  if v > 1 then return 1 end
+  return v
+end
+
+local function FormatLuaRGB(r, g, b)
+  return string.format("{ %.3f, %.3f, %.3f }", Clamp01(r), Clamp01(g), Clamp01(b))
+end
+
+local function OpenColorPicker(r, g, b, onChanged)
+  r, g, b = Clamp01(r), Clamp01(g), Clamp01(b)
+  if not ColorPickerFrame then
+    if type(onChanged) == "function" then onChanged(r, g, b) end
+    return
+  end
+
+  -- Dragonflight+ API
+  if ColorPickerFrame.SetupColorPickerAndShow then
+    local info = {
+      swatchFunc = function()
+        local nr, ng, nb = ColorPickerFrame:GetColorRGB()
+        if type(onChanged) == "function" then onChanged(nr, ng, nb) end
+      end,
+      cancelFunc = function(prev)
+        if type(prev) == "table" and prev.r and prev.g and prev.b then
+          if type(onChanged) == "function" then onChanged(prev.r, prev.g, prev.b) end
+        end
+      end,
+      r = r,
+      g = g,
+      b = b,
+      hasOpacity = false,
+    }
+    ColorPickerFrame:SetupColorPickerAndShow(info)
+    return
+  end
+
+  -- Legacy API
+  ColorPickerFrame.func = function()
+    local nr, ng, nb = ColorPickerFrame:GetColorRGB()
+    if type(onChanged) == "function" then onChanged(nr, ng, nb) end
+  end
+  ColorPickerFrame.cancelFunc = function(prev)
+    if type(prev) == "table" and prev.r and prev.g and prev.b then
+      if type(onChanged) == "function" then onChanged(prev.r, prev.g, prev.b) end
+    end
+  end
+  ColorPickerFrame.hasOpacity = false
+  ColorPickerFrame.previousValues = { r = r, g = g, b = b }
+  ColorPickerFrame:SetColorRGB(r, g, b)
+  ColorPickerFrame:Show()
+end
+
+local function EnsureRGBPickerFrame()
+  if rgbPickerFrame then return rgbPickerFrame end
+
+  local f = CreateFrame("Frame", "FR0Z3NUIFQTRGBPicker", UIParent, "BackdropTemplate")
+  f:SetSize(420, 170)
+  f:SetPoint("CENTER")
+  f:SetFrameStrata("DIALOG")
+  f:SetClampedToScreen(true)
+  f:SetMovable(true)
+  f:EnableMouse(true)
+  RestoreWindowPosition("rgbPicker", f, "CENTER", "CENTER", 0, 0)
+  f:RegisterForDrag("LeftButton")
+  f:SetScript("OnDragStart", f.StartMoving)
+  f:SetScript("OnDragStop", function(self)
+    if self.StopMovingOrSizing then self:StopMovingOrSizing() end
+    SaveWindowPosition("rgbPicker", self)
+  end)
+  ApplyFAOBackdrop(f, 0.90)
+
+  local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  title:SetPoint("TOPLEFT", 12, -10)
+  title:SetText("|cff00ccff[FQT]|r RGB Picker")
+
+  local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+  close:SetPoint("TOPRIGHT", f, "TOPRIGHT", 2, 2)
+
+  local swatch = CreateFrame("Button", nil, f, "BackdropTemplate")
+  swatch:SetSize(28, 28)
+  swatch:SetPoint("TOPLEFT", 14, -36)
+  swatch:SetBackdrop({
+    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    tile = true,
+    tileSize = 16,
+    edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+  })
+  swatch:SetBackdropColor(1, 1, 1, 1)
+
+  local function CreateSmallBox(parent, labelText)
+    local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    lbl:SetText(labelText)
+    local eb = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+    eb:SetSize(52, 18)
+    eb:SetAutoFocus(false)
+    eb:SetJustifyH("CENTER")
+    return lbl, eb
+  end
+
+  local lr, er = CreateSmallBox(f, "R (0-255)")
+  local lg, eg = CreateSmallBox(f, "G")
+  local lb, eb = CreateSmallBox(f, "B")
+
+  lr:SetPoint("TOPLEFT", swatch, "TOPRIGHT", 14, 6)
+  er:SetPoint("TOPLEFT", lr, "BOTTOMLEFT", -6, -2)
+
+  lg:SetPoint("LEFT", lr, "RIGHT", 70, 0)
+  eg:SetPoint("TOPLEFT", lg, "BOTTOMLEFT", -6, -2)
+
+  lb:SetPoint("LEFT", lg, "RIGHT", 70, 0)
+  eb:SetPoint("TOPLEFT", lb, "BOTTOMLEFT", -6, -2)
+
+  local outLbl = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  outLbl:SetPoint("TOPLEFT", swatch, "BOTTOMLEFT", 0, -16)
+  outLbl:SetText("Output (copy into rule):")
+
+  local out = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
+  out:SetSize(390, 20)
+  out:SetPoint("TOPLEFT", outLbl, "BOTTOMLEFT", -6, -2)
+  out:SetAutoFocus(false)
+  out:SetJustifyH("LEFT")
+
+  local out2 = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
+  out2:SetSize(390, 20)
+  out2:SetPoint("TOPLEFT", out, "BOTTOMLEFT", 0, -6)
+  out2:SetAutoFocus(false)
+  out2:SetJustifyH("LEFT")
+
+  local help = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  help:SetPoint("TOPLEFT", out2, "BOTTOMLEFT", 6, -8)
+  help:SetText("Use as: color = { r, g, b }   (or paste hex)")
+
+  local function GetRGB255()
+    local r = tonumber(er:GetText() or "") or 255
+    local g = tonumber(eg:GetText() or "") or 255
+    local b = tonumber(eb:GetText() or "") or 255
+    if r < 0 then r = 0 elseif r > 255 then r = 255 end
+    if g < 0 then g = 0 elseif g > 255 then g = 255 end
+    if b < 0 then b = 0 elseif b > 255 then b = 255 end
+    return r, g, b
+  end
+
+  local function SetRGB255(r, g, b)
+    r = tonumber(r) or 255
+    g = tonumber(g) or 255
+    b = tonumber(b) or 255
+    if r < 0 then r = 0 elseif r > 255 then r = 255 end
+    if g < 0 then g = 0 elseif g > 255 then g = 255 end
+    if b < 0 then b = 0 elseif b > 255 then b = 255 end
+    er:SetText(tostring(math.floor(r + 0.5)))
+    eg:SetText(tostring(math.floor(g + 0.5)))
+    eb:SetText(tostring(math.floor(b + 0.5)))
+  end
+
+  local function RefreshOutput()
+    local r, g, b = GetRGB255()
+    swatch:SetBackdropColor(r / 255, g / 255, b / 255, 1)
+    local rr, gg, bb = r / 255, g / 255, b / 255
+    local hex = ColorHex(rr, gg, bb)
+    out:SetText("color = " .. FormatLuaRGB(rr, gg, bb))
+    out2:SetText("color = \"#" .. hex .. "\"")
+  end
+
+  local function OnAnyChanged()
+    RefreshOutput()
+  end
+
+  er:SetScript("OnTextChanged", OnAnyChanged)
+  eg:SetScript("OnTextChanged", OnAnyChanged)
+  eb:SetScript("OnTextChanged", OnAnyChanged)
+
+  swatch:SetScript("OnClick", function()
+    local r, g, b = GetRGB255()
+    OpenColorPicker(r / 255, g / 255, b / 255, function(nr, ng, nb)
+      SetRGB255(nr * 255, ng * 255, nb * 255)
+      RefreshOutput()
+    end)
+  end)
+
+  SetRGB255(255, 255, 255)
+  RefreshOutput()
+
+  rgbPickerFrame = f
+  return f
+end
+
+local function ShowRGBPicker()
+  local f = EnsureRGBPickerFrame()
+  f:Show()
+  if f.Raise then f:Raise() end
+end
+
 SLASH_FR0Z3NUIFQT1 = "/fqt"
 if not SlashCmdList["FR0Z3NUIFQT"] then
   rawset(SlashCmdList, "FR0Z3NUIFQT", function(msg)
@@ -4716,6 +5091,11 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     ResetFramePositionsToDefaults()
     RefreshAll()
     Print("Frame positions reset to defaults.")
+    return
+  end
+
+  if cmd == "rgb" then
+    ShowRGBPicker()
     return
   end
 
@@ -4783,6 +5163,6 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     return
   end
 
-  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt twdebug, /fqt twclear, /fqt evclear")
+  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt twdebug, /fqt twclear, /fqt evclear")
   end)
 end
