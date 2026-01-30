@@ -19,42 +19,42 @@ local bakedRules = {
 
 {["label"] = "SU  The War Campaign 01", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:52544:list1:28",
 ["questID"] = 52544, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   1: WBT 200 War Resources\\n       Get Resources Chests", },
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   1: WBT 200 War Resources\\n       Get Resources Chests", },
 
 {["label"] = "SU The War Campaign 02", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:53332:list1:29",
-["questID"] = 53332, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   2: Return to Boralus Ship", },
+["questID"] = 53332, ["prereq"] = { 52544, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   2: Return to Boralus Ship", },
 
 {["label"] = "SU The War Campaign 03", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:51714:list1:30",
-["questID"] = 51714, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   3: Start Mission, Skip to 13", },
+["questID"] = 51714, ["prereq"] = { 53332, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   3: Start Mission, Skip to 13", },
 
 {["label"] = "SU The War Campaign 04", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:51359:list1:31",
-["questID"] = 51359, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   4: Open Zuldazar", },
+["questID"] = 51359, ["prereq"] = { 51714, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   4: Open Zuldazar", },
 
 {["label"] = "SU The War Campaign 05", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:51177:list1:32",
-["questID"] = 51177, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   5: Open Nazmir", },
+["questID"] = 51177, ["prereq"] = { 51359, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   5: Open Nazmir", },
 
 {["label"] = "SU The War Campaign 06", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:51402:list1:33",
-["questID"] = 51402, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   6: Open Voldun", },
+["questID"] = 51402, ["prereq"] = { 51359, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   6: Open Voldun", },
 
 {["label"] = "SU The War Campaign 07", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:52428:list1:34",
-["questID"] = 52428, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   7: Complete A Dying World", },
+["questID"] = 52428, ["prereq"] = { 51402, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   7: Complete A Dying World", },
 
 {["label"] = "SU The War Campaign 08", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:52450:list1:35",
-["questID"] = 52450, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   8: Complete Uniting Kul Tiras", },
+["questID"] = 52450, ["prereq"] = { 52428, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   8: Complete Uniting Kul Tiras", },
 
 {["label"] = "SU The War Campaign 09", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:65669:list1:36",
-["questID"] = 65669, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\nReturn to Lordaeron", },
+["questID"] = 65669, ["prereq"] = { 52450, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\nReturn to Lordaeron", },
 
 {["label"] = "SU  Nazjatar 01", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:54972:list1:48",
-["questID"] = 54972, ["prereq"] = { 47189, 52450, }, ["hideWhenCompleted"] = true,
+["questID"] = 54972, ["prereq"] = { 52450, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Battle For Azeroth\n + Nazjatar (Zygor)\n + Quest Until Accepting\n       \"Essential Empowerment\"\n  + Port to Zuldazar", },
 
 {["label"] = "SU  Nazjatar 02", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:56162:list1:48",
@@ -70,7 +70,7 @@ local bakedRules = {
 ["questInfo"] = "Battle For Azeroth\n + Mechagon (Zygor)\n + Quest Until Turning In\n      \"Princely Visit\"", },
 
 {["label"] = "SU  N'Zoth Invasions 01", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:q:58506:list1:61A",
-["questID"] = 58506, ["prereq"] = { 55500, 56156, }, ["hideWhenCompleted"] = true,
+["questID"] = 58506, ["prereq"] = { 56156, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Battle For Azeroth\nMagnis Plan (Zygor)\\n  + PickUp Missive\\n     A  Dockmasters Office\\n  + Follow Guide\\n    - Consoles Unnamed?, Relog", },
 
 {["label"] = "Kul Tiran Archaeology", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:97",
@@ -124,75 +124,75 @@ local bakedRules = {
 
 {["label"] = "SU The War Campaign 01", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:52746:list1:37",
 ["questID"] = 52746, ["prereq"] = { 46931, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   1: Take War Campaign Quest\\n Warband Transfer Resources\\n       Then Port to Orgimmar & Back\\n   2: Get Resources Chests/WBT", },
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   1: Take War Campaign Quest\\n Warband Transfer Resources\\n       Then Port to Orgimmar & Back\\n   2: Get Resources Chests/WBT", },
 
 {["label"] = "SU The War Campaign 02", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:53333:list1:38",
-["questID"] = 53333, ["prereq"] = { 46931, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   3: Return to Ship", },
+["questID"] = 53333, ["prereq"] = { 52746, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   3: Return to Ship", },
 
 {["label"] = "SU The War Campaign 03", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:51800:list1:39",
-["questID"] = 51800, ["prereq"] = { 46931, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   4: Start Mission, Skip to 10\\n   Table: Tiragarde", },
+["questID"] = 51800, ["prereq"] = { 53333, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   4: Start Mission, Skip to 10\\n   Table: Tiragarde", },
 
 {["label"] = "SU The War Campaign 04", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:51438:list1:40",
-["questID"] = 51438, ["prereq"] = { 46931, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   5: Open Tiragarde Sound", },
+["questID"] = 51438, ["prereq"] = { 51800, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   5: Open Tiragarde Sound", },
 
 {["label"] = "SU The War Campaign 05", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:51696:list1:41",
-["questID"] = 51696, ["prereq"] = { 46931, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   6: Stormsong Valley", },
+["questID"] = 51696, ["prereq"] = { 51438, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   6: Stormsong Valley", },
 
 {["label"] = "SU The War Campaign 06", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:51234:list1:42",
-["questID"] = 51234, ["prereq"] = { 46931, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   7: Open Drustvar", },
+["questID"] = 51234, ["prereq"] = { 51696, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   7: Open Drustvar", },
 
 {["label"] = "SU The War Campaign 07", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:52428:list1:43",
-["questID"] = 52428, ["prereq"] = { 46931, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   8: Complete A Dying World", },
+["questID"] = 52428, ["prereq"] = { 51234, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   8: Complete A Dying World", },
 
 {["label"] = "SU The War Campaign 08", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:52451:list1:44",
-["questID"] = 52451, ["prereq"] = { 46931, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\n   9: Complete Uniting Zuldazar", },
+["questID"] = 52451, ["prereq"] = { 52428, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\n   9: Complete Uniting Zuldazar", },
 
 {["label"] = "SU The War Campaign 09", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:65788:list1:45",
 ["questID"] = 65788, ["prereq"] = { 52451, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\\nReturn to Lordaeron", },
+["questInfo"] = "Battle For Azeroth\n + War Campaign (Zygor)\nReturn to Lordaeron", },
 
 {["label"] = "SU  Nazjatar 01", ["faction"] = "Horde",["frameID"] = "list1", ["key"] = "custom:q:55053:list1:53",
 ["questID"] = 55053, ["prereq"] = { 52451, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\\n  1: Follow Guide Until\\n       \"A Way Home\"", },
+["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\n  1: Follow Guide Until\n       \"A Way Home\"", },
 
 {["label"] = "SU  Nazjatar 02", ["faction"] = "Horde",["frameID"] = "list1", ["key"] = "custom:q:55851:list1:54",
 ["questID"] = 55851, ["prereq"] = { 55053, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\\n  2: Port to Zuldazar\\n         Then Silithus\\n         Then Chamber of Heart", },
+["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\n  2: Port to Zuldazar\n         Then Silithus\n         Then Chamber of Heart", },
 
 {["label"] = "SU  Nazjatar 03", ["faction"] = "Horde",["frameID"] = "list1", ["key"] = "custom:q:55425:list1:55",
 ["questID"] = 55425, ["prereq"] = { 55851, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\\n  3: Follow Guide Until\\n       \"Dominating the Indomitable\"", },
+["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\n  3: Follow Guide Until\n       \"Dominating the Indomitable\"", },
 
 {["label"] = "SU  Nazjatar 04", ["faction"] = "Horde",["frameID"] = "list1", ["key"] = "custom:q:55497:list1:56",
 ["questID"] = 55497, ["prereq"] = { 55425, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\\n  4: Hearth Out\\n         Portal to Silithus/Chamber", },
+["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\n  4: Hearth Out\n         Portal to Silithus/Chamber", },
 
 {["label"] = "SU  Nazjatar 05", ["faction"] = "Horde",["frameID"] = "list1", ["key"] = "custom:q:57010:list1:57",
 ["questID"] = 57010, ["prereq"] = { 55497, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\\n  5: Follow Guide Until\\n       \"Back Out to Sea\"", },
+["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\n  5: Follow Guide Until\n       \"Back Out to Sea\"", },
 
 {["label"] = "SU  Nazjatar 06", ["faction"] = "Horde",["frameID"] = "list1", ["key"] = "custom:q:56161:list1:58",
 ["questID"] = 56161, ["prereq"] = { 57010, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\\n  6: Pad to Silithus\\n        Portal to Zuldazar\\n        Portal to Nazjatar", },
+["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\n  6: Pad to Silithus\n        Portal to Zuldazar\n        Portal to Nazjatar", },
 
 {["label"] = "SU  Nazjatar 07", ["faction"] = "Horde",["frameID"] = "list1", ["key"] = "custom:q:55500:list1:59",
 ["questID"] = 55500, ["prereq"] = { 56161, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\\n  7: Follow Guide Until\\n        \"Save a Friend\"", },
+["questInfo"] = "Battle For Azeroth\nNazjatar (Zygor)\n  7: Follow Guide Until\n        \"Save a Friend\"", },
 
 {["label"] = "SU  Nazjatar 08", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:55652:list1:60",
 ["questID"] = 55652, ["prereq"] = { 55500, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nMechagon (Zygor)\\n    1: Follow Guide Until\\n        \"We Come in Peace...\"",  },
+["questInfo"] = "Battle For Azeroth\nMechagon (Zygor)\n    1: Follow Guide Until\n        \"We Come in Peace...\"",  },
 
 {["label"] = "SU  N'Zoth Invasions 01", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:58506:list1:61H",
-["questID"] = 58506, ["prereq"] = { 55500, 56156, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Battle For Azeroth\nMagnis Plan (Zygor)\\n  + PickUp Missive\\n     On Ship at Dock\\n  + Follow Guide\\n    - Consoles Unnamed?, Relog", },
+["questID"] = 58506, ["prereq"] = { 55500, }, ["hideWhenCompleted"] = true,
+["questInfo"] = "Battle For Azeroth\nMagnis Plan (Zygor)\n  + PickUp Missive\n     On Ship at Dock\n  + Follow Guide\n    - Consoles Unnamed?, Relog", },
 
 {["label"] = "Zandalari Archaeology", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:108",
 ["spellInfo"] = "Archaeology", ["notSpellKnown"] = 278910,

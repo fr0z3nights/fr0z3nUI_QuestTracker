@@ -73,7 +73,6 @@ ns.rules = {
     questInfo = "Timewalking",
     preferQuestInfoForTitle = true,
     aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true },
-    hideIfRememberedTimewalkingKind = true,
     hideIfAnyQuestInLog = {
       86731, 85947, -- Classic
       83363, 85948, -- Outland
@@ -249,7 +248,7 @@ ns.rules = {
       {
         questID = 40173,
         shape = "square",
-        overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
+        overlay = { itemIDs = { 129928, }, text = "1", color = { 1.0, 1.0, 0.1 } },
       },
     },
   },

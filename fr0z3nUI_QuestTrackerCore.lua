@@ -1414,9 +1414,10 @@ local function CalendarKeywordCacheKey(keywords)
   return table.concat(list, "|")
 end
 
-local function IsCalendarEventActiveByKeywords(keywords)
+local function IsCalendarEventActiveByKeywords(keywords, includeHolidayText)
   local cacheKey = CalendarKeywordCacheKey(keywords)
   if not cacheKey then return false end
+  cacheKey = (includeHolidayText == true and "h:" or "t:") .. cacheKey
 
   local now = 0
   if GetServerTime then now = tonumber(GetServerTime()) or 0 end
@@ -1450,8 +1451,14 @@ local function IsCalendarEventActiveByKeywords(keywords)
     n = okNum and tonumber(n) or 0
     for i = 1, n do
       local title = GetCalendarEventText(0, day, i) or ""
-      local holidayText = GetCalendarHolidayText(0, day, i) or ""
-      local hay = (title .. "\n" .. holidayText):lower()
+      local holidayText = ""
+      if includeHolidayText == true then
+        holidayText = GetCalendarHolidayText(0, day, i) or ""
+      end
+      local hay = title:lower()
+      if holidayText ~= "" then
+        hay = (hay .. "\n" .. holidayText:lower())
+      end
 
       for kw in cacheKey:gmatch("[^|]+") do
         local k = tostring(kw or ""):lower()
@@ -1604,7 +1611,7 @@ local function GetWeeklyResetAt()
     local s = tonumber(C_DateAndTime.GetSecondsUntilWeeklyReset())
     -- Sanity clamp: weekly resets should never be weeks/months away.
     -- If Blizzard returns bogus values, don't persist remembered weekly state.
-    if s and s > 0 and s < (60 * 60 * 24 * 10) then
+    if s and s > 0 and s < (60 * 60 * 24 * 8) then
       return now + s
     end
   end
@@ -1642,7 +1649,7 @@ local function HasRememberedWeeklyAura(spellID)
   local exp = fr0z3nUI_QuestTracker_Acc.cache.weeklyAuras[tostring(spellID)]
   exp = tonumber(exp) or 0
   -- If expiration is absurdly far in the future, treat as corrupt/stale.
-  if exp > (now + (60 * 60 * 24 * 10)) then
+  if exp > (now + (60 * 60 * 24 * 8)) then
     fr0z3nUI_QuestTracker_Acc.cache.weeklyAuras[tostring(spellID)] = nil
     return false
   end
@@ -1688,7 +1695,9 @@ local function RememberWeeklyTimewalkingKind(kind)
   kind = tostring(kind or "")
   if kind == "" then return end
   NormalizeSV()
-  local resetAt = GetWeeklyResetAt()
+  -- Timewalking kind memory is intentionally short-lived.
+  -- Store it only until the next DAILY reset to avoid stale/incorrect kinds persisting.
+  local resetAt = GetDailyResetAt()
   if resetAt and resetAt > 0 then
     fr0z3nUI_QuestTracker_Acc.cache.twWeekly.kind = kind
     fr0z3nUI_QuestTracker_Acc.cache.twWeekly.exp = resetAt
@@ -1702,7 +1711,8 @@ local function HasRememberedWeeklyTimewalkingKind(kind)
   if type(cache) ~= "table" then return false end
   local exp = tonumber(cache.exp) or 0
   -- If expiration is absurdly far in the future, treat as corrupt/stale.
-  if exp > (now + (60 * 60 * 24 * 10)) then
+  -- Daily reset should be within ~48 hours.
+  if exp > (now + (60 * 60 * 48)) then
     cache.kind = nil
     cache.exp = nil
     return false
@@ -2516,10 +2526,7 @@ local function BuildRuleStatus(rule, ctx, opts)
   -- keep showing when completed, allow it to remain visible even if it drops
   -- out of the quest log (Timewalking weeklies commonly do this).
   if applyGates and questID and rule.requireInLog == true and not IsQuestInLog(questID) then
-    local twKind = (type(rule) == "table") and rule.twKind or nil
-    if twKind ~= nil and HasRememberedWeeklyTimewalkingKind(twKind) then
-      -- allow: another character already picked up this week's TW quest
-    elseif not (completed and hideWhenCompleted == false) then
+    if not (completed and hideWhenCompleted == false) then
       return nil
     end
   end
@@ -2534,7 +2541,7 @@ local function BuildRuleStatus(rule, ctx, opts)
       rememberedKey = "event:timewalking"
     elseif rule.aura.eventKind == "calendar" then
       local kws = rule.aura.keywords or rule.aura.keyword or rule.aura.text
-      has = IsCalendarEventActiveByKeywords(kws)
+      has = IsCalendarEventActiveByKeywords(kws, rule.aura.includeHolidayText == true)
       local ck = CalendarKeywordCacheKey(kws)
       if ck and ck ~= "" then
         rememberedKey = "event:calendar:" .. ck

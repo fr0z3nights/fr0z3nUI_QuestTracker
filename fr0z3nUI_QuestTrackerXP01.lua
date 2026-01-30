@@ -13,62 +13,62 @@ local bakedRules = {
 
 -- ALLIANCE TABARDS
 {["label"] = "Stormwind Tabard", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:item:45574:list1:139",
-["itemInfo"] = "Stormwind Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 72, }, ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45574, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85, ", },
+["itemInfo"] = "Stormwind Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 72, }, 
+["item"] = { ["itemID"] = 45574, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85, ", ["restedOnly"] = Y,},
 
 {["label"] = "Tushui Tabard", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:item:83079:list1:138",
-["itemInfo"] = "Tushui Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1353, }, ["restedOnly"] = true, 
-["item"] = { ["itemID"] = 83079, ["required"] = { 1, true }, }, ["locationID"] = "84, 85,", },
+["itemInfo"] = "Tushui Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1353, }, 
+["item"] = { ["itemID"] = 83079, ["required"] = { 1, true }, }, ["locationID"] = "84, 85,", ["restedOnly"] = true, },
 
 {["label"] = "Darnassus Tabard", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:item:45579:list1:137",
-["itemInfo"] = "Darnassus Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 69, }, ["locationID"] = "999999", ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45579, ["required"] = { 1, Y }, }, ["locationID"] = "999999", },
+["itemInfo"] = "Darnassus Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 69, }, 
+["item"] = { ["itemID"] = 45579, ["required"] = { 1, Y }, }, ["locationID"] = "999999", ["restedOnly"] = Y,},
 
 {["label"] = "Exodar Tabard", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:item:45580:list1:135",
-["itemInfo"] = "Take Portal to Exodar\n Buy Exodar Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 930, }, ["locationID"] = "999999", ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45580, ["required"] = { 1, Y }, }, ["locationID"] = "999999", },
+["itemInfo"] = "Take Portal to Exodar\n Buy Exodar Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 930, }, 
+["item"] = { ["itemID"] = 45580, ["required"] = { 1, Y }, }, ["locationID"] = "999999", ["restedOnly"] = Y,},
 
 {["label"] = "Gnomeregan Tabard", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:item:45578:list1:142",
-["itemInfo"] = "Gnomeregan Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 54, }, ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45578, ["required"] = { 1, Y }, }, ["locationID"] = "999999", },
+["itemInfo"] = "Gnomeregan Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 54, },
+["item"] = { ["itemID"] = 45578, ["required"] = { 1, Y }, }, ["locationID"] = "999999", ["restedOnly"] = Y,},
 
 {["label"] = "Ironforge Tabard", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:item:45577:list1:143",
-["itemInfo"] = "Ironforge Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 47, }, ["locationID"] = "999999", ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45577, ["required"] = { 1, Y }, },},
+["itemInfo"] = "Ironforge Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 47, },
+["item"] = { ["itemID"] = 45577, ["required"] = { 1, Y }, }, ["locationID"] = "999999", ["restedOnly"] = Y, },
 
 {["label"] = "Gilneas Tabard", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:item:64882:list1:136",
-["itemInfo"] = "Gilneas Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1134, }, ["restedOnly"] = true,
-["item"] = { ["itemID"] = 64882, ["required"] = { 1, Y }, }, ["locationID"] = "1133", },
+["itemInfo"] = "Gilneas Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1134, },
+["item"] = { ["itemID"] = 64882, ["required"] = { 1, Y }, }, ["locationID"] = "1133", ["restedOnly"] = true, },
 
 
 -- HORDE TABARDS
 {["label"] = "Orgrimmar Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:45581:list1:134",
-["itemInfo"] = "Orgrimmar Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 76, }, ["locationID"] = "84, 85", ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45581, ["required"] = { 1, Y }, }, },
+["itemInfo"] = "Orgrimmar Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 76, },
+["item"] = { ["itemID"] = 45581, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85", ["restedOnly"] = Y, },
 
 {["label"] = "Darkspear Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:45582:list1:133",
-["itemInfo"] = "Darkspear Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 530, }, ["locationID"] = "84, 85", ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45582, ["required"] = { 1, Y }, }, },
+["itemInfo"] = "Darkspear Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 530, },
+["item"] = { ["itemID"] = 45582, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85", ["restedOnly"] = Y, },
 
 {["label"] = "Bilgewater Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:64884:list1:132",
-["itemInfo"] = "Bilgewater Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1134, }, ["restedOnly"] = true,
-["item"] = { ["itemID"] = 64884, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85, ", },
+["itemInfo"] = "Bilgewater Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1134, },
+["item"] = { ["itemID"] = 64884, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85, ", ["restedOnly"] = true, },
 
 {["label"] = "Undercity Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:45583:list1:130",
-["itemInfo"] = "Undercity Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 68, }, ["locationID"] = "84, 85", ["restedOnly"] = Y, 
-["item"] = { ["itemID"] = 45583, ["required"] = { 1, Y }, }, },
+["itemInfo"] = "Undercity Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 68, },
+["item"] = { ["itemID"] = 45583, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85", ["restedOnly"] = Y, },
 
 {["label"] = "Huojin Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:83080:list1:131",
-["itemInfo"] = "Huojin Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1352, }, ["restedOnly"] = true, 
-["item"] = { ["itemID"] = 83080, ["required"] = { 1, true }, }, ["locationID"] = "84, 85,", },
+["itemInfo"] = "Huojin Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1352, },
+["item"] = { ["itemID"] = 83080, ["required"] = { 1, true }, }, ["locationID"] = "84, 85,", ["restedOnly"] = true, },
 
 {["label"] = "Silvermoon Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:45585:list1:140",
-["itemInfo"] = "Silvermoon Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 911, }, ["locationID"] = "999999", ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45585, ["required"] = { 1, Y }, }, },
+["itemInfo"] = "Silvermoon Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 911, },
+["item"] = { ["itemID"] = 45585, ["required"] = { 1, Y }, }, ["locationID"] = "999999", ["restedOnly"] = Y, },
 
 {["label"] = "Thunder Bluff Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:45584:list1:141",
-["itemInfo"] = "Thunder Bluff Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 81, }, ["locationID"] = "999999", ["restedOnly"] = Y,
-["item"] = { ["itemID"] = 45584, ["required"] = { 1, Y }, }, },
+["itemInfo"] = "Thunder Bluff Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 81, },
+["item"] = { ["itemID"] = 45584, ["required"] = { 1, Y }, }, ["locationID"] = "999999", ["restedOnly"] = Y, },
 
 
 -- NEUTRAL ITEMS
