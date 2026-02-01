@@ -1176,9 +1176,28 @@ end
 ns.GetQuestTitle = GetQuestTitle
 
 local function GetItemCountSafe(itemID)
-  if C_Item and C_Item.GetItemCount then
-    return C_Item.GetItemCount(itemID, false, false, false) or 0
+  itemID = tonumber(itemID)
+  if not itemID then return 0 end
+
+  -- Prefer the global API when available; it typically counts bags + equipped.
+  local GetItemCountFn = _G and rawget(_G, "GetItemCount")
+  if type(GetItemCountFn) == "function" then
+    local ok, v = pcall(GetItemCountFn, itemID, false, false, false)
+    v = ok and tonumber(v) or 0
+    if v and v > 0 then return v end
   end
+
+  if C_Item and C_Item.GetItemCount then
+    local ok, v = pcall(C_Item.GetItemCount, itemID, false, false, false)
+    v = ok and tonumber(v) or 0
+    if v and v > 0 then return v end
+  end
+
+  -- Last-resort: consider equipped items (not all count APIs include equipment).
+  if GetInventoryItemID and GetInventoryItemID("player", 19) == itemID then
+    return 1
+  end
+
   return 0
 end
 
@@ -2430,8 +2449,16 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
   end
 
+  local sellReminderExalted = false
+  if applyGates and type(rule) == "table" and type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
+    local sid = GetStandingIDByFactionID(rule.rep.factionID)
+    if sid and sid >= 8 then
+      sellReminderExalted = true
+    end
+  end
+
   -- Location gate (optional; uiMapID)
-  if applyGates and type(rule) == "table" and rule.locationID ~= nil then
+  if applyGates and (not sellReminderExalted) and type(rule) == "table" and rule.locationID ~= nil then
     local wants = ParseLocationIDs(rule.locationID)
     if wants and wants[1] then
       local have = (ctx and ctx.mapID) or GetBestMapIDSafe()
@@ -2473,7 +2500,7 @@ local function BuildRuleStatus(rule, ctx, opts)
   end
 
   -- Rested-area gate (optional)
-  if applyGates and type(rule) == "table" and rule.restedOnly == true then
+  if applyGates and (not sellReminderExalted) and type(rule) == "table" and rule.restedOnly == true then
     if not IsRestingSafe() then
       return nil
     end
@@ -2580,6 +2607,7 @@ local function BuildRuleStatus(rule, ctx, opts)
 
   -- Item gate/progress
   local extra = nil
+  local sellPrefix = false
 
   -- Explicit extra override (used for helper tasks)
   if type(rule) == "table" and rule.extra ~= nil then
@@ -2622,7 +2650,17 @@ local function BuildRuleStatus(rule, ctx, opts)
     if applyGates then
       local req, hideWhenAcquired = GetItemRequiredGate(rule.item)
       if hideWhenAcquired == true and count > 0 then
-        return nil
+        -- Exception: if we're Exalted and the rule wants a vendor reminder, keep it visible.
+        local allowSellReminder = false
+        if type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
+          local standingID = GetStandingIDByFactionID(rule.rep.factionID)
+          if standingID and standingID >= 8 then
+            allowSellReminder = true
+          end
+        end
+        if not allowSellReminder then
+          return nil
+        end
       end
       if rule.item.mustHave and count <= 0 then
         return nil
@@ -2650,7 +2688,9 @@ local function BuildRuleStatus(rule, ctx, opts)
         if count <= 0 then
           return nil
         end
-        extra = "SELL " .. tostring(count)
+        -- Display as a title prefix instead of an extra counter.
+        sellPrefix = true
+        extra = nil
       end
     end
   end
@@ -2734,11 +2774,17 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
   elseif type(rule) == "table" and type(rule.item) == "table" and rule.item.itemID then
     local itemName = (rule.label ~= nil and tostring(rule.label) ~= "") and tostring(rule.label) or (GetItemNameSafe(rule.item.itemID) or ("Item " .. tostring(rule.item.itemID)))
-    rawTitle = itemName
-    if rule.itemInfo ~= nil and tostring(rule.itemInfo) ~= "" then
-      title = tostring(rule.itemInfo)
+    if sellPrefix then
+      local sellTitle = "Sell " .. itemName
+      rawTitle = sellTitle
+      title = sellTitle
     else
-      title = itemName
+      rawTitle = itemName
+      if rule.itemInfo ~= nil and tostring(rule.itemInfo) ~= "" then
+        title = tostring(rule.itemInfo)
+      else
+        title = itemName
+      end
     end
   elseif type(rule) == "table" and (rule.spellKnown or rule.notSpellKnown or rule.SpellKnown or rule.NotSpellKnown) then
     local function PickSpellID(v)

@@ -51,7 +51,7 @@ local bakedRules = {
 ["item"] = { ["itemID"] = 45582, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85", ["restedOnly"] = Y, },
 
 {["label"] = "Bilgewater Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:64884:list1:132",
-["itemInfo"] = "Bilgewater Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1134, },
+["itemInfo"] = "Bilgewater Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 1133, },
 ["item"] = { ["itemID"] = 64884, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85, ", ["restedOnly"] = true, },
 
 {["label"] = "Undercity Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:45583:list1:130",
@@ -59,7 +59,7 @@ local bakedRules = {
 ["item"] = { ["itemID"] = 45583, ["required"] = { 1, Y }, }, ["locationID"] = "84, 85", ["restedOnly"] = Y, },
 
 {["label"] = "Huojin Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:83080:list1:131",
-["itemInfo"] = "Huojin Tabard", ["rep"] = { ["sellWhenExalted"] = true, ["factionID"] = 1352, },
+["itemInfo"] = "Huojin Tabard", ["rep"] = { ["sellWhenExalted"] = Y, ["factionID"] = 1352, },
 ["item"] = { ["itemID"] = 83080, ["required"] = { 1, true }, }, ["locationID"] = "84, 85,", ["restedOnly"] = true, },
 
 {["label"] = "Silvermoon Tabard", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:45585:list1:140",
