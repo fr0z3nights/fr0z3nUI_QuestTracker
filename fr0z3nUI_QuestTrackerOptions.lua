@@ -4398,6 +4398,18 @@ local function EnsureOptionsFrame()
         panels.items._itemShowBelowBox:SetText((sb > 0) and tostring(sb) or "")
       end
 
+      do
+        local enabled, maxQty = false, 0
+        if type(rule.item) == "table" and type(rule.item.buy) == "table" then
+          enabled = (rule.item.buy.enabled == true)
+          maxQty = tonumber(rule.item.buy.max) or 0
+        end
+        if panels.items._buyEnabled then panels.items._buyEnabled:SetChecked(enabled and true or false) end
+        if panels.items._buyMaxBox and panels.items._buyMaxBox.SetText then
+          panels.items._buyMaxBox:SetText((maxQty and maxQty > 0) and tostring(maxQty) or "0")
+        end
+      end
+
       local frameID = tostring(rule.frameID or "list1")
       panels.items._targetFrameID = frameID
       if UDDM_SetText and panels.items._itemsFrameDrop then UDDM_SetText(panels.items._itemsFrameDrop, GetFrameDisplayNameByID(frameID)) end
@@ -4789,6 +4801,18 @@ local function EnsureOptionsFrame()
       if panels.items._itemShowBelowBox and type(rule.item) == "table" then
         local sb = tonumber(rule.item.showWhenBelow) or 0
         panels.items._itemShowBelowBox:SetText((sb > 0) and tostring(sb) or "")
+      end
+
+      do
+        local enabled, maxQty = false, 0
+        if type(rule.item) == "table" and type(rule.item.buy) == "table" then
+          enabled = (rule.item.buy.enabled == true)
+          maxQty = tonumber(rule.item.buy.max) or 0
+        end
+        if panels.items._buyEnabled then panels.items._buyEnabled:SetChecked(enabled and true or false) end
+        if panels.items._buyMaxBox and panels.items._buyMaxBox.SetText then
+          panels.items._buyMaxBox:SetText((maxQty and maxQty > 0) and tostring(maxQty) or "0")
+        end
       end
 
       local frameID = tostring(rule.frameID or "list1")

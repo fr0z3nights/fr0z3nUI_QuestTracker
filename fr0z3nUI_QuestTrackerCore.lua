@@ -34,6 +34,34 @@ local RuleKey
 
 local GetPlayerClass, GetPrimaryProfessionNames, HasTradeSkillLine, CanQueryTradeSkillLines
 
+local function HasProfessionSkillLineID(skillLineID)
+  skillLineID = tonumber(skillLineID)
+  if not skillLineID or skillLineID <= 0 then return false end
+
+  local GP = _G and rawget(_G, "GetProfessions")
+  local GPI = _G and rawget(_G, "GetProfessionInfo")
+  if type(GP) ~= "function" or type(GPI) ~= "function" then
+    return false
+  end
+
+  local ok, prof1, prof2, archaeology, fishing, cooking = pcall(GP)
+  if not ok then return false end
+
+  local indices = { prof1, prof2, archaeology, fishing, cooking }
+  for i = 1, #indices do
+    local idx = indices[i]
+    if idx then
+      local ok2, _, _, _, _, _, line = pcall(GPI, idx)
+      line = ok2 and tonumber(line) or nil
+      if line and line == skillLineID then
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
 local function CopyArray(src)
   if type(src) ~= "table" then return nil end
   local out = {}
@@ -277,6 +305,54 @@ local function NormalizeRuleInPlace(rule)
     rule.prereq = out[1] and out or nil
   end
 
+  -- Item auto-buy config (default off).
+  -- Visible schema:
+  --   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
+  -- Also mirrored to:
+  --   item.buy = { enabled = bool, max = number }
+  if type(rule.item) == "table" and tonumber(rule.item.itemID) and tonumber(rule.item.itemID) > 0 then
+    local item = rule.item
+
+    local req = nil
+    local hide = nil
+    if type(item.required) == "table" then
+      req = tonumber(item.required[1])
+      hide = (item.required[2] == true)
+      if item.required[2] == nil then
+        hide = (item.hideWhenAcquired == true)
+      end
+    else
+      req = tonumber(item.required)
+      hide = (item.hideWhenAcquired == true)
+    end
+    if not req then req = tonumber(item.count) end
+    req = tonumber(req)
+    if not req or req <= 0 then req = 1 end
+    hide = (hide and true or false)
+
+    local buyEnabled = false
+    local buyMax = 0
+
+    -- Prefer tuple fields if present (so baked DB edits can be done in one place).
+    if type(item.required) == "table" and (item.required[3] ~= nil or item.required[4] ~= nil) then
+      buyEnabled = (item.required[3] == true)
+      buyMax = tonumber(item.required[4]) or 0
+    elseif type(item.buy) == "table" then
+      buyEnabled = (item.buy.enabled == true)
+      buyMax = tonumber(item.buy.max) or 0
+    end
+    if buyMax < 0 then buyMax = 0 end
+    if buyMax <= 0 then buyEnabled = false end
+
+    item.buy = item.buy or {}
+    item.buy.enabled = buyEnabled and true or false
+    item.buy.max = buyMax
+
+    -- Make it visible directly on the rule.
+    item.required = { req, hide, item.buy.enabled, item.buy.max }
+    item.hideWhenAcquired = nil
+  end
+
   -- Per-rule text styling ("inherit"/0 means no override).
   -- These are explicit so the DB + custom rules are consistent for manual edits.
   if rule.font == nil then rule.font = "inherit" end
@@ -295,18 +371,21 @@ local function EnsureDefaultRulesMigrated()
     if type(r) == "table" then
       NormalizeRuleInPlace(r)
 
+      local isQuest = (r.questID ~= nil)
+
       -- Legacy default DB rules used `label` as a multiline info field for items/spells.
-      if type(r.item) == "table" and tonumber(r.item.itemID) and tonumber(r.item.itemID) > 0 then
+      -- Do not migrate quest labels: quest rules commonly use `label` as their display name.
+      if (not isQuest) and type(r.item) == "table" and tonumber(r.item.itemID) and tonumber(r.item.itemID) > 0 then
         if r.itemInfo == nil and type(r.label) == "string" and r.label ~= "" then
           r.itemInfo = r.label
           r.label = nil
         end
-      elseif (r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup) then
+      elseif (not isQuest) and (r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup) then
         if r.spellInfo == nil and type(r.label) == "string" and r.label ~= "" then
           r.spellInfo = r.label
           r.label = nil
         end
-      else
+      elseif not isQuest then
         if r.textInfo == nil and type(r.label) == "string" and r.label ~= "" then
           r.textInfo = r.label
         end
@@ -352,6 +431,11 @@ local function NormalizeSV()
   fr0z3nUI_QuestTracker_Char = fr0z3nUI_QuestTracker_Char or {}
 
   fr0z3nUI_QuestTracker_Acc.settings = fr0z3nUI_QuestTracker_Acc.settings or {}
+  if fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy == nil then
+    fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy = false
+  else
+    fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy = (fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy == true)
+  end
   fr0z3nUI_QuestTracker_Acc.settings.ui = fr0z3nUI_QuestTracker_Acc.settings.ui or {}
   fr0z3nUI_QuestTracker_Acc.settings.customRules = fr0z3nUI_QuestTracker_Acc.settings.customRules or {}
   fr0z3nUI_QuestTracker_Acc.settings.customRulesTrash = fr0z3nUI_QuestTracker_Acc.settings.customRulesTrash or {}
@@ -371,6 +455,7 @@ local function NormalizeSV()
   fr0z3nUI_QuestTracker_Acc.cache.weeklyAuras = fr0z3nUI_QuestTracker_Acc.cache.weeklyAuras or {}
   fr0z3nUI_QuestTracker_Acc.cache.dailyAuras = fr0z3nUI_QuestTracker_Acc.cache.dailyAuras or {}
   fr0z3nUI_QuestTracker_Acc.cache.twWeekly = fr0z3nUI_QuestTracker_Acc.cache.twWeekly or {}
+  fr0z3nUI_QuestTracker_Acc.cache.currencyWB = fr0z3nUI_QuestTracker_Acc.cache.currencyWB or {}
   if type(fr0z3nUI_QuestTracker_Acc.cache.twWeekly) ~= "table" then
     fr0z3nUI_QuestTracker_Acc.cache.twWeekly = {}
   end
@@ -1175,20 +1260,22 @@ end
 
 ns.GetQuestTitle = GetQuestTitle
 
-local function GetItemCountSafe(itemID)
+local function GetItemCountSafe(itemID, includeBank)
   itemID = tonumber(itemID)
   if not itemID then return 0 end
+
+  includeBank = (includeBank == true)
 
   -- Prefer the global API when available; it typically counts bags + equipped.
   local GetItemCountFn = _G and rawget(_G, "GetItemCount")
   if type(GetItemCountFn) == "function" then
-    local ok, v = pcall(GetItemCountFn, itemID, false, false, false)
+    local ok, v = pcall(GetItemCountFn, itemID, includeBank, false, false)
     v = ok and tonumber(v) or 0
     if v and v > 0 then return v end
   end
 
   if C_Item and C_Item.GetItemCount then
-    local ok, v = pcall(C_Item.GetItemCount, itemID, false, false, false)
+    local ok, v = pcall(C_Item.GetItemCount, itemID, includeBank, false, false)
     v = ok and tonumber(v) or 0
     if v and v > 0 then return v end
   end
@@ -1201,18 +1288,196 @@ local function GetItemCountSafe(itemID)
   return 0
 end
 
-local function GetCurrencyQuantitySafe(currencyID)
+local function GetCurrencyInfoSafe(currencyID)
   currencyID = tonumber(currencyID)
-  if not currencyID or currencyID <= 0 then return 0 end
+  if not currencyID or currencyID <= 0 then return nil end
 
   if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
     local ok, info = pcall(C_CurrencyInfo.GetCurrencyInfo, currencyID)
     if ok and type(info) == "table" then
-      return tonumber(info.quantity) or 0
+      return info
     end
   end
 
+  return nil
+end
+
+local function GetCurrencyQuantitySafe(currencyID)
+  currencyID = tonumber(currencyID)
+  if not currencyID or currencyID <= 0 then return 0 end
+
+  local info = GetCurrencyInfoSafe(currencyID)
+  if type(info) == "table" then
+    return tonumber(info.quantity) or 0
+  end
+
   return 0
+end
+
+local _warbandCurrencyTotals = {}
+local _warbandCurrencyRequestAt = 0
+local _warbandCurrencyFullRefreshAt = 0
+
+local function RequestWarbandCurrencyData()
+  if not (C_CurrencyInfo and C_CurrencyInfo.RequestCurrencyDataForAccountCharacters) then
+    return false
+  end
+
+  local now = (GetTime and GetTime()) or 0
+  if now > 0 and _warbandCurrencyRequestAt > 0 and (now - _warbandCurrencyRequestAt) < 30 then
+    return false
+  end
+  _warbandCurrencyRequestAt = now
+  pcall(C_CurrencyInfo.RequestCurrencyDataForAccountCharacters)
+  return true
+end
+
+local function GetCachedWarbandCurrencyTotal(currencyID)
+  local acc = fr0z3nUI_QuestTracker_Acc
+  local t = (type(acc) == "table" and type(acc.cache) == "table") and acc.cache.currencyWB or nil
+  if type(t) ~= "table" then return nil end
+
+  local e = t[currencyID]
+  if type(e) == "table" then
+    local total = tonumber(e.total)
+    if total ~= nil then return total end
+  end
+  return nil
+end
+
+local function SaveCachedWarbandCurrencyTotal(currencyID, total)
+  local acc = fr0z3nUI_QuestTracker_Acc
+  if type(acc) ~= "table" then return end
+  acc.cache = acc.cache or {}
+  acc.cache.currencyWB = acc.cache.currencyWB or {}
+  acc.cache.currencyWB[currencyID] = {
+    total = tonumber(total) or 0,
+    at = (time and time()) or 0,
+  }
+end
+
+local function ComputeWarbandCurrencyTotalFromAccountData(currencyID)
+  if not (C_CurrencyInfo and C_CurrencyInfo.GetAccountCharacterCurrencyData) then
+    return nil
+  end
+
+  local ok, data = pcall(C_CurrencyInfo.GetAccountCharacterCurrencyData, currencyID)
+  if not ok or type(data) ~= "table" then
+    return nil
+  end
+
+  local total = 0
+  local found = false
+  for _, row in ipairs(data) do
+    if type(row) == "table" then
+      local q = row.quantity
+      if q == nil then q = row.amount end
+      if q == nil then q = row.count end
+      if q == nil then q = row.totalQuantity end
+      q = tonumber(q)
+      if q ~= nil then
+        total = total + q
+        found = true
+      end
+    end
+  end
+
+  if not found then return nil end
+  return total
+end
+
+local function GetWarbandCurrencyTotalSafe(currencyID, allowCache)
+  currencyID = tonumber(currencyID)
+  if not currencyID or currencyID <= 0 then return nil, false end
+
+  if _warbandCurrencyTotals[currencyID] ~= nil then
+    return _warbandCurrencyTotals[currencyID], false
+  end
+
+  RequestWarbandCurrencyData()
+
+  local total = ComputeWarbandCurrencyTotalFromAccountData(currencyID)
+  if total ~= nil then
+    _warbandCurrencyTotals[currencyID] = total
+    SaveCachedWarbandCurrencyTotal(currencyID, total)
+    return total, false
+  end
+
+  if allowCache then
+    local cached = GetCachedWarbandCurrencyTotal(currencyID)
+    if cached ~= nil then
+      return cached, true
+    end
+  end
+
+  return nil, false
+end
+
+local IsCurrencyWarbandTransferableSafe
+
+local function CollectCurrencyGateIDsFromRules()
+  local out = {}
+
+  local function AddFromRule(r)
+    if type(r) ~= "table" then return end
+    if type(r.item) == "table" then
+      local cid = tonumber((type(r.item.currencyID) == "table") and r.item.currencyID[1] or r.item.currencyID)
+      if cid and cid > 0 then
+        out[cid] = true
+      end
+    end
+  end
+
+  if type(ns.rules) == "table" then
+    for _, r in ipairs(ns.rules) do
+      AddFromRule(r)
+    end
+  end
+
+  local acc = fr0z3nUI_QuestTracker_Acc
+  local settings = (type(acc) == "table") and acc.settings or nil
+  local custom = (type(settings) == "table") and settings.customRules or nil
+  if type(custom) == "table" then
+    for _, r in ipairs(custom) do
+      AddFromRule(r)
+    end
+  end
+
+  local edits = (type(settings) == "table") and settings.defaultRuleEdits or nil
+  if type(edits) == "table" then
+    for _, r in pairs(edits) do
+      AddFromRule(r)
+    end
+  end
+
+  return out
+end
+
+local function RefreshWarbandCurrencyCacheForAllKnownCurrencies()
+  local now = (GetTime and GetTime()) or 0
+  if now > 0 and _warbandCurrencyFullRefreshAt > 0 and (now - _warbandCurrencyFullRefreshAt) < 30 then
+    return
+  end
+  _warbandCurrencyFullRefreshAt = now
+
+  RequestWarbandCurrencyData()
+
+  local ids = CollectCurrencyGateIDsFromRules()
+  for cid in pairs(ids) do
+    if IsCurrencyWarbandTransferableSafe(cid) then
+      _warbandCurrencyTotals[cid] = nil
+      local total = ComputeWarbandCurrencyTotalFromAccountData(cid)
+      if total ~= nil then
+        _warbandCurrencyTotals[cid] = total
+        SaveCachedWarbandCurrencyTotal(cid, total)
+      end
+    end
+  end
+end
+
+IsCurrencyWarbandTransferableSafe = function(currencyID)
+  local info = GetCurrencyInfoSafe(currencyID)
+  return (type(info) == "table" and info.isAccountTransferable == true) and true or false
 end
 
 local function GetItemNameSafe(itemID)
@@ -1401,7 +1666,7 @@ local function IsAnyTimewalkingEventActive()
   return found and true or false
 end
 
-local _calendarKeywordCache = { at = 0, active = {} }
+local _calendarKeywordCache = { at = 0, active = {}, unknown = {} }
 
 local function NormalizeCalendarKeywords(keywords)
   if keywords == nil then return nil end
@@ -1434,35 +1699,45 @@ local function CalendarKeywordCacheKey(keywords)
 end
 
 local function IsCalendarEventActiveByKeywords(keywords, includeHolidayText)
-  local cacheKey = CalendarKeywordCacheKey(keywords)
-  if not cacheKey then return false end
-  cacheKey = (includeHolidayText == true and "h:" or "t:") .. cacheKey
+  local kwList = NormalizeCalendarKeywords(keywords)
+  if not kwList then return false, false end
+
+  local cacheKeyBase = CalendarKeywordCacheKey(kwList)
+  if not cacheKeyBase then return false, false end
+  local cacheKey = (includeHolidayText == true and "h:" or "t:") .. cacheKeyBase
+
+  local needles = {}
+  for i = 1, #kwList do
+    needles[i] = tostring(kwList[i] or ""):lower()
+  end
 
   local now = 0
   if GetServerTime then now = tonumber(GetServerTime()) or 0 end
   if _calendarKeywordCache.at and (now - (_calendarKeywordCache.at or 0)) < 60 and _calendarKeywordCache.active[cacheKey] ~= nil then
-    return _calendarKeywordCache.active[cacheKey] and true or false
+    local unk = (_calendarKeywordCache.unknown and _calendarKeywordCache.unknown[cacheKey]) and true or false
+    return _calendarKeywordCache.active[cacheKey] and true or false, unk
   end
 
   EnsureCalendarOpened()
   if not (C_Calendar and C_Calendar.GetNumDayEvents and C_Calendar.GetDayEvent) then
     _calendarKeywordCache.at = now
     _calendarKeywordCache.active[cacheKey] = false
-    return false
+    if _calendarKeywordCache.unknown then _calendarKeywordCache.unknown[cacheKey] = true end
+    return false, true
   end
 
   local today = GetCurrentCalendarDay()
   if not today then
     _calendarKeywordCache.at = now
     _calendarKeywordCache.active[cacheKey] = false
-    return false
+    if _calendarKeywordCache.unknown then _calendarKeywordCache.unknown[cacheKey] = true end
+    return false, true
   end
 
-  local numDays = GetCurrentMonthNumDays()
+  -- Daily check only: only treat an event as active if it appears on *today*.
+  -- This avoids false positives from upcoming/previous calendar entries.
   local startDay = today
   local endDay = today
-  if startDay < 1 then startDay = 1 end
-  if endDay > numDays then endDay = numDays end
 
   local found = false
   for day = startDay, endDay do
@@ -1479,8 +1754,8 @@ local function IsCalendarEventActiveByKeywords(keywords, includeHolidayText)
         hay = (hay .. "\n" .. holidayText:lower())
       end
 
-      for kw in cacheKey:gmatch("[^|]+") do
-        local k = tostring(kw or ""):lower()
+      for j = 1, #needles do
+        local k = needles[j]
         if k ~= "" and hay:find(k, 1, true) then
           found = true
           break
@@ -1494,7 +1769,8 @@ local function IsCalendarEventActiveByKeywords(keywords, includeHolidayText)
 
   _calendarKeywordCache.at = now
   _calendarKeywordCache.active[cacheKey] = found and true or false
-  return found and true or false
+  if _calendarKeywordCache.unknown then _calendarKeywordCache.unknown[cacheKey] = false end
+  return found and true or false, false
 end
 
 local function GetCalendarDebugEvents(daysBack, daysForward)
@@ -1945,6 +2221,49 @@ end
 local function EvaluateIndicatorCondition(ind)
   if type(ind) ~= "table" then return false end
 
+  -- Composite conditions
+  if type(ind.any) == "table" then
+    for _, child in ipairs(ind.any) do
+      if EvaluateIndicatorCondition(child) then
+        return true
+      end
+    end
+    return false
+  end
+
+  if type(ind.all) == "table" then
+    for _, child in ipairs(ind.all) do
+      if not EvaluateIndicatorCondition(child) then
+        return false
+      end
+    end
+    return true
+  end
+
+  -- Reputation condition (standingID)
+  do
+    local rep = (type(ind.rep) == "table") and ind.rep or nil
+    local factionID = tonumber((rep and rep.factionID) or ind.factionID)
+    if factionID then
+      local standingID = GetStandingIDByFactionID(factionID)
+      if not standingID then
+        return false
+      end
+
+      local minStanding = tonumber((rep and rep.minStanding) or ind.minStanding)
+      if minStanding and standingID < minStanding then
+        return false
+      end
+
+      local maxStanding = tonumber((rep and rep.maxStanding) or ind.maxStanding)
+      if maxStanding and standingID > maxStanding then
+        return false
+      end
+
+      return true
+    end
+  end
+
   if type(ind.questIDs) == "table" then
     for _, q in ipairs(ind.questIDs) do
       if IsQuestCompleted(tonumber(q)) then
@@ -1980,6 +2299,247 @@ local function EvaluateIndicatorCondition(ind)
   return false
 end
 
+local function EvaluateRuleCondition(node)
+  if type(node) ~= "table" then return false end
+
+  local includeBank = (node.includeBank == true)
+
+  local function EvalChild(child)
+    if includeBank and type(child) == "table" and child.includeBank == nil then
+      local t = {}
+      for k, v in pairs(child) do t[k] = v end
+      t.includeBank = true
+      return EvaluateRuleCondition(t)
+    end
+    return EvaluateRuleCondition(child)
+  end
+
+  if type(node.any) == "table" then
+    for _, child in ipairs(node.any) do
+      if EvalChild(child) then
+        return true
+      end
+    end
+    return false
+  end
+
+  if type(node.all) == "table" then
+    for _, child in ipairs(node.all) do
+      if not EvalChild(child) then
+        return false
+      end
+    end
+    return true
+  end
+
+  local hadCondition = false
+
+  if node.class ~= nil then
+    hadCondition = true
+    local want = node.class
+    local have = GetPlayerClass()
+    if type(want) == "table" then
+      local ok = false
+      for _, c in ipairs(want) do
+        if tostring(c):upper() == tostring(have or ""):upper() then
+          ok = true
+          break
+        end
+      end
+      if not ok then return false end
+    else
+      if tostring(want):upper() ~= tostring(have or ""):upper() then
+        return false
+      end
+    end
+  end
+
+  if node.missingPrimarySlot ~= nil then
+    hadCondition = true
+    if not IsPrimaryProfessionSlotMissing(node.missingPrimarySlot) then
+      return false
+    end
+  end
+
+  if node.missingSecondary ~= nil then
+    hadCondition = true
+    if not IsSecondaryProfessionMissing(node.missingSecondary) then
+      return false
+    end
+  end
+
+  if node.missingTradeSkillLine ~= nil then
+    hadCondition = true
+    if not CanQueryTradeSkillLines() then
+      return false
+    end
+    if HasTradeSkillLine(node.missingTradeSkillLine) then
+      return false
+    end
+  end
+
+  if type(node.questIDs) == "table" then
+    hadCondition = true
+    local any = false
+    for _, q in ipairs(node.questIDs) do
+      if IsQuestCompleted(tonumber(q)) then
+        any = true
+        break
+      end
+    end
+    if not any then
+      return false
+    end
+  end
+
+  -- Quest-in-log gate (active quest): useful for reminders that should appear while a quest
+  -- is currently picked up.
+  if type(node.questInLogIDs) == "table" then
+    hadCondition = true
+    local any = false
+    for _, q in ipairs(node.questInLogIDs) do
+      local qid = tonumber(q)
+      if qid and qid > 0 and IsQuestInLog(qid) then
+        any = true
+        break
+      end
+    end
+    if not any then
+      return false
+    end
+  end
+
+  if node.questInLog then
+    hadCondition = true
+    local qid = tonumber(node.questInLog)
+    if not (qid and qid > 0 and IsQuestInLog(qid)) then
+      return false
+    end
+  end
+
+  if node.questID then
+    hadCondition = true
+    if not IsQuestCompleted(tonumber(node.questID)) then
+      return false
+    end
+  end
+
+  if type(node.itemIDs) == "table" then
+    hadCondition = true
+    local need = tonumber(node.count) or tonumber(node.required) or 1
+    local any = false
+    for _, itemID in ipairs(node.itemIDs) do
+      if GetItemCountSafe(tonumber(itemID), includeBank) >= need then
+        any = true
+        break
+      end
+    end
+    if not any then
+      return false
+    end
+  end
+
+  if node.itemID then
+    hadCondition = true
+    local need = tonumber(node.count) or tonumber(node.required) or 1
+    if GetItemCountSafe(tonumber(node.itemID), includeBank) < need then
+      return false
+    end
+  end
+
+  if type(node.item) == "table" and node.item.itemID then
+    hadCondition = true
+    local itemID = tonumber(node.item.itemID)
+    local need = tonumber(node.item.count) or tonumber(node.item.required) or 1
+    local inc = (node.item.includeBank == true) or includeBank
+    if GetItemCountSafe(itemID, inc) < need then
+      return false
+    end
+  end
+
+  do
+    -- Currency gate support (used by showIf and other helper rules).
+    local currencyID = nil
+    local currencyRequired = nil
+
+    if node.currencyID ~= nil then
+      if type(node.currencyID) == "table" then
+        currencyID = tonumber(node.currencyID[1])
+        currencyRequired = tonumber(node.currencyID[2])
+      else
+        currencyID = tonumber(node.currencyID)
+        currencyRequired = tonumber(node.currencyRequired) or tonumber(node.required) or tonumber(node.count)
+      end
+    elseif type(node.currency) == "table" then
+      currencyID = tonumber(node.currency.currencyID or node.currency.id or node.currency[1])
+      currencyRequired = tonumber(node.currency.required or node.currency[2] or node.required or node.count)
+    elseif type(node.item) == "table" and node.item.currencyID ~= nil and node.item.itemID == nil then
+      if type(node.item.currencyID) == "table" then
+        currencyID = tonumber(node.item.currencyID[1])
+        currencyRequired = tonumber(node.item.currencyID[2])
+      else
+        currencyID = tonumber(node.item.currencyID)
+        currencyRequired = tonumber(node.item.currencyRequired) or tonumber(node.item.required) or tonumber(node.item.count)
+      end
+    end
+
+    if currencyID and currencyID > 0 then
+      hadCondition = true
+      local req = tonumber(currencyRequired) or 1
+      local charQty = GetCurrencyQuantitySafe(currencyID)
+      local gateQty = charQty
+      if IsCurrencyWarbandTransferableSafe(currencyID) then
+        local wbTotal = select(1, GetWarbandCurrencyTotalSafe(currencyID, true))
+        if wbTotal ~= nil then
+          gateQty = wbTotal
+        end
+      end
+      if gateQty < req then
+        return false
+      end
+    end
+  end
+
+  do
+    local rep = (type(node.rep) == "table") and node.rep or nil
+    local factionID = tonumber((rep and rep.factionID) or node.factionID)
+    if factionID then
+      hadCondition = true
+      local standingID = GetStandingIDByFactionID(factionID)
+      if not standingID then
+        return false
+      end
+
+      local minStanding = tonumber((rep and rep.minStanding) or node.minStanding)
+      if minStanding and standingID < minStanding then
+        return false
+      end
+
+      local maxStanding = tonumber((rep and rep.maxStanding) or node.maxStanding)
+      if maxStanding and standingID > maxStanding then
+        return false
+      end
+    end
+  end
+
+  if type(node.aura) == "table" and node.aura.spellID then
+    hadCondition = true
+    local has = HasAuraSpellID(tonumber(node.aura.spellID))
+    local must = (node.aura.mustHave ~= false)
+    if must and not has then return false end
+    if (not must) and has then return false end
+  end
+
+  if node.profession ~= nil then
+    hadCondition = true
+    if not HasProfession(node.profession) then
+      return false
+    end
+  end
+
+  return hadCondition and true or false
+end
+
 local function BuildIndicators(rule)
   if type(rule) ~= "table" or type(rule.indicators) ~= "table" then return nil end
 
@@ -2007,7 +2567,20 @@ local function BuildIndicators(rule)
 
           local overlay
           if type(ind.overlay) == "table" then
-            local show = EvaluateIndicatorCondition(ind.overlay)
+            local hasCondition = false
+            if ind.overlay.questID or ind.overlay.itemID then
+              hasCondition = true
+            elseif type(ind.overlay.questIDs) == "table" or type(ind.overlay.itemIDs) == "table" then
+              hasCondition = true
+            elseif type(ind.overlay.aura) == "table" and ind.overlay.aura.spellID then
+              hasCondition = true
+            elseif type(ind.overlay.any) == "table" or type(ind.overlay.all) == "table" then
+              hasCondition = true
+            elseif type(ind.overlay.rep) == "table" or ind.overlay.factionID or ind.overlay.minStanding or ind.overlay.maxStanding then
+              hasCondition = true
+            end
+
+            local show = (not hasCondition) or EvaluateIndicatorCondition(ind.overlay)
             if show then
               overlay = {
                 text = ind.overlay.text,
@@ -2232,47 +2805,8 @@ local function BuildRuleStatus(rule, ctx, opts)
 
   -- Generic conditional rules (used for profession/flow helpers)
   if applyGates and type(rule) == "table" and type(rule.showIf) == "table" then
-    local s = rule.showIf
-
-    if s.class ~= nil then
-      local want = s.class
-      local have = (ctx and ctx.class) or GetPlayerClass()
-      if type(want) == "table" then
-        local ok = false
-        for _, c in ipairs(want) do
-          if tostring(c):upper() == tostring(have or ""):upper() then
-            ok = true
-            break
-          end
-        end
-        if not ok then return nil end
-      else
-        if tostring(want):upper() ~= tostring(have or ""):upper() then
-          return nil
-        end
-      end
-    end
-
-    if s.missingPrimarySlot ~= nil then
-      if not IsPrimaryProfessionSlotMissing(s.missingPrimarySlot) then
-        return nil
-      end
-    end
-
-    if s.missingSecondary ~= nil then
-      if not IsSecondaryProfessionMissing(s.missingSecondary) then
-        return nil
-      end
-    end
-
-    if s.missingTradeSkillLine ~= nil then
-      -- If we cannot query trade skill lines, don't show the reminder.
-      if not CanQueryTradeSkillLines() then
-        return nil
-      end
-      if HasTradeSkillLine(s.missingTradeSkillLine) then
-        return nil
-      end
+    if not EvaluateRuleCondition(rule.showIf) then
+      return nil
     end
   end
 
@@ -2284,41 +2818,48 @@ local function BuildRuleStatus(rule, ctx, opts)
     hideWhenCompleted = true
   end
 
+  -- Events: Darkmoon Faire behaves like a checklist; keep entries visible even when completed.
+  if type(rule) == "table" and tostring(rule.group or "") == "event:darkmoon-faire" then
+    hideWhenCompleted = false
+  end
+
   local completed = false
   if questID and IsQuestCompleted(questID) then
     completed = true
-    if hideWhenCompleted and applyGates then
-      return nil
-    end
   end
 
   -- Optional additional completion criteria (for non-quest tasks or stricter completion).
   local complete = (type(rule) == "table" and type(rule.complete) == "table") and rule.complete or nil
   if complete then
-    local ok = true
-    if complete.questID then
-      ok = ok and IsQuestCompleted(tonumber(complete.questID))
+    local ok
+    if type(complete.any) == "table" or type(complete.all) == "table" then
+      ok = EvaluateRuleCondition(complete)
+    else
+      ok = true
+      if complete.questID then
+        ok = ok and IsQuestCompleted(tonumber(complete.questID))
+      end
+      if type(complete.item) == "table" and complete.item.itemID then
+        local itemID = tonumber(complete.item.itemID)
+        local need = tonumber(complete.item.count) or tonumber(complete.item.required) or 1
+        local have = GetItemCountSafe(itemID)
+        ok = ok and (have >= need)
+      end
+      if complete.rep ~= nil or complete.factionID ~= nil or complete.minStanding ~= nil or complete.maxStanding ~= nil then
+        ok = ok and EvaluateRuleCondition({ rep = complete.rep, factionID = complete.factionID, minStanding = complete.minStanding, maxStanding = complete.maxStanding })
+      end
+      if complete.profession ~= nil then
+        ok = ok and HasProfession(complete.profession)
+      end
+      if type(complete.aura) == "table" and complete.aura.spellID then
+        local has = HasAuraSpellID(tonumber(complete.aura.spellID))
+        local must = (complete.aura.mustHave ~= false)
+        ok = ok and (must and has or (not must and not has))
+      end
+    end
 
-    end
-    if type(complete.item) == "table" and complete.item.itemID then
-      local itemID = tonumber(complete.item.itemID)
-      local need = tonumber(complete.item.count) or tonumber(complete.item.required) or 1
-      local have = GetItemCountSafe(itemID)
-      ok = ok and (have >= need)
-    end
-    if complete.profession ~= nil then
-      ok = ok and HasProfession(complete.profession)
-    end
-    if type(complete.aura) == "table" and complete.aura.spellID then
-      local has = HasAuraSpellID(tonumber(complete.aura.spellID))
-      local must = (complete.aura.mustHave ~= false)
-      ok = ok and (must and has or (not must and not has))
-    end
     if ok then
       completed = true
-      if hideWhenCompleted and applyGates then
-        return nil
-      end
     end
   end
 
@@ -2435,6 +2976,28 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
   end
 
+  -- Profession gate (optional): skillLineID or profession name.
+  -- Uses trade-skill-line querying when available (supports secondary/archaeology/etc).
+  if applyGates and type(rule) == "table" and rule.profession ~= nil then
+    local ok = false
+    if CanQueryTradeSkillLines and CanQueryTradeSkillLines() and HasTradeSkillLine then
+      ok = HasTradeSkillLine(rule.profession) and true or false
+    elseif HasProfession then
+      ok = HasProfession(rule.profession) and true or false
+    end
+    if not ok then
+      return nil
+    end
+  end
+
+  -- Profession skillLine gate (optional): checks any profession returned by GetProfessions().
+  -- Useful for cases where spellKnown is unreliable (e.g. Mining across expansion variants).
+  if applyGates and type(rule) == "table" and rule.professionSkillLineID ~= nil then
+    if not HasProfessionSkillLineID(rule.professionSkillLineID) then
+      return nil
+    end
+  end
+
   -- Primary-professions-missing gate (optional)
   if applyGates and type(rule) == "table" and rule.missingPrimaryProfessions == true then
     if not (IsPrimaryProfessionSlotMissing(1) or IsPrimaryProfessionSlotMissing(2)) then
@@ -2449,16 +3012,8 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
   end
 
-  local sellReminderExalted = false
-  if applyGates and type(rule) == "table" and type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
-    local sid = GetStandingIDByFactionID(rule.rep.factionID)
-    if sid and sid >= 8 then
-      sellReminderExalted = true
-    end
-  end
-
   -- Location gate (optional; uiMapID)
-  if applyGates and (not sellReminderExalted) and type(rule) == "table" and rule.locationID ~= nil then
+  if applyGates and type(rule) == "table" and rule.locationID ~= nil then
     local wants = ParseLocationIDs(rule.locationID)
     if wants and wants[1] then
       local have = (ctx and ctx.mapID) or GetBestMapIDSafe()
@@ -2490,17 +3045,38 @@ local function BuildRuleStatus(rule, ctx, opts)
       return true
     end
 
+    -- Any-of variant: at least one spell must match.
+    local function CheckAnyValue(v)
+      if v == nil then return true end
+      local list = {}
+      if type(v) == "table" then
+        list = v
+      else
+        list = { v }
+      end
+      for _, id in ipairs(list) do
+        if IsSpellKnownSafe(id) then
+          return true
+        end
+      end
+      return false
+    end
+
     -- Support legacy/capitalized DB keys.
     -- IMPORTANT: these are aliases, not fallbacks-on-failure.
+    -- NOTE: spellKnown with a table means ALL listed spells must be known.
+    -- Use spellKnownAny for OR semantics.
     local spellKnownGate = (rule.spellKnown ~= nil) and rule.spellKnown or rule.SpellKnown
     local notSpellKnownGate = (rule.notSpellKnown ~= nil) and rule.notSpellKnown or rule.NotSpellKnown
+    local spellKnownAnyGate = (rule.spellKnownAny ~= nil) and rule.spellKnownAny or rule.SpellKnownAny
 
     if not CheckValue(spellKnownGate, true) then return nil end
     if not CheckValue(notSpellKnownGate, false) then return nil end
+    if not CheckAnyValue(spellKnownAnyGate) then return nil end
   end
 
   -- Rested-area gate (optional)
-  if applyGates and (not sellReminderExalted) and type(rule) == "table" and rule.restedOnly == true then
+  if applyGates and type(rule) == "table" and rule.restedOnly == true then
     if not IsRestingSafe() then
       return nil
     end
@@ -2514,7 +3090,7 @@ local function BuildRuleStatus(rule, ctx, opts)
       if minStanding and standingID < minStanding then
         return nil
       end
-      if rule.rep.hideWhenExalted == true and standingID >= 8 and rule.rep.sellWhenExalted ~= true then
+      if rule.rep.hideWhenExalted == true and standingID >= 8 then
         return nil
       end
     end
@@ -2562,13 +3138,14 @@ local function BuildRuleStatus(rule, ctx, opts)
   if applyGates and type(rule.aura) == "table" then
     local has = nil
     local rememberedKey = nil
+    local calendarUnknown = false
 
     if rule.aura.eventKind == "timewalking" then
       has = IsAnyTimewalkingEventActive()
       rememberedKey = "event:timewalking"
     elseif rule.aura.eventKind == "calendar" then
       local kws = rule.aura.keywords or rule.aura.keyword or rule.aura.text
-      has = IsCalendarEventActiveByKeywords(kws, rule.aura.includeHolidayText == true)
+      has, calendarUnknown = IsCalendarEventActiveByKeywords(kws, rule.aura.includeHolidayText == true)
       local ck = CalendarKeywordCacheKey(kws)
       if ck and ck ~= "" then
         rememberedKey = "event:calendar:" .. ck
@@ -2591,7 +3168,9 @@ local function BuildRuleStatus(rule, ctx, opts)
         RememberWeeklyAura(rememberedKey)
       end
       if (not has) and rule.aura.rememberDaily == true and (rule.aura.mustHave ~= false) then
-        has = HasRememberedDailyAura(rememberedKey) or has
+        if calendarUnknown == true then
+          has = HasRememberedDailyAura(rememberedKey) or has
+        end
       end
       if (not has) and rule.aura.rememberWeekly == true and (rule.aura.mustHave ~= false) then
         has = HasRememberedWeeklyAura(rememberedKey)
@@ -2607,11 +3186,74 @@ local function BuildRuleStatus(rule, ctx, opts)
 
   -- Item gate/progress
   local extra = nil
-  local sellPrefix = false
+  local shoppingListText = nil
+  local currencyGate = nil
 
   -- Explicit extra override (used for helper tasks)
   if type(rule) == "table" and rule.extra ~= nil then
     extra = tostring(rule.extra)
+  end
+
+  -- Currency progress placeholders for questInfo/spellInfo/textInfo.
+  -- For quest rules, currency gates commonly live under showIf (e.g. Archaeology fragments).
+  -- We extract the first currency gate we can find so $hv/$rq/{currency} placeholders render.
+  if type(rule) == "table" and currencyGate == nil then
+    local function ExtractCurrencyGate(node)
+      if type(node) ~= "table" then return nil, nil end
+
+      if type(node.any) == "table" then
+        for _, child in ipairs(node.any) do
+          local cid, req = ExtractCurrencyGate(child)
+          if cid and cid > 0 then return cid, req end
+        end
+      end
+
+      if type(node.all) == "table" then
+        for _, child in ipairs(node.all) do
+          local cid, req = ExtractCurrencyGate(child)
+          if cid and cid > 0 then return cid, req end
+        end
+      end
+
+      if node.currencyID ~= nil then
+        if type(node.currencyID) == "table" then
+          return tonumber(node.currencyID[1]), tonumber(node.currencyID[2])
+        end
+        return tonumber(node.currencyID), tonumber(node.currencyRequired) or tonumber(node.required) or tonumber(node.count)
+      end
+      if type(node.currency) == "table" then
+        local cid = tonumber(node.currency.currencyID or node.currency.id or node.currency[1])
+        local req = tonumber(node.currency.required or node.currency[2] or node.required or node.count)
+        return cid, req
+      end
+      return nil, nil
+    end
+
+    local cid, req = ExtractCurrencyGate(rule)
+    if not (cid and cid > 0) and type(rule.showIf) == "table" then
+      cid, req = ExtractCurrencyGate(rule.showIf)
+    end
+
+    if cid and cid > 0 then
+      local charQty = GetCurrencyQuantitySafe(cid)
+      local isWB = IsCurrencyWarbandTransferableSafe(cid)
+      local wbTotal = nil
+      local gateQty = charQty
+      if isWB then
+        wbTotal = select(1, GetWarbandCurrencyTotalSafe(cid, true))
+        if wbTotal ~= nil then
+          gateQty = wbTotal
+        end
+      end
+      currencyGate = {
+        id = cid,
+        required = tonumber(req) or 0,
+        charQty = charQty,
+        wbTotal = wbTotal,
+        gateQty = gateQty,
+        isWarbandTransferable = isWB,
+      }
+    end
   end
 
   if type(rule.item) == "table" and rule.item.itemID then
@@ -2620,9 +3262,29 @@ local function BuildRuleStatus(rule, ctx, opts)
     if applyGates then
       local currencyID, currencyRequired = GetItemCurrencyGate(rule.item)
       if currencyID and currencyRequired then
-        if GetCurrencyQuantitySafe(currencyID) < currencyRequired then
+        local charQty = GetCurrencyQuantitySafe(currencyID)
+        local isWB = IsCurrencyWarbandTransferableSafe(currencyID)
+        local wbTotal = nil
+        local gateQty = charQty
+        if isWB then
+          wbTotal = select(1, GetWarbandCurrencyTotalSafe(currencyID, true))
+          if wbTotal ~= nil then
+            gateQty = wbTotal
+          end
+        end
+
+        if gateQty < currencyRequired then
           return nil
         end
+
+        currencyGate = {
+          id = currencyID,
+          required = currencyRequired,
+          charQty = charQty,
+          wbTotal = wbTotal,
+          gateQty = gateQty,
+          isWarbandTransferable = isWB,
+        }
       end
     end
 
@@ -2638,7 +3300,7 @@ local function BuildRuleStatus(rule, ctx, opts)
       end
     end
 
-    local count = GetItemCountSafe(itemID)
+    local count = GetItemCountSafe(itemID, (rule.item.includeBank == true))
 
     if applyGates then
       local showBelow = tonumber(rule.item.showWhenBelow)
@@ -2650,17 +3312,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     if applyGates then
       local req, hideWhenAcquired = GetItemRequiredGate(rule.item)
       if hideWhenAcquired == true and count > 0 then
-        -- Exception: if we're Exalted and the rule wants a vendor reminder, keep it visible.
-        local allowSellReminder = false
-        if type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
-          local standingID = GetStandingIDByFactionID(rule.rep.factionID)
-          if standingID and standingID >= 8 then
-            allowSellReminder = true
-          end
-        end
-        if not allowSellReminder then
-          return nil
-        end
+        return nil
       end
       if rule.item.mustHave and count <= 0 then
         return nil
@@ -2681,24 +3333,46 @@ local function BuildRuleStatus(rule, ctx, opts)
       end
     end
 
-    -- Optional vendor reminder: if exalted, show a SELL prompt for remaining items.
-    if applyGates and type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
-      local standingID = GetStandingIDByFactionID(rule.rep.factionID)
-      if standingID and standingID >= 8 then
-        if count <= 0 then
-          return nil
-        end
-        -- Display as a title prefix instead of an extra counter.
-        sellPrefix = true
-        extra = nil
-      end
-    end
   end
 
   -- Quest objective progress (for weekly/delve/timewalking style quests)
   if type(rule.progress) == "table" and rule.progress.objectiveIndex then
     local txt = GetQuestObjectiveProgressText(questID, rule.progress.objectiveIndex)
     if txt then extra = txt end
+  end
+
+  -- Optional quest shopping list (typically vendor mats).
+  -- Embed using %sl / {shoppingList} in questInfo.
+  if not completed and type(rule) == "table" and type(rule.shopping) == "table" and rule.shopping[1] ~= nil then
+    local qi = (type(rule.questInfo) == "string") and rule.questInfo or nil
+    local wantsShoppingList = qi and (
+      qi:find("%sl", 1, true)
+      or qi:find("{shoppingList}", 1, true)
+    )
+    local shouldBuildList = wantsShoppingList
+
+    if shouldBuildList then
+      local lines = {}
+      for _, it in ipairs(rule.shopping) do
+        if type(it) == "table" then
+          local itemID = tonumber(it.itemID or it.id)
+          local need = tonumber(it.required or it.count or it.need)
+          if itemID and itemID > 0 and need and need > 0 then
+            local have = GetItemCountSafe(itemID, (it.includeBank == true))
+            if have < 0 then have = 0 end
+            local name = GetItemNameSafe(itemID)
+            if not name or name == "" then
+              name = "Loading..."
+            end
+            lines[#lines + 1] = string.format("  - %s %d/%d", tostring(name), tonumber(have) or 0, tonumber(need) or 0)
+          end
+        end
+      end
+
+      if lines[1] ~= nil then
+        shoppingListText = table.concat(lines, "\n")
+      end
+    end
   end
 
   if completed then
@@ -2774,17 +3448,11 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
   elseif type(rule) == "table" and type(rule.item) == "table" and rule.item.itemID then
     local itemName = (rule.label ~= nil and tostring(rule.label) ~= "") and tostring(rule.label) or (GetItemNameSafe(rule.item.itemID) or ("Item " .. tostring(rule.item.itemID)))
-    if sellPrefix then
-      local sellTitle = "Sell " .. itemName
-      rawTitle = sellTitle
-      title = sellTitle
+    rawTitle = itemName
+    if rule.itemInfo ~= nil and tostring(rule.itemInfo) ~= "" then
+      title = tostring(rule.itemInfo)
     else
-      rawTitle = itemName
-      if rule.itemInfo ~= nil and tostring(rule.itemInfo) ~= "" then
-        title = tostring(rule.itemInfo)
-      else
-        title = itemName
-      end
+      title = itemName
     end
   elseif type(rule) == "table" and (rule.spellKnown or rule.notSpellKnown or rule.SpellKnown or rule.NotSpellKnown) then
     local function PickSpellID(v)
@@ -2841,6 +3509,114 @@ local function BuildRuleStatus(rule, ctx, opts)
   if completed and type(rule) == "table" and rule.labelComplete then
     title = tostring(rule.labelComplete)
     rawTitle = title
+  end
+
+  local function ApplyShorthandPlaceholders(s)
+    if type(s) ~= "string" then return s, false end
+    local before = s
+
+    -- Progress shorthand
+    s = s:gsub("%%p", "{progress}")
+
+    -- Shopping-list shorthand (vendor mats)
+    s = s:gsub("%%sl", "{shoppingList}")
+
+    -- Currency shorthands
+    s = s:gsub("%$rq", "{currency:req}")
+    s = s:gsub("%$nm", "{currency:name}")
+    -- Amount used for gating (warband total when transferable; otherwise character amount)
+    s = s:gsub("%$hv", "{currency}")
+    s = s:gsub("%$ga", "{currency}")
+    -- Character-only amount
+    s = s:gsub("%$cc", "{currency:char}")
+    s = s:gsub("%$wb", "{currency:wb}")
+
+    return s, s ~= before
+  end
+
+  do
+    local newTitle = title
+    newTitle = (select(1, ApplyShorthandPlaceholders(newTitle)))
+    title = newTitle
+  end
+
+  local function ApplyCurrencyPlaceholders(s, g)
+    if type(s) ~= "string" then return s, false end
+    if type(g) ~= "table" or not g.id then return s, false end
+    if not s:find("{currency", 1, true) then
+      return s, false
+    end
+
+    local info = GetCurrencyInfoSafe(g.id)
+    local name = (type(info) == "table" and info.name) or ""
+    local repHave = tostring(tonumber(g.gateQty) or 0)
+    local repChar = tostring(tonumber(g.charQty) or 0)
+    local repWB = (g.wbTotal ~= nil) and tostring(tonumber(g.wbTotal) or 0) or ""
+    local repReq = tostring(tonumber(g.required) or 0)
+    local repName = tostring(name or "")
+
+    local before = s
+    s = s:gsub("{currency}", repHave)
+    s = s:gsub("{currency:have}", repHave)
+    s = s:gsub("{currency:char}", repChar)
+    s = s:gsub("{currency:wb}", repWB)
+    s = s:gsub("{currency:req}", repReq)
+    s = s:gsub("{currency:name}", repName)
+    s = s:gsub("%s+$", "")
+    return s, s ~= before
+  end
+
+  do
+    local newTitle = title
+    local replaced = false
+    newTitle, replaced = ApplyCurrencyPlaceholders(newTitle, currencyGate)
+    if replaced then
+      title = newTitle
+    end
+  end
+
+  local function ApplyExtraPlaceholder(s, extraText)
+    if type(s) ~= "string" then return s, false end
+    if not (s:find("{progress}", 1, true) or s:find("{extra}", 1, true)) then
+      return s, false
+    end
+    local rep = extraText or ""
+    local before = s
+    s = s:gsub("{progress}", rep)
+    s = s:gsub("{extra}", rep)
+    if rep == "" then
+      s = s:gsub("%s+$", "")
+    end
+    return s, s ~= before
+  end
+
+  do
+    local newTitle, replaced = ApplyExtraPlaceholder(title, extra)
+    if replaced then
+      title = newTitle
+      extra = nil
+    end
+  end
+
+  local function ApplyShoppingListPlaceholder(s, slText)
+    if type(s) ~= "string" then return s, false end
+    if not s:find("{shoppingList}", 1, true) then
+      return s, false
+    end
+    local rep = slText or ""
+    local before = s
+    s = s:gsub("{shoppingList}", rep)
+    if rep == "" then
+      s = s:gsub("%s+$", "")
+    end
+    return s, s ~= before
+  end
+
+  do
+    local newTitle, replaced = ApplyShoppingListPlaceholder(title, shoppingListText)
+    if replaced then
+      title = newTitle
+    end
   end
 
   -- Tag Timewalking quests when name is derived from ID.
@@ -2910,6 +3686,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     editText = editText,
     extra = extra,
     completed = completed,
+    hideWhenCompleted = hideWhenCompleted,
     indicators = indicators,
     rule = rule,
     disabled = disabled,
@@ -3598,6 +4375,8 @@ local function CreateBarFrame(def)
   f:EnableMouseWheel(f._wheelEnabled)
   f:SetScript("OnMouseWheel", function(self, delta)
     if not (editMode or (IsShiftKeyDown and IsShiftKeyDown())) then return end
+    -- Only allow scrolling when the content actually overflows.
+    if self._canScroll ~= true then return end
     local id = tostring(self._id or "")
     if id == "" then return end
     local offset = GetFrameScrollOffset(id)
@@ -3638,11 +4417,17 @@ local function CreateListFrame(def)
   f:EnableMouseWheel(f._wheelEnabled)
   f:SetScript("OnMouseWheel", function(self, delta)
     if not (editMode or (IsShiftKeyDown and IsShiftKeyDown())) then return end
+    -- Only allow scrolling when the content actually overflows.
+    if self._canScroll ~= true then return end
     local id = tostring(self._id or "")
     if id == "" then return end
     local offset = GetFrameScrollOffset(id)
     offset = offset + ((delta and delta < 0) and 1 or -1)
     if offset < 0 then offset = 0 end
+    local maxOffset = tonumber(self._maxScrollOffset)
+    if maxOffset and maxOffset >= 0 and offset > maxOffset then
+      offset = maxOffset
+    end
     SetFrameScrollOffset(id, offset)
     RefreshAll()
   end)
@@ -3656,6 +4441,16 @@ local function EnsureFontString(parent, idx, fontDef)
   local fs = parent:CreateFontString(nil, "OVERLAY", parent._itemFont or "GameFontHighlight")
   fs:SetJustifyH("LEFT")
   ApplyFontStyle(fs, fontDef)
+  do
+    if fs.GetFont then
+      local p, s, f = fs:GetFont()
+      fs._defaultFont = { p, s, f }
+    end
+    if fs.GetTextColor then
+      local r, g, b, a = fs:GetTextColor()
+      fs._defaultTextColor = { r, g, b, a }
+    end
+  end
   parent.items[idx] = fs
   return fs
 end
@@ -4018,12 +4813,48 @@ local function ResetFramePositionsToDefaults()
     for k in pairs(store) do store[k] = nil end
   end
 
+  -- Also clear any custom frame position overrides so effective defs fall back to layout defaults.
+  -- (Positions can be stored either in the framePos store OR in customFrames itself.)
+  local custom = GetCustomFrames and GetCustomFrames() or nil
+  if type(custom) == "table" then
+    for _, d in ipairs(custom) do
+      if type(d) == "table" then
+        d.point = nil
+        d.relPoint = nil
+        d.x = nil
+        d.y = nil
+        d.anchorCorner = nil
+      end
+    end
+  end
+
+  local baseByID = {}
+  if type(ns) == "table" and type(ns.frames) == "table" then
+    for _, d in ipairs(ns.frames) do
+      if type(d) == "table" and tostring(d.id or "") ~= "" then
+        baseByID[tostring(d.id)] = d
+      end
+    end
+  end
+
   for _, def in ipairs(GetEffectiveFrames()) do
     local id = tostring(def.id or "")
     local f = framesByID[id]
     if f and f.ClearAllPoints and f.SetPoint then
+      local baseDef = baseByID[id]
+      local useDef = baseDef or def
       f:ClearAllPoints()
-      f:SetPoint(def.point or "TOP", UIParent, def.relPoint or def.point or "TOP", def.x or 0, def.y or 0)
+      local point = (type(useDef) == "table") and useDef.point or nil
+      local relPoint = (type(useDef) == "table") and (useDef.relPoint or useDef.point) or nil
+      local x = (type(useDef) == "table") and useDef.x or nil
+      local y = (type(useDef) == "table") and useDef.y or nil
+      if not point then
+        point = "CENTER"
+        relPoint = "CENTER"
+        x = 0
+        y = 0
+      end
+      f:SetPoint(point, UIParent, relPoint or point, tonumber(x) or 0, tonumber(y) or 0)
     end
   end
 end
@@ -4037,6 +4868,8 @@ local function RenderList(frameDef, frame, entries)
   local maxItems = tonumber(frameDef.maxItems) or 20
   local rowH = tonumber(frameDef.rowHeight) or 16
   if type(entries) ~= "table" then entries = {} end
+
+  local debugHitboxes = (editMode and (type(GetUISetting) == "function") and (GetUISetting("debugHitboxes", false) == true)) and true or false
 
   -- Always allow zebra in edit mode so list editing is readable.
   local zebra = (editMode and true) or ((type(frameDef) == "table" and frameDef.zebra == true) and true or false)
@@ -4075,11 +4908,110 @@ local function RenderList(frameDef, frame, entries)
   local offset = GetFrameScrollOffset(frame and frame._id)
   local maxOffset = 0
   if type(entries) == "table" then
-    if not editMode then
-      -- With multi-line wrapping, "rows per page" varies. Allow scrolling to any starting index.
-      maxOffset = math.max(0, (#entries) - 1)
-    else
-      maxOffset = math.max(0, (#entries) - visibleRows)
+    local count = #entries
+
+    local wrapText0 = not editMode
+    local maxY0 = nil
+    if wrapText0 then
+      local limit = nil
+      if type(frameDef) == "table" and tonumber(frameDef.maxHeight) and tonumber(frameDef.maxHeight) > 0 then
+        limit = tonumber(frameDef.maxHeight) or nil
+      elseif frame and frame.GetHeight then
+        limit = frame:GetHeight()
+      end
+      if limit and limit > 0 then
+        maxY0 = limit - padTop - padBottom
+        if maxY0 < rowH then maxY0 = rowH end
+      end
+    end
+
+    local textW0
+    do
+      local w = (frame and frame.GetWidth and frame:GetWidth()) or (frameDef and frameDef.width) or 300
+      local rightPad = editMode and 62 or 12
+      local leftPad = 16
+      local tw = w - leftPad - rightPad
+      if tw < 50 then tw = 50 end
+      textW0 = tw
+    end
+
+    -- Default: only allow scrolling when there are more entries than visible rows.
+    maxOffset = math.max(0, count - visibleRows)
+
+    -- Wrapped text can overflow even when count <= visibleRows. Also, the prior approach
+    -- allowed maxOffset=count-1 which can leave the list mostly empty at the bottom.
+    -- Instead, compute maxOffset based on how many entries can fit on the *last page*.
+    if (not editMode) and wrapText0 and maxY0 and count > 0 and frame and frame.CreateFontString then
+      local function GetEntryText(e)
+        if not e then return nil end
+        local text = e.title
+        if text == nil then return nil end
+        text = tostring(text)
+        if e.extra then text = text .. "  " .. tostring(e.extra) .. " " end
+        return " " .. text .. " "
+      end
+
+      local measure = frame._measureFS
+      if not (measure and measure.SetText and measure.GetStringHeight) then
+        measure = frame:CreateFontString(nil, "OVERLAY", frame._itemFont or "GameFontHighlight")
+        frame._measureFS = measure
+        if measure.SetJustifyH then measure:SetJustifyH("LEFT") end
+        if measure.SetJustifyV then measure:SetJustifyV("TOP") end
+      end
+      ApplyFontStyle(measure, frameDef and frameDef.font)
+      if measure.SetWordWrap then measure:SetWordWrap(true) end
+      if measure.SetNonSpaceWrap then measure:SetNonSpaceWrap(true) end
+      if measure.SetWidth then measure:SetWidth(textW0) end
+
+      local gapWrap = 2
+      local total = 0
+      local fitCount = 0
+      for i = count, 1, -1 do
+        local e = entries[i]
+        if e and e.rule then
+          ApplyFontStyle(measure, GetRuleFontDef(e.rule))
+        else
+          ApplyFontStyle(measure, frameDef and frameDef.font)
+        end
+        local t = GetEntryText(e)
+        measure:SetText(t or "")
+        local h = (measure:GetStringHeight() or 0)
+        if h < rowH then h = rowH end
+
+        local add = h + gapWrap
+        if fitCount > 0 and listPad > 0 then
+          add = add + listPad
+        end
+
+        -- Always allow at least one entry, even if it exceeds the frame.
+        if fitCount > 0 and (total + add) > maxY0 then
+          break
+        end
+
+        total = total + add
+        fitCount = fitCount + 1
+        if fitCount >= visibleRows then
+          break
+        end
+      end
+      if fitCount < 1 then fitCount = 1 end
+
+      local wrapMaxOffset = math.max(0, count - fitCount)
+      maxOffset = wrapMaxOffset
+    end
+  end
+
+  -- Store whether scrolling is meaningful for this frame right now.
+  if frame then
+    frame._canScroll = (maxOffset > 0) and true or false
+    frame._maxScrollOffset = maxOffset
+  end
+
+  -- If the frame doesn't need scrolling, force-reset any stale stored scroll offset.
+  if maxOffset <= 0 and offset ~= 0 then
+    offset = 0
+    if frame and frame._id and SetFrameScrollOffset then
+      SetFrameScrollOffset(frame._id, 0)
     end
   end
   if offset > maxOffset then
@@ -4124,6 +5056,39 @@ local function RenderList(frameDef, frame, entries)
 
   local textW = GetTextWidth()
 
+  local function HideDebugRects()
+    if not frame then return end
+    if type(frame._debugHitRects) ~= "table" then return end
+    for _, byIdx in pairs(frame._debugHitRects) do
+      if type(byIdx) == "table" then
+        for _, t in pairs(byIdx) do
+          if t and t.Hide then t:Hide() end
+        end
+      end
+    end
+  end
+
+  local function EnsureDebugRect(kind, i, r, g, b, a)
+    if not (frame and frame.CreateTexture) then return nil end
+    frame._debugHitRects = frame._debugHitRects or {}
+    frame._debugHitRects[kind] = frame._debugHitRects[kind] or {}
+    local t = frame._debugHitRects[kind][i]
+    if t then return t end
+    t = frame:CreateTexture(nil, "OVERLAY")
+    frame._debugHitRects[kind][i] = t
+    if t.SetColorTexture then
+      t:SetColorTexture(r or 1, g or 1, b or 1, a or 0.15)
+    elseif t.SetVertexColor then
+      t:SetVertexColor(r or 1, g or 1, b or 1, a or 0.15)
+    end
+    t:Hide()
+    return t
+  end
+
+  if not debugHitboxes then
+    HideDebugRects()
+  end
+
   local function EnsureZebraRow(i)
     if not (zebra and frame and frame.CreateTexture) then return nil end
     frame._zebraRows = frame._zebraRows or {}
@@ -4144,6 +5109,23 @@ local function RenderList(frameDef, frame, entries)
     local e = entries[i + offset]
     local yBefore = yCursor
     local fs = EnsureFontString(frame, i, frameDef and frameDef.font)
+
+    -- Reset any prior per-row styling (FontStrings are reused across rows).
+    if fs then
+      if fs._defaultFont and fs.SetFont then
+        local d = fs._defaultFont
+        if d[1] or d[2] or d[3] then
+          local curP, curS, curF = fs:GetFont()
+          fs:SetFont(d[1] or curP, d[2] or curS or 12, d[3] or curF)
+        end
+      end
+      if fs._defaultTextColor and fs.SetTextColor then
+        local c = fs._defaultTextColor
+        fs:SetTextColor(c[1] or 1, c[2] or 1, c[3] or 1, c[4] or 1)
+      end
+      if fs.SetJustifyH then fs:SetJustifyH("LEFT") end
+    end
+
     fs:ClearAllPoints()
     if wrapText then
       if fs.SetJustifyV then fs:SetJustifyV((growY == "up") and "BOTTOM" or "TOP") end
@@ -4154,8 +5136,8 @@ local function RenderList(frameDef, frame, entries)
       if fs.SetJustifyV then fs:SetJustifyV("MIDDLE") end
       if fs.SetWordWrap then fs:SetWordWrap(false) end
       if fs.SetNonSpaceWrap then fs:SetNonSpaceWrap(false) end
-      -- In edit mode, avoid SetWidth() so the row button doesn't cover the remove (X) button.
-      if fs.SetWidth then fs:SetWidth(0) end
+      -- In edit mode, keep a stable hitbox width while leaving room for [up][down][X].
+      if fs.SetWidth then fs:SetWidth(textW) end
     end
     if growY == "up" and not editMode then
       fs:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, padBottom + yCursor)
@@ -4264,7 +5246,54 @@ local function RenderList(frameDef, frame, entries)
       mvDown:SetScript("OnClick", function(selfBtn) DoMove(selfBtn, 1) end)
     end
 
+    if debugHitboxes then
+      local tRow = EnsureDebugRect("row", i, 1, 0, 0, 0.12)
+      if tRow and tRow.SetAllPoints then
+        tRow:ClearAllPoints()
+        tRow:SetAllPoints(btn)
+        tRow:SetShown(editMode and e ~= nil)
+      end
+
+      local tX = EnsureDebugRect("x", i, 0, 1, 0, 0.18)
+      if tX and tX.SetAllPoints then
+        tX:ClearAllPoints()
+        tX:SetAllPoints(rm)
+        tX:SetShown(editMode and e ~= nil)
+      end
+
+      local tUp = EnsureDebugRect("up", i, 0, 0.65, 1, 0.18)
+      if tUp and tUp.SetAllPoints and mvUp then
+        tUp:ClearAllPoints()
+        tUp:SetAllPoints(mvUp)
+        tUp:SetShown(editMode and e ~= nil)
+      end
+
+      local tDown = EnsureDebugRect("down", i, 0, 0.65, 1, 0.18)
+      if tDown and tDown.SetAllPoints and mvDown then
+        tDown:ClearAllPoints()
+        tDown:SetAllPoints(mvDown)
+        tDown:SetShown(editMode and e ~= nil)
+      end
+    end
+
     if e then
+      -- Darkmoon Faire styling (header + child entries)
+      local isDMFHeader = false
+      do
+        local r = e.rule
+        local grp = (type(r) == "table") and (r.group or r["group"]) or nil
+        if grp == "event:darkmoon-faire" then
+          local k = (type(r) == "table") and tostring(r.key or "") or ""
+          if k == "event:darkmoon-faire" then
+            isDMFHeader = true
+            ApplyFontStyle(fs, { name = "lsm:Bazooka", size = 20, color = "6b21a8" })
+            if fs.SetJustifyH then fs:SetJustifyH("CENTER") end
+          else
+            if fs.SetTextColor then fs:SetTextColor(0.72, 0.56, 0.90, 1) end
+          end
+        end
+      end
+
       local text
       if editMode then
         if tostring(frame and frame._id or ""):find("^inspect:") then
@@ -4281,7 +5310,11 @@ local function RenderList(frameDef, frame, entries)
         text = e.title
       end
       if (not editMode) and e.extra then text = text .. "  " .. e.extra .. " " end
-      fs:SetText(" " .. text .. " ")
+      if isDMFHeader then
+        fs:SetText(tostring(text or ""))
+      else
+        fs:SetText(" " .. text .. " ")
+      end
       fs:Show()
       RenderIndicators(frame, i, fs, e.indicators, uiPad)
       shown = shown + 1
@@ -4561,9 +5594,15 @@ RefreshAll = function()
     staged[#staged + 1] = { frameID = frameID, rule = rule, status = status }
   end
 
+  local function IsHiddenByCompletion(status)
+    if not status then return false end
+    if status.completed ~= true then return false end
+    return status.hideWhenCompleted == true
+  end
+
   for _, rule in ipairs(rules) do
     local status = BuildRuleStatus(rule, evalCtx)
-    if status then
+    if status and (editMode or (not IsHiddenByCompletion(status))) then
       if type(rule.targets) == "table" then
         for _, frameID in ipairs(rule.targets) do
           Stage(tostring(frameID), rule, status)
@@ -4598,7 +5637,7 @@ RefreshAll = function()
 
     for _, rule in ipairs(rules) do
       local status = BuildRuleStatus(rule, evalCtx, { forceNormalVisibility = true })
-      if status then
+      if status and (not IsHiddenByCompletion(status)) then
         if type(rule.targets) == "table" then
           for _, frameID in ipairs(rule.targets) do
             StageActive(tostring(frameID), rule, status)
@@ -4624,7 +5663,10 @@ RefreshAll = function()
       local group = rule and rule.group
       local order = tonumber(rule and rule.order) or 0
 
-      if group ~= nil then
+      local groupStr = (group ~= nil) and tostring(group) or ""
+      local isDMF = (groupStr ~= "") and (groupStr:find("event:darkmoon-faire", 1, true) ~= nil)
+
+      if group ~= nil and (not isDMF) then
         local key = frameID .. "|" .. tostring(group)
         local current = winnersByGroup[key]
         if not current or order < current.order then
@@ -4655,7 +5697,10 @@ RefreshAll = function()
       local group = rule and rule.group
       local order = tonumber(rule and rule.order) or 0
 
-      if group ~= nil then
+      local groupStr = (group ~= nil) and tostring(group) or ""
+      local isDMF = (groupStr ~= "") and (groupStr:find("event:darkmoon-faire", 1, true) ~= nil)
+
+      if group ~= nil and (not isDMF) then
         local key = frameID .. "|" .. tostring(group)
         local current = winnersByGroup[key]
         if not current or order < current.order then
@@ -4727,6 +5772,36 @@ RefreshAll = function()
     local id = tostring(def.id or "")
     local f = framesByID[id]
     if f then
+      -- Apply size updates for existing frames.
+      -- Note: CreateAllFrames() only creates missing frames; it does not re-apply sizing
+      -- to already-created frames, so size edits (like list width) must be reflected here.
+      do
+        local t0 = tostring(def.type or "list"):lower()
+        local w = tonumber(def.width) or 300
+        if w < 1 then w = 1 end
+        if t0 == "bar" then
+          local h = tonumber(def.height) or 20
+          if h < 1 then h = 1 end
+          if f.SetSize then
+            f:SetSize(w, h)
+          elseif f.SetWidth then
+            f:SetWidth(w)
+          end
+        else
+          local rh = tonumber(def.rowHeight) or 16
+          local mi = tonumber(def.maxItems) or 20
+          local h = (rh or 16) * ((mi or 20) + 2)
+          if type(def) == "table" and tonumber(def.maxHeight) and tonumber(def.maxHeight) > 0 then
+            h = math.min(h, tonumber(def.maxHeight))
+          end
+          if f.SetSize then
+            f:SetSize(w, h)
+          elseif f.SetWidth then
+            f:SetWidth(w)
+          end
+        end
+      end
+
       -- late parent binding (useful when parent addon loads after us)
       if type(def) == "table" and def.parentFrame then
         local p = _G and _G[tostring(def.parentFrame)]
@@ -4828,6 +5903,733 @@ end
 
 ns.DestroyFrameByID = DestroyFrameByID
 
+local function AutoSellItemsAtMerchant()
+  if InCombatLockdown and InCombatLockdown() then return end
+
+  if not (C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerItemID and C_Container.UseContainerItem) then
+    return
+  end
+
+  local rules = GetEffectiveRules()
+  if type(rules) ~= "table" or not rules[1] then return end
+
+  local shouldSellByItemID = {}
+  for _, rule in ipairs(rules) do
+    if type(rule) == "table" and type(rule.rep) == "table" and rule.rep.sellWhenExalted == true and rule.rep.factionID then
+      if not IsRuleDisabled(rule) then
+        local sid = GetStandingIDByFactionID(rule.rep.factionID)
+        if sid and sid >= 8 then
+          local itemID
+          if type(rule.item) == "table" and rule.item.itemID then
+            itemID = tonumber(rule.item.itemID)
+          elseif rule.itemID then
+            itemID = tonumber(rule.itemID)
+          end
+          if itemID and itemID > 0 then
+            shouldSellByItemID[itemID] = true
+          end
+        end
+      end
+    end
+  end
+
+  if not next(shouldSellByItemID) then return end
+
+  local soldCountsByItemID = {}
+  for bag = 0, 4 do
+    local n = C_Container.GetContainerNumSlots(bag) or 0
+    for slot = 1, n do
+      local itemID = C_Container.GetContainerItemID(bag, slot)
+      if itemID and shouldSellByItemID[itemID] then
+        local info = C_Container.GetContainerItemInfo and C_Container.GetContainerItemInfo(bag, slot) or nil
+        local locked = (type(info) == "table" and info.isLocked == true)
+        local noValue = (type(info) == "table" and info.hasNoValue == true)
+        if not locked and not noValue then
+          C_Container.UseContainerItem(bag, slot)
+          soldCountsByItemID[itemID] = (soldCountsByItemID[itemID] or 0) + 1
+        end
+      end
+    end
+  end
+
+  if not next(soldCountsByItemID) then return end
+
+  local parts = {}
+  for itemID, count in pairs(soldCountsByItemID) do
+    local name
+    if C_Item and C_Item.GetItemNameByID then
+      local ok, n = pcall(C_Item.GetItemNameByID, itemID)
+      if ok and n and n ~= "" then
+        name = n
+      end
+    end
+    parts[#parts + 1] = tostring(count) .. "x " .. tostring(name or ("itemID:" .. tostring(itemID)))
+  end
+  table.sort(parts)
+  Print("Sold (Exalted): " .. table.concat(parts, ", "))
+end
+
+local function AutoBuyItemsAtMerchant()
+  if InCombatLockdown and InCombatLockdown() then return end
+
+  NormalizeSV()
+  local debugSetting = fr0z3nUI_QuestTracker_Acc
+    and fr0z3nUI_QuestTracker_Acc.settings
+    and fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy == true
+  local debugShift = (type(IsShiftKeyDown) == "function") and (IsShiftKeyDown() == true) or false
+  local debug = (debugSetting or debugShift) and true or false
+  local function Debug(msg)
+    if not debug then return end
+    Print("AutoBuy: " .. tostring(msg))
+  end
+
+  -- Session-local tracking to prevent duplicate buys when merchant/bag data updates lag behind.
+  frame._autoBuyBaselineHave = (type(frame._autoBuyBaselineHave) == "table") and frame._autoBuyBaselineHave or {}
+  frame._autoBuySessionBought = (type(frame._autoBuySessionBought) == "table") and frame._autoBuySessionBought or {}
+
+  local function IsMerchantSessionOpen()
+    if frame and frame._merchantOpen == true then return true end
+    local mf = rawget(_G, "MerchantFrame")
+    if mf and mf.IsShown and mf:IsShown() then return true end
+    return false
+  end
+
+  local function CanRetry()
+    if not IsMerchantSessionOpen() then return false end
+    local attempts = tonumber(frame and frame._autoBuyAttempts) or 0
+    return attempts < 12
+  end
+
+  local function ScheduleRetry(delay, reason)
+    if not (C_Timer and C_Timer.After) then return end
+    if not CanRetry() then
+      Debug("retry blocked (merchant closed or attempts exceeded)")
+      return
+    end
+    if frame and frame._autoBuyRetryPending then
+      return
+    end
+    if frame then
+      frame._autoBuyRetryPending = true
+      frame._autoBuyAttempts = (tonumber(frame._autoBuyAttempts) or 0) + 1
+    end
+    Debug("scheduled retry in " .. tostring(delay) .. "s" .. (reason and (" (" .. tostring(reason) .. ")") or ""))
+    C_Timer.After(tonumber(delay) or 0.2, function()
+      if frame then frame._autoBuyRetryPending = nil end
+      if IsMerchantSessionOpen() then
+        AutoBuyItemsAtMerchant()
+      end
+    end)
+  end
+
+  local function ResolveMerchantAPI()
+    -- 1) Prefer C_MerchantFrame when present.
+    local cmf = rawget(_G, "C_MerchantFrame")
+    if type(cmf) == "table" and type(cmf.GetItemInfo) == "function" then
+      local getNum = cmf.GetNumItems or cmf.GetNumMerchantItems
+      if type(getNum) == "function" then
+        return {
+          kind = "C_MerchantFrame",
+          getNum = function() return getNum() end,
+          getInfo = function(index) return cmf.GetItemInfo(index) end,
+        }
+      end
+
+      -- Some builds expose GetItemInfo but not a public GetNum*; probe until nil.
+      return {
+        kind = "C_MerchantFrame(probe)",
+        getNum = function()
+          local maxProbe = 200
+          local count = 0
+          local sawAny = false
+          for i = 1, maxProbe do
+            local ok, info = pcall(cmf.GetItemInfo, i)
+            if ok and type(info) == "table" then
+              sawAny = true
+              count = i
+            else
+              if sawAny then
+                break
+              end
+            end
+          end
+          return count
+        end,
+        getInfo = function(index) return cmf.GetItemInfo(index) end,
+      }
+    end
+
+    -- 2) Legacy global functions (names vary across builds; try a small set).
+    local getNumFn = rawget(_G, "GetMerchantNumItems") or rawget(_G, "GetNumMerchantItems")
+    local getInfoFn = rawget(_G, "GetMerchantItemInfo")
+    local getLinkFn = rawget(_G, "GetMerchantItemLink")
+    if type(getNumFn) == "function" and type(getInfoFn) == "function" then
+      return {
+        kind = "legacy",
+        getNum = function() return getNumFn() end,
+        getInfo = function(index)
+          local name, texture, price, quantity, numAvailable, isPurchasable, isUsable, extendedCost = getInfoFn(index)
+          local link = (type(getLinkFn) == "function") and getLinkFn(index) or nil
+          return {
+            name = name,
+            texture = texture,
+            price = price,
+            quantity = quantity,
+            stackCount = quantity,
+            numAvailable = numAvailable,
+            isPurchasable = isPurchasable,
+            isUsable = isUsable,
+            extendedCost = extendedCost,
+            hasExtendedCost = extendedCost,
+            itemLink = link,
+          }
+        end,
+      }
+    end
+
+    -- 3) Heuristic: scan globals for a Merchant* namespace with the right shape.
+    -- This avoids hard-coding API names when Blizzard renames namespaces.
+    local candidates
+    for k, v in pairs(_G) do
+      if type(k) == "string" and k:find("Merchant") and type(v) == "table" then
+        local getInfo = v.GetItemInfo or v.GetMerchantItemInfo
+        local getNum = v.GetNumItems or v.GetNumMerchantItems
+        if type(getInfo) == "function" and type(getNum) == "function" then
+          return {
+            kind = k,
+            getNum = function() return getNum() end,
+            getInfo = function(index) return getInfo(index) end,
+          }
+        end
+        if debug then
+          candidates = candidates or {}
+          if (v.GetItemInfo or v.GetMerchantItemInfo or v.GetNumItems or v.GetNumMerchantItems) then
+            candidates[#candidates + 1] = k
+          end
+        end
+      end
+    end
+
+    if debug and candidates and candidates[1] then
+      table.sort(candidates)
+      if #candidates > 25 then
+        local trimmed = {}
+        for i = 1, 25 do trimmed[i] = candidates[i] end
+        candidates = trimmed
+      end
+      Debug("merchant namespace candidates: " .. table.concat(candidates, ", "))
+    end
+
+    return nil
+  end
+
+  local api = ResolveMerchantAPI()
+  if not api then
+    Debug("Merchant API missing (no supported namespace/functions found)")
+    return
+  end
+  Debug("merchant api=" .. tostring(api.kind))
+
+  local GetNumMerchantItems = api.getNum
+  local GetMerchantItemInfoSafe = api.getInfo
+
+  if not (C_Item and C_Item.GetItemCount) then
+    Debug("C_Item.GetItemCount missing")
+    return
+  end
+
+  -- Ensure default/custom rules have been migrated/normalized so `item.buy` is populated.
+  if EnsureDefaultRulesMigrated then EnsureDefaultRulesMigrated() end
+  if EnsureRulesNormalized then EnsureRulesNormalized() end
+
+  local rules = GetEffectiveRules()
+  if type(rules) ~= "table" or not rules[1] then
+    Debug("no rules")
+    return
+  end
+
+  Debug("rules=" .. tostring(#rules))
+
+  -- Collapse enabled auto-buy rules.
+  -- Supports:
+  --   item.buy = { enabled=true, max=N } (legacy)
+  --   item.buy = { enabled=true, min=A, target=B, max=C } (restock behavior)
+  --   item.buy = { enabled=true, cheapestOf={...}, ... } (buy cheapest merchant variant)
+  local wantByItemID = {}
+  local wantCheapestGroups = {}
+
+  local function MergeBuySpec(dst, src)
+    if type(dst) ~= "table" then dst = {} end
+    if type(src) ~= "table" then return dst end
+
+    local function pickMax(a, b)
+      a = tonumber(a) or 0
+      b = tonumber(b) or 0
+      return (b > a) and b or a
+    end
+
+    dst.max = pickMax(dst.max, src.max)
+    dst.min = pickMax(dst.min, src.min)
+    dst.target = pickMax(dst.target, src.target)
+
+    -- Optional "bundle yield" semantics:
+    -- When set, min/target/max are interpreted in terms of yieldItemID count, and
+    -- each purchased item contributes yieldCount toward that total.
+    local yieldItemID = tonumber(src.yieldItemID)
+    local yieldCount = tonumber(src.yieldCount)
+    if yieldItemID and yieldItemID > 0 then
+      dst.yieldItemID = yieldItemID
+      dst.yieldCount = (yieldCount and yieldCount > 0) and yieldCount or (tonumber(dst.yieldCount) or 1)
+      if dst.yieldCount <= 0 then dst.yieldCount = 1 end
+    end
+    return dst
+  end
+
+  local function NormalizeIDList(t)
+    local tmp = {}
+    if type(t) == "table" then
+      for _, v in pairs(t) do
+        local id = tonumber(v)
+        if id and id > 0 then
+          tmp[#tmp + 1] = id
+        end
+      end
+    end
+    if not tmp[1] then return nil end
+    table.sort(tmp)
+    local out = {}
+    local last
+    for i = 1, #tmp do
+      local id = tmp[i]
+      if id ~= last then
+        out[#out + 1] = id
+        last = id
+      end
+    end
+    return out
+  end
+
+  for _, rule in ipairs(rules) do
+    if type(rule) == "table" and not IsRuleDisabled(rule) then
+      -- Standard item auto-buy rules.
+      if type(rule.item) == "table" then
+        local buy = rule.item.buy
+        if type(buy) == "table" and buy.enabled == true then
+          local itemID = tonumber(rule.item.itemID)
+          local maxQty = tonumber(buy.max) or 0
+          local minQty = tonumber(buy.min) or 0
+          local targetQty = tonumber(buy.target) or 0
+
+          local yieldItemID = tonumber(buy.yieldItemID)
+          local yieldCount = tonumber(buy.yieldCount)
+
+          if itemID and itemID > 0 and maxQty and maxQty > 0 then
+            local spec = { max = maxQty, min = minQty, target = targetQty, yieldItemID = yieldItemID, yieldCount = yieldCount }
+
+            local cheapestIDs = NormalizeIDList(buy.cheapestOf)
+            if cheapestIDs and cheapestIDs[1] then
+              -- Ensure the primary itemID is included.
+              cheapestIDs[#cheapestIDs + 1] = itemID
+              cheapestIDs = NormalizeIDList(cheapestIDs)
+              local key = table.concat(cheapestIDs, ",")
+              wantCheapestGroups[key] = wantCheapestGroups[key] or { ids = cheapestIDs, max = 0, min = 0, target = 0 }
+              MergeBuySpec(wantCheapestGroups[key], spec)
+            else
+              wantByItemID[itemID] = MergeBuySpec(wantByItemID[itemID], spec)
+            end
+          end
+        end
+      end
+
+      -- Quest shopping-list auto-buy (vendor mats), only while quest is incomplete and gates pass.
+      if rule.autoBuyShopping == true and type(rule.shopping) == "table" and rule.shopping[1] ~= nil and rule.questID ~= nil then
+        local status = BuildRuleStatus(rule, nil, { forceNormalVisibility = true })
+        if status and status.completed ~= true then
+          for _, it in ipairs(rule.shopping) do
+            if type(it) == "table" and it.buy == true then
+              local itemID = tonumber(it.itemID or it.id)
+              local req = tonumber(it.required or it.count or it.need)
+              if itemID and itemID > 0 and req and req > 0 then
+                wantByItemID[itemID] = MergeBuySpec(wantByItemID[itemID], { max = req, target = req, min = 0 })
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  if not (next(wantByItemID) or next(wantCheapestGroups)) then return end
+
+  do
+    local sample = {}
+    for id, spec in pairs(wantByItemID) do
+      sample[#sample + 1] = tostring(id) .. "->" .. tostring(spec and spec.max or 0)
+      if #sample >= 8 then break end
+    end
+    table.sort(sample)
+    Debug("wantByItemID sample=" .. table.concat(sample, ", "))
+    if next(wantCheapestGroups) then
+      local gSample = {}
+      for k, g in pairs(wantCheapestGroups) do
+        gSample[#gSample + 1] = string.format("[%s] max=%s", tostring(k), tostring(g and g.max or 0))
+        if #gSample >= 2 then break end
+      end
+      table.sort(gSample)
+      Debug("wantCheapestGroups=" .. tostring(#gSample) .. " sample=" .. table.concat(gSample, " | "))
+    end
+  end
+
+  local function GetItemIDFromMerchantInfo(info, merchantIndex)
+    if type(info) ~= "table" then return nil end
+
+    local function ItemIDFromLink(link)
+      if type(link) ~= "string" or link == "" then return nil end
+      if C_Item and C_Item.GetItemInfoInstant then
+        local ok, iid = pcall(function()
+          return select(1, C_Item.GetItemInfoInstant(link))
+        end)
+        iid = ok and tonumber(iid) or nil
+        if iid and iid > 0 then return iid end
+      end
+      local iid = tonumber((tostring(link):match("item:(%d+)") or ""))
+      if iid and iid > 0 then return iid end
+      return nil
+    end
+
+    local itemID = tonumber(info["itemID"] or info["itemId"] or info["itemid"]) 
+    if itemID and itemID > 0 then return itemID end
+
+    local link = info["itemLink"] or info["link"] or info["hyperlink"]
+    if type(link) == "string" and link ~= "" then
+      local iid = ItemIDFromLink(link)
+      if iid and iid > 0 then return iid end
+      if C_Item and C_Item.GetItemIDForItemInfo then
+        local ok, iid = pcall(C_Item.GetItemIDForItemInfo, link)
+        iid = ok and tonumber(iid) or nil
+        if iid and iid > 0 then return iid end
+      end
+    end
+
+    if type(GetMerchantItemLink) == "function" and merchantIndex then
+      local ok, l2 = pcall(GetMerchantItemLink, merchantIndex)
+      local iid = ok and ItemIDFromLink(l2) or nil
+      if iid and iid > 0 then return iid end
+    end
+
+    return nil
+  end
+
+  -- Build merchant lookup by itemID once.
+  local okN, n = pcall(GetNumMerchantItems)
+  n = (okN and tonumber(n)) or 0
+  if n <= 0 then
+    Debug("merchant has 0 items")
+    return
+  end
+
+  Debug("merchant items=" .. tostring(n))
+
+  local merchantIndexByItemID = {}
+  local merchantInfoByIndex = {}
+  local missingItemID = 0
+  for i = 1, n do
+    local okInfo, info = pcall(GetMerchantItemInfoSafe, i)
+    if okInfo and type(info) == "table" then
+      if debug and i == 1 and not frame._didDumpMerchantInfoKeys then
+        frame._didDumpMerchantInfoKeys = true
+        local keys = {}
+        for k in pairs(info) do
+          keys[#keys + 1] = tostring(k)
+        end
+        table.sort(keys)
+        if #keys > 40 then
+          local trimmed = {}
+          for j = 1, 40 do trimmed[j] = keys[j] end
+          keys = trimmed
+        end
+        Debug("merchantInfo keys (index=1): " .. table.concat(keys, ", "))
+      end
+
+      local itemID = GetItemIDFromMerchantInfo(info, i)
+      if itemID and itemID > 0 then
+        do
+          local prev = merchantIndexByItemID[itemID]
+          if not prev then
+            merchantIndexByItemID[itemID] = i
+          else
+            local prevInfo = merchantInfoByIndex[prev]
+            local prevPrice = (type(prevInfo) == "table") and (tonumber(prevInfo["price"]) or 0) or 0
+            local newPrice = tonumber(info["price"]) or 0
+            if newPrice < prevPrice then
+              merchantIndexByItemID[itemID] = i
+            end
+          end
+        end
+        merchantInfoByIndex[i] = info
+      else
+        missingItemID = missingItemID + 1
+      end
+    end
+  end
+
+  if not next(merchantIndexByItemID) then
+    Debug("merchant itemID map empty; missingItemID=" .. tostring(missingItemID))
+    -- Some clients populate merchant item links/IDs a tick after MERCHANT_SHOW.
+    ScheduleRetry(0.25, "itemID map empty")
+    return
+  end
+
+  -- If we have wants but the merchant map is missing some of them, retry shortly.
+  do
+    local missingWants = 0
+    for itemID in pairs(wantByItemID) do
+      if not merchantIndexByItemID[itemID] then
+        missingWants = missingWants + 1
+        if missingWants >= 3 then break end
+      end
+    end
+    if missingWants > 0 then
+      Debug("merchant missing " .. tostring(missingWants) .. " wanted itemIDs; will retry")
+      ScheduleRetry(0.25, "wanted itemID not mapped")
+    end
+  end
+
+  do
+    local wantDarnassus = wantByItemID[45579]
+    if wantDarnassus then
+      Debug("want itemID 45579 max=" .. tostring(wantDarnassus.max) .. "; merchantIndex=" .. tostring(merchantIndexByItemID[45579]))
+    end
+  end
+
+  local boughtCountsByItemID = {}
+
+  local function CanBuyFromMerchantInfo(info)
+    if type(info) ~= "table" then return false end
+    local isPurchasable = (info["isPurchasable"] ~= false)
+    local extendedCost = (info["extendedCost"] == true) or (info["hasExtendedCost"] == true)
+    return (isPurchasable and not extendedCost) and true or false
+  end
+
+  local function GetRawHaveCount(itemID)
+    local have = 0
+    local okCount, c = pcall(C_Item.GetItemCount, itemID, false, false, false)
+    have = (okCount and tonumber(c)) or 0
+    if have < 0 then have = 0 end
+    return have
+  end
+
+  local function GetHaveCount(itemID)
+    itemID = tonumber(itemID)
+    if not itemID or itemID <= 0 then return 0 end
+
+    local raw = GetRawHaveCount(itemID)
+
+    local base = frame._autoBuyBaselineHave[itemID]
+    if base == nil then
+      base = raw
+      frame._autoBuyBaselineHave[itemID] = base
+    end
+
+    local bought = tonumber(frame._autoBuySessionBought[itemID]) or 0
+    local expected = (tonumber(base) or 0) + bought
+
+    local have = raw
+    if expected > have then
+      have = expected
+    end
+    return have
+  end
+
+  local function GetEffectiveHaveForSpec(spec, itemIDs)
+    if type(spec) ~= "table" then return 0 end
+    if type(itemIDs) ~= "table" or not itemIDs[1] then
+      local itemID = tonumber(spec.itemID)
+      return (itemID and itemID > 0) and GetHaveCount(itemID) or 0
+    end
+
+    local yieldItemID = tonumber(spec.yieldItemID)
+    local yieldCount = tonumber(spec.yieldCount) or 1
+    if yieldCount <= 0 then yieldCount = 1 end
+
+    if yieldItemID and yieldItemID > 0 then
+      local haveYield = GetHaveCount(yieldItemID)
+      local haveContainers = 0
+      for i = 1, #itemIDs do
+        local id = tonumber(itemIDs[i])
+        if id and id > 0 and id ~= yieldItemID then
+          haveContainers = haveContainers + GetHaveCount(id)
+        end
+      end
+      return haveYield + (haveContainers * yieldCount)
+    end
+
+    local haveTotal = 0
+    for i = 1, #itemIDs do
+      haveTotal = haveTotal + GetHaveCount(itemIDs[i])
+    end
+    return haveTotal
+  end
+
+  local function ComputeNeed(spec, have)
+    if type(spec) ~= "table" then return 0 end
+    local maxQty = tonumber(spec.max) or 0
+    local minQty = tonumber(spec.min) or 0
+    local targetQty = tonumber(spec.target) or 0
+    if maxQty <= 0 then return 0 end
+    if have < 0 then have = 0 end
+
+    -- Restock semantics:
+    -- - max is always a hard cap
+    -- - if target is set, restock up to target whenever below target
+    -- - else if min is set, restock up to min whenever below min
+    local desired = (targetQty > 0) and targetQty or ((minQty > 0) and minQty or maxQty)
+    if desired > maxQty then desired = maxQty end
+    local need = desired - have
+    if need < 0 then need = 0 end
+    return need
+  end
+
+  local function BuyFromMerchant(merchantIndex, info, itemID, need)
+    itemID = tonumber(itemID)
+    if not itemID or itemID <= 0 then return end
+    if need <= 0 then return end
+    if not (merchantIndex and info) then return end
+
+    local bundleQty = tonumber(info["stackCount"] or info["quantity"]) or 1
+    if bundleQty <= 0 then bundleQty = 1 end
+
+    local purchases = math.floor((need + bundleQty - 1) / bundleQty)
+    local numAvailable = tonumber(info["numAvailable"])
+    if numAvailable and numAvailable >= 0 then
+      purchases = math.min(purchases, numAvailable)
+    end
+
+    local price = tonumber(info["price"]) or 0
+    if price > 0 and type(GetMoney) == "function" then
+      local money = tonumber(GetMoney()) or 0
+      purchases = math.min(purchases, math.floor(money / price))
+    end
+
+    if purchases and purchases > 0 then
+      local remaining = purchases
+      while remaining > 0 do
+        local chunk = math.min(remaining, 100)
+        BuyMerchantItem(merchantIndex, chunk)
+        remaining = remaining - chunk
+      end
+      local got = (purchases * bundleQty)
+      boughtCountsByItemID[itemID] = (boughtCountsByItemID[itemID] or 0) + got
+      frame._autoBuySessionBought[itemID] = (tonumber(frame._autoBuySessionBought[itemID]) or 0) + got
+    end
+  end
+
+  -- 1) Cheapest-variant groups
+  for _, g in pairs(wantCheapestGroups) do
+    if type(g) == "table" and type(g.ids) == "table" and g.ids[1] then
+      local chosenItemID
+      local chosenIndex
+      local chosenInfo
+      local chosenPrice
+
+      for i = 1, #g.ids do
+        local id = g.ids[i]
+        local idx = merchantIndexByItemID[id]
+        if idx then
+          local info = merchantInfoByIndex[idx]
+          if CanBuyFromMerchantInfo(info) then
+            local price = tonumber(info["price"]) or 0
+            if (chosenItemID == nil) or (price < (chosenPrice or 0)) or (price == (chosenPrice or 0) and id < chosenItemID) then
+              chosenItemID = id
+              chosenIndex = idx
+              chosenInfo = info
+              chosenPrice = price
+            end
+          end
+        end
+      end
+
+      if chosenItemID and chosenIndex and chosenInfo then
+        local haveTotal = GetEffectiveHaveForSpec(g, g.ids)
+        local need = ComputeNeed(g, haveTotal)
+        if need > 0 then
+          local yieldItemID = tonumber(g.yieldItemID)
+          local yieldCount = tonumber(g.yieldCount) or 1
+          if yieldCount <= 0 then yieldCount = 1 end
+
+          if yieldItemID and yieldItemID > 0 then
+            local maxQty = tonumber(g.max) or 0
+            local capacity = maxQty - haveTotal
+            if capacity < yieldCount then
+              need = 0
+            else
+              local purchasesNeeded = math.floor((need + yieldCount - 1) / yieldCount)
+              local maxPurchases = math.floor(capacity / yieldCount)
+              need = math.min(purchasesNeeded, maxPurchases)
+            end
+          end
+
+          if need > 0 then
+            Debug(string.format("cheapestOf: chose itemID=%d price=%s need=%d", chosenItemID, tostring(chosenPrice), need))
+            BuyFromMerchant(chosenIndex, chosenInfo, chosenItemID, need)
+          end
+        end
+      end
+    end
+  end
+
+  -- 2) Direct itemIDs
+  for itemID, spec in pairs(wantByItemID) do
+    local merchantIndex = merchantIndexByItemID[itemID]
+    if merchantIndex then
+      local info = merchantInfoByIndex[merchantIndex]
+      if CanBuyFromMerchantInfo(info) then
+        local have = GetHaveCount(itemID)
+        local need = ComputeNeed(spec, have)
+
+        local yieldItemID = tonumber(spec.yieldItemID)
+        local yieldCount = tonumber(spec.yieldCount) or 1
+        if yieldCount <= 0 then yieldCount = 1 end
+        if yieldItemID and yieldItemID > 0 then
+          local maxQty = tonumber(spec.max) or 0
+          local capacity = maxQty - have
+          if capacity < yieldCount then
+            need = 0
+          else
+            local purchasesNeeded = math.floor((need + yieldCount - 1) / yieldCount)
+            local maxPurchases = math.floor(capacity / yieldCount)
+            need = math.min(purchasesNeeded, maxPurchases)
+          end
+        end
+
+        if need > 0 then
+          BuyFromMerchant(merchantIndex, info, itemID, need)
+        end
+      end
+    end
+  end
+
+  if not next(boughtCountsByItemID) then return end
+
+  -- Merchant data / bag counts can update after purchases; rerun once more shortly
+  -- to catch delayed itemIDs or additional wants (prevents needing to reopen vendor).
+  ScheduleRetry(0.25, "post-purchase refresh")
+
+  local parts = {}
+  for itemID, count in pairs(boughtCountsByItemID) do
+    local name
+    if C_Item and C_Item.GetItemNameByID then
+      local ok, n2 = pcall(C_Item.GetItemNameByID, itemID)
+      if ok and n2 and n2 ~= "" then
+        name = n2
+      end
+    end
+    parts[#parts + 1] = tostring(count) .. "x " .. tostring(name or ("itemID:" .. tostring(itemID)))
+  end
+  table.sort(parts)
+  Print("Bought (Auto): " .. table.concat(parts, ", "))
+end
+
 -- Events
 frame = CreateFrame("Frame")
 
@@ -4850,6 +6652,9 @@ frame:RegisterEvent("SKILL_LINES_CHANGED")
 SafeRegisterEvent(frame, "LEARNED_SPELL_IN_TAB")
 SafeRegisterEvent(frame, "NEW_RECIPE_LEARNED")
 SafeRegisterEvent(frame, "TRADE_SKILL_LIST_UPDATE")
+frame:RegisterEvent("MERCHANT_SHOW")
+SafeRegisterEvent(frame, "MERCHANT_UPDATE")
+SafeRegisterEvent(frame, "MERCHANT_CLOSED")
 frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("CALENDAR_UPDATE_EVENT_LIST")
@@ -4857,6 +6662,42 @@ frame:RegisterEvent("CALENDAR_UPDATE_EVENT")
 frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 
 frame:SetScript("OnEvent", function(_, event, ...)
+  if event == "MERCHANT_SHOW" then
+    frame._didDumpMerchantInfoKeys = nil
+    frame._merchantOpen = true
+    frame._autoBuyRetryPending = nil
+    frame._autoBuyAttempts = 0
+    frame._autoBuyBaselineHave = {}
+    frame._autoBuySessionBought = {}
+    -- Sell items flagged with rep.sellWhenExalted once the merchant opens.
+    AutoSellItemsAtMerchant()
+    AutoBuyItemsAtMerchant()
+    return
+  end
+  if event == "MERCHANT_CLOSED" then
+    frame._merchantOpen = nil
+    frame._autoBuyRetryPending = nil
+    frame._autoBuyAttempts = nil
+    frame._autoBuyBaselineHave = nil
+    frame._autoBuySessionBought = nil
+    if frame._autoBuyUpdateTimer then
+      frame._autoBuyUpdateTimer:Cancel()
+      frame._autoBuyUpdateTimer = nil
+    end
+    return
+  end
+  if event == "MERCHANT_UPDATE" then
+    if InCombatLockdown and InCombatLockdown() then return end
+    if frame._autoBuyUpdateTimer then return end
+    if not (C_Timer and C_Timer.NewTimer) then return end
+    frame._autoBuyUpdateTimer = C_Timer.NewTimer(0.15, function()
+      frame._autoBuyUpdateTimer = nil
+      if frame._merchantOpen == true then
+        AutoBuyItemsAtMerchant()
+      end
+    end)
+    return
+  end
   if event == "MODIFIER_STATE_CHANGED" then
     if InCombatLockdown and InCombatLockdown() then
       frame._pendingInteractivity = true
@@ -4872,11 +6713,25 @@ frame:SetScript("OnEvent", function(_, event, ...)
 
   if event == "PLAYER_LOGIN" then
     NormalizeSV()
+    RequestWarbandCurrencyData()
+    C_Timer.After(2.0, RefreshWarbandCurrencyCacheForAllKnownCurrencies)
     CreateAllFrames()
     C_Timer.After(1.0, RefreshAll)
     frame._didPostWorldWarm = false
     Print("Loaded. Type /fqt to configure.")
     return
+  end
+
+  if event == "CURRENCY_DISPLAY_UPDATE" then
+    local currencyID = tonumber((...))
+    if currencyID and currencyID > 0 then
+      _warbandCurrencyTotals[currencyID] = nil
+    end
+    RequestWarbandCurrencyData()
+    if frame._wbCurrencyRefreshTimer then
+      frame._wbCurrencyRefreshTimer:Cancel()
+    end
+    frame._wbCurrencyRefreshTimer = C_Timer.NewTimer(1.0, RefreshWarbandCurrencyCacheForAllKnownCurrencies)
   end
 
   if event == "PLAYER_ENTERING_WORLD" and not frame._didPostWorldWarm then
@@ -5198,6 +7053,184 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     return
   end
 
+  if cmd == "evdebug" then
+    Print("Event debug:")
+    EnsureCalendarOpened()
+
+    local events, meta = GetCalendarDebugEvents(0, 0)
+    if type(meta) == "table" and meta.ok == false then
+      Print("Calendar debug unavailable: " .. tostring(meta.reason or "unknown"))
+    else
+      if type(events) ~= "table" or events[1] == nil then
+        Print("Today: no calendar day-events returned.")
+      else
+        for _, ev in ipairs(events) do
+          local title = tostring(ev.title or "")
+          local ht = tostring(ev.holidayText or "")
+          if ht ~= "" then
+            ht = ht:gsub("\n", " ")
+            if #ht > 140 then ht = ht:sub(1, 140) .. "..." end
+          end
+          Print(string.format("Day %s: %s", tostring(ev.day or "?"), title ~= "" and title or "(no title)"))
+          if ht ~= "" then
+            Print("  Holiday: " .. ht)
+          end
+        end
+      end
+    end
+
+    do
+      local found, unknown = IsCalendarEventActiveByKeywords({ "Darkmoon Faire" }, true)
+      Print("DMF keyword match today: " .. tostring(found and true or false) .. "; calendarUnknown=" .. tostring(unknown and true or false))
+
+      NormalizeSV()
+      local disabled = fr0z3nUI_QuestTracker_Char
+        and fr0z3nUI_QuestTracker_Char.settings
+        and fr0z3nUI_QuestTracker_Char.settings.disabledRules
+        and fr0z3nUI_QuestTracker_Char.settings.disabledRules["event:darkmoon-faire"]
+      Print("DMF title rule disabledRules['event:darkmoon-faire']=" .. tostring(disabled and true or false))
+
+      local ck = CalendarKeywordCacheKey({ "Darkmoon Faire" })
+      if ck and ck ~= "" then
+        local rememberedKey = "event:calendar:" .. ck
+        Print("DMF remembered daily aura state: " .. tostring(HasRememberedDailyAura(rememberedKey) and true or false))
+      end
+    end
+
+    return
+  end
+
+  if cmd == "framedebug" then
+    NormalizeSV()
+    local frameID = tostring(rest or "")
+    frameID = frameID:gsub("^%s+", ""):gsub("%s+$", "")
+    if frameID == "" then frameID = "list2" end
+
+    Print("Frame debug: " .. frameID)
+    Print("framesEnabled=" .. tostring(framesEnabled and true or false) .. "; editMode=" .. tostring(editMode and true or false))
+
+    local def
+    local defs = GetEffectiveFrames and GetEffectiveFrames() or nil
+    if type(defs) == "table" then
+      for _, d in ipairs(defs) do
+        if tostring(d and d.id or "") == frameID then
+          def = d
+          break
+        end
+      end
+    end
+
+    if not def then
+      Print("No effective frame def for id='" .. frameID .. "'.")
+    else
+      Print(string.format(
+        "type=%s hideFrame=%s hideWhenEmpty=%s parentFrame=%s visLink=%s",
+        tostring(def.type or "list"),
+        tostring(def.hideFrame == true),
+        tostring(def.hideWhenEmpty ~= false),
+        tostring(def.parentFrame or ""),
+        tostring(def.visLink or "")
+      ))
+    end
+
+    local f = framesByID and framesByID[frameID] or nil
+    if not f then
+      Print("Frame object not created (framesByID['" .. frameID .. "']=nil).")
+      if CreateAllFrames then
+        CreateAllFrames()
+        f = framesByID and framesByID[frameID] or nil
+        Print("CreateAllFrames() attempted; frame now " .. (f and "exists" or "missing") .. ".")
+      end
+    end
+
+    if f then
+      local shown = (f.IsShown and f:IsShown()) and true or false
+      Print("IsShown=" .. tostring(shown))
+
+      local scrollOffset = (GetFrameScrollOffset and GetFrameScrollOffset(frameID)) or 0
+      Print("scrollOffset=" .. tostring(scrollOffset))
+
+      local entries = f._lastEntries or {}
+      local allEntries = f._lastAllEntries or nil
+      Print("entries=" .. tostring(type(entries) == "table" and #entries or 0) .. "; allEntries=" .. tostring(type(allEntries) == "table" and #allEntries or "(nil)"))
+
+      local maxDump = 12
+      for i = 1, math.min(maxDump, (type(entries) == "table" and #entries or 0)) do
+        local e = entries[i]
+        local r = e and e.rule
+        local k = (RuleKey and r) and RuleKey(r) or (type(r) == "table" and r.key) or nil
+        local title = (e and (e.rawTitle or e.title or e.editText)) or ""
+        if type(title) == "string" then
+          title = title:gsub("\n", " ")
+          if #title > 120 then title = title:sub(1, 120) .. "..." end
+        end
+        Print(string.format("%d) %s  key=%s", i, tostring(title), tostring(k or "")))
+      end
+
+      -- Dump actual rendered row texts (what the user should be seeing on screen).
+      if type(f.items) == "table" then
+        local maxRows = 12
+        for i = 1, maxRows do
+          local fs = f.items[i]
+          if fs and fs.GetText then
+            local t = fs:GetText() or ""
+            if type(t) == "string" then
+              t = t:gsub("\n", " ")
+              if #t > 120 then t = t:sub(1, 120) .. "..." end
+            end
+            local fsShown = (fs.IsShown and fs:IsShown()) and true or false
+            Print(string.format("rowFS %d shown=%s text=%s", i, tostring(fsShown), tostring(t)))
+          end
+        end
+      end
+    end
+
+    return
+  end
+
+  if cmd == "ruledebug" then
+    NormalizeSV()
+    local key = tostring(rest or "")
+    key = key:gsub("^%s+", ""):gsub("%s+$", "")
+    if key == "" then
+      Print("Usage: /fqt ruledebug <ruleKey>")
+      return
+    end
+
+    local rules = GetEffectiveRules and GetEffectiveRules() or nil
+    local found
+    if type(rules) == "table" then
+      for _, r in ipairs(rules) do
+        if type(r) == "table" then
+          local rk = RuleKey and RuleKey(r) or r.key
+          if tostring(rk or "") == key then
+            found = r
+            break
+          end
+        end
+      end
+    end
+
+    if not found then
+      Print("Rule not found for key='" .. key .. "'.")
+      return
+    end
+
+    local status = BuildRuleStatus(found, BuildEvalContext(), { forceNormalVisibility = true })
+    if not status then
+      Print("BuildRuleStatus: nil (gated/disabled/prereq/etc)")
+      if found.professionSkillLineID ~= nil then
+        Print("  professionSkillLineID=" .. tostring(found.professionSkillLineID) .. "; has=" .. tostring(HasProfessionSkillLineID(found.professionSkillLineID)))
+      end
+      return
+    end
+
+    Print("Rule debug key='" .. key .. "':")
+    Print("  completed=" .. tostring(status.completed and true or false) .. "; hideWhenCompleted=" .. tostring(status.hideWhenCompleted and true or false))
+    Print("  title=" .. tostring((status.rawTitle or status.title) or ""))
+    return
+  end
+
   if cmd == "twclear" then
     if type(ns) == "table" and type(ns.ClearRememberedTimewalkingKind) == "function" then
       ns.ClearRememberedTimewalkingKind()
@@ -5216,6 +7249,46 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     return
   end
 
-  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt twdebug, /fqt twclear, /fqt evclear")
+  if cmd == "debug" then
+    NormalizeSV()
+    local sub, rest2 = rest:match("^(%S+)%s*(.-)$")
+    sub = tostring(sub or ""):lower()
+    rest2 = tostring(rest2 or ""):lower()
+    if sub == "autobuy" or sub == "buy" then
+      local v
+      if rest2 == "on" or rest2 == "1" or rest2 == "true" then
+        v = true
+      elseif rest2 == "off" or rest2 == "0" or rest2 == "false" then
+        v = false
+      else
+        v = not (fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy == true)
+      end
+      fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy = (v == true)
+      Print("AutoBuy debug: " .. (fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy and "ON" or "OFF"))
+      return
+    end
+
+    if sub == "hitboxes" or sub == "hitbox" or sub == "hb" then
+      local v
+      if rest2 == "on" or rest2 == "1" or rest2 == "true" then
+        v = true
+      elseif rest2 == "off" or rest2 == "0" or rest2 == "false" then
+        v = false
+      else
+        v = not ((type(GetUISetting) == "function") and (GetUISetting("debugHitboxes", false) == true))
+      end
+      if type(SetUISetting) == "function" then
+        SetUISetting("debugHitboxes", v == true)
+      end
+      RefreshAll()
+      Print("Hitbox debug: " .. (((type(GetUISetting) == "function") and (GetUISetting("debugHitboxes", false) == true)) and "ON" or "OFF"))
+      return
+    end
+
+    Print("Usage: /fqt debug autobuy [on|off] | hitboxes [on|off]")
+    return
+  end
+
+  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt debug autobuy [on|off], /fqt debug hitboxes [on|off], /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
   end)
 end

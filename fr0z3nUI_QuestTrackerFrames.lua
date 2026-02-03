@@ -589,11 +589,28 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
   frameHideCombat:Hide()
   optionsFrame._frameHideCombat = frameHideCombat
 
-  local frameHideFrame = CreateFrame("CheckButton", nil, panels.frames, "UICheckButtonTemplate")
+  local frameHideFrame = CreateFrame("Button", nil, panels.frames, "UIPanelButtonTemplate")
+  frameHideFrame:SetSize(110, 18)
   frameHideFrame:SetPoint("BOTTOMLEFT", frameHideCombat, "TOPLEFT", 0, 2)
-  if SetCheckButtonLabel then SetCheckButtonLabel(frameHideFrame, "Hide frame") end
+  frameHideFrame:SetText("Hide Frame")
   frameHideFrame:Hide()
   optionsFrame._frameHideFrame = frameHideFrame
+
+  local function UpdateHideFrameButton(def)
+    if not (frameHideFrame and frameHideFrame.GetFontString) then return end
+    local hidden = (type(def) == "table" and def.hideFrame == true) and true or false
+    if frameHideFrame.SetText then
+      frameHideFrame:SetText(hidden and "Show Frame" or "Hide Frame")
+    end
+    local fs = frameHideFrame:GetFontString()
+    if fs and fs.SetTextColor then
+      if hidden then
+        fs:SetTextColor(1.00, 0.90, 0.20) -- yellow (hidden)
+      else
+        fs:SetTextColor(0.75, 0.75, 0.75) -- gray (showing)
+      end
+    end
+  end
 
   -- Per-frame scale (bars/lists)
   local scaleSlider = CreateFrame("Slider", "FR0Z3NUIFQT_FrameScaleSlider", panels.frames, "OptionsSliderTemplate")
@@ -766,7 +783,7 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
     frameHideFrame:ClearAllPoints()
     frameHideFrame:SetPoint("TOPLEFT", widthBox, "BOTTOMLEFT", 0, -8)
     frameHideCombat:ClearAllPoints()
-    frameHideCombat:SetPoint("LEFT", frameHideFrame, "RIGHT", 120, 0)
+    frameHideCombat:SetPoint("LEFT", frameHideFrame, "RIGHT", 10, 0)
   end
 
   if linkLabel and hideAnchor then
@@ -957,7 +974,6 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
         optionsFrame._frameHideCombat:Hide()
       end
       if optionsFrame._frameHideFrame then
-        optionsFrame._frameHideFrame:SetChecked(false)
         optionsFrame._frameHideFrame:Hide()
       end
 
@@ -1061,7 +1077,7 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
     end
 
     if optionsFrame._frameHideFrame then
-      optionsFrame._frameHideFrame:SetChecked(def.hideFrame == true)
+      UpdateHideFrameButton(def)
       optionsFrame._frameHideFrame:Show()
     end
 
@@ -1621,8 +1637,21 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
       if not eff then return end
       local def = FindOrCreateCustomFrameDef(id)
       if not def then return end
-      def.hideFrame = self:GetChecked() and true or nil
+      -- Toggle based on the CURRENT effective state (not the current custom override).
+      -- This is critical for default-hidden frames (e.g. bar2/list2/list3).
+      local newHide = (eff.hideFrame ~= true)
+      def.hideFrame = newHide
+
+      -- Optional debug: hold SHIFT while clicking to print current state.
+      if IsShiftKeyDown and IsShiftKeyDown() then
+        Print(string.format("Toggle hideFrame %s: effective=%s -> custom=%s", id, tostring(eff.hideFrame == true), tostring(newHide == true)))
+      end
+
       SafeCall(RefreshAll)
+
+      -- Re-read effective state after refresh so the button reflects what the engine will use.
+      local eff2 = FindEffectiveFrameDef(id)
+      UpdateHideFrameButton(eff2 or def)
       if RefreshFramesList then RefreshFramesList() end
     end)
   end

@@ -47,6 +47,20 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
   local rowH = 18
 
+  local DMF_GROUP = "event:darkmoon-faire"
+
+  local function IsDarkmoonRule(rule)
+    if type(rule) ~= "table" then return false end
+    return tostring(rule.group or "") == DMF_GROUP or tostring(rule.key or "") == DMF_GROUP
+  end
+
+  local function CategoryFilterLabel(v)
+    v = tostring(v or "all")
+    if v == "all" then return "Any Category" end
+    if v == DMF_GROUP then return "Darkmoon Faire" end
+    return v
+  end
+
   local rulesTitle = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   rulesTitle:SetPoint("TOPLEFT", 12, -40)
   rulesTitle:SetText("Rules")
@@ -235,6 +249,10 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     if type(SetUISetting) == "function" then
       SetUISetting("rulesCategoryFilter", v)
     end
+    if v == DMF_GROUP then
+      -- Treat as a sub-category under the Events expansion.
+      SetRulesExpansionFilter("Events")
+    end
     if optionsFrame._refreshRulesList then optionsFrame._refreshRulesList() end
   end
 
@@ -316,7 +334,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
   local function InitRulesCategoryDrop()
     local v = GetRulesCategoryFilter()
     if UDDM_SetText then
-      UDDM_SetText(rulesCategoryDrop, (v == "all") and "Any Category" or v)
+      UDDM_SetText(rulesCategoryDrop, CategoryFilterLabel(v))
     end
   end
 
@@ -334,6 +352,21 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         root:CreateButton(label, function() SetRulesExpansionFilter(val) end)
       end
     end
+
+    if root and root.CreateTitle then root:CreateTitle("Events") end
+    if root and root.CreateRadio then
+      root:CreateRadio("Darkmoon Faire", function()
+        return (GetRulesExpansionFilter() == "Events") and (GetRulesCategoryFilter() == DMF_GROUP)
+      end, function()
+        SetRulesExpansionFilter("Events")
+        SetRulesCategoryFilter(DMF_GROUP)
+      end)
+    elseif root and root.CreateButton then
+      root:CreateButton("Darkmoon Faire", function()
+        SetRulesExpansionFilter("Events")
+        SetRulesCategoryFilter(DMF_GROUP)
+      end)
+    end
   end) then
     -- modern menu wired
   elseif UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
@@ -345,6 +378,24 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         info.text = (val == "all") and "Any" or tostring(val)
         info.checked = (GetRulesExpansionFilter() == tostring(val)) and true or false
         info.func = function() SetRulesExpansionFilter(val) end
+        UDDM_AddButton(info)
+      end
+
+      do
+        local info = UDDM_CreateInfo()
+        info.text = " "
+        info.disabled = true
+        info.notCheckable = true
+        UDDM_AddButton(info)
+      end
+      do
+        local info = UDDM_CreateInfo()
+        info.text = "Events: Darkmoon Faire"
+        info.checked = (GetRulesExpansionFilter() == "Events") and (GetRulesCategoryFilter() == DMF_GROUP) and true or false
+        info.func = function()
+          SetRulesExpansionFilter("Events")
+          SetRulesCategoryFilter(DMF_GROUP)
+        end
         UDDM_AddButton(info)
       end
     end)
@@ -363,12 +414,19 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     if root and root.CreateTitle then root:CreateTitle("Category") end
     local choices = (optionsFrame and optionsFrame._rulesCategoryChoices) or { "all" }
     for _, val in ipairs(choices) do
-      local label = (val == "all") and "Any" or tostring(val)
+      local label = (val == "all") and "Any" or CategoryFilterLabel(val)
       if root and root.CreateRadio then
         root:CreateRadio(label, function() return (GetRulesCategoryFilter() == tostring(val)) end, function() SetRulesCategoryFilter(val) end)
       elseif root and root.CreateButton then
         root:CreateButton(label, function() SetRulesCategoryFilter(val) end)
       end
+    end
+
+    if root and root.CreateTitle then root:CreateTitle("Events") end
+    if root and root.CreateRadio then
+      root:CreateRadio("Darkmoon Faire", function() return (GetRulesCategoryFilter() == DMF_GROUP) end, function() SetRulesCategoryFilter(DMF_GROUP) end)
+    elseif root and root.CreateButton then
+      root:CreateButton("Darkmoon Faire", function() SetRulesCategoryFilter(DMF_GROUP) end)
     end
   end) then
     -- modern menu wired
@@ -378,9 +436,24 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       local choices = (optionsFrame and optionsFrame._rulesCategoryChoices) or { "all" }
       for _, val in ipairs(choices) do
         local info = UDDM_CreateInfo()
-        info.text = (val == "all") and "Any" or tostring(val)
+        info.text = (val == "all") and "Any" or CategoryFilterLabel(val)
         info.checked = (GetRulesCategoryFilter() == tostring(val)) and true or false
         info.func = function() SetRulesCategoryFilter(val) end
+        UDDM_AddButton(info)
+      end
+
+      do
+        local info = UDDM_CreateInfo()
+        info.text = " "
+        info.disabled = true
+        info.notCheckable = true
+        UDDM_AddButton(info)
+      end
+      do
+        local info = UDDM_CreateInfo()
+        info.text = "Events: Darkmoon Faire"
+        info.checked = (GetRulesCategoryFilter() == DMF_GROUP) and true or false
+        info.func = function() SetRulesCategoryFilter(DMF_GROUP) end
         UDDM_AddButton(info)
       end
     end)
@@ -623,6 +696,12 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
     local function RuleCategory(rule)
       if type(rule) ~= "table" then return "Other" end
+
+      -- Events sub-category
+      if IsDarkmoonRule(rule) then
+        return DMF_GROUP
+      end
+
       local c = rule.category or rule._category
       if type(c) == "string" and c ~= "" then return c end
       if rule.questID ~= nil then return "Quest" end
@@ -702,7 +781,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
       if UDDM_SetText then
         UDDM_SetText(rulesExpansionDrop, (expFilter == "all") and "Any Expansion" or expFilter)
-        UDDM_SetText(rulesCategoryDrop, (catFilter == "all") and "Any Category" or catFilter)
+        UDDM_SetText(rulesCategoryDrop, CategoryFilterLabel(catFilter))
       end
 
       local function MatchesSearch(rr)
@@ -741,7 +820,11 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
             ok = (RuleExpansionName(r, src) == expFilter)
           end
           if ok and catFilter ~= "all" then
-            ok = (RuleCategory(rr) == catFilter)
+            if catFilter == DMF_GROUP then
+              ok = IsDarkmoonRule(rr) or IsDarkmoonRule(r)
+            else
+              ok = (RuleCategory(rr) == catFilter)
+            end
           end
           if ok and ql ~= "" then
             ok = MatchesSearch(rr)

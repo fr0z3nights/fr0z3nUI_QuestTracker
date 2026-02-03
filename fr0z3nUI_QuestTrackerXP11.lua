@@ -1,4 +1,4 @@
-﻿local addonName, ns = ...
+local addonName, ns = ...
 
 -- Auto-generated split from fr0z3nUI_QuestTracker_DB2.lua on 20260121_173032
 -- Expansion DB11 (The War Within)
@@ -10,6 +10,31 @@ local EXPANSION_NAME = "The War Within"
 
 local Y, N = true, false
 
+-- Currency gates (optional):
+--   item.currencyID = { currencyID, required }
+-- Amount sources (Retail):
+--   Character amount: C_CurrencyInfo.GetCurrencyInfo(id).quantity
+--   Warband total: C_CurrencyInfo.GetAccountCharacterCurrencyData(id)
+--     (requires RequestCurrencyDataForAccountCharacters() to be called earlier)
+--   Transferability: C_CurrencyInfo.GetCurrencyInfo(id).isAccountTransferable
+-- Notes:
+--   If isAccountTransferable is true, the tracker gates using the warband total (falls back to a cached
+--   account saved-variable snapshot if the live data isn't available yet).
+-- Placeholders usable in itemInfo/textInfo/spellInfo:
+--   {currency:name} {currency:req} {currency:char} {currency:wb} {currency} (gate amount)
+-- Shorthand (DB convenience):
+--   %p  -> {progress}
+--   $rq -> {currency:req}
+--   $nm -> {currency:name}
+--   $hv -> {currency} (gate/have amount)
+--   $ga -> {currency} (gate/have amount)
+--   $cc -> {currency:char}
+--   $wb -> {currency:wb}
+
+
+-- item.required tuple keys:
+--   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
+local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
 {["label"] = "TD 3.01  11  Q-82520  Pet - Mind Slurp", ["frameID"] = "list1", ["key"] = "custom:q:82520:list1:68",
@@ -63,7 +88,7 @@ local bakedRules = {
 {["frameID"] = "list1", ["key"] = "custom:item:230728:list1:129",
 ["hideWhenCompleted"] = false,
 ["locationID"] = "2369",
-["item"] = { ["itemID"] = 230728, ["required"] = { 1, true }, },
+["item"] = { ["itemID"] = 230728, ["required"] = { 1, true, N, 0 }, },
 ["restedOnly"] = false, },
 
 {["label"] = "Khaz Algar Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:118",
@@ -113,7 +138,7 @@ local bakedRules = {
 ["playerLevel"] = { ">", 70 },
 ["faction"] = "Horde",
 ["restedOnly"] = true,
-["item"] = { ["itemID"] = 202046, ["required"] = { 1, true }, }, },
+["item"] = { ["itemID"] = 202046, ["required"] = { 1, true, N, 0 }, }, },
 
 {["label"] = "Khaz Algar Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:124",
 ["hideWhenCompleted"] = false,

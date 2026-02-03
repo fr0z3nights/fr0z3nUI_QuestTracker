@@ -467,6 +467,42 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
   if HideInputBoxTemplateArt then HideInputBoxTemplateArt(itemsLocBox) end
   if AttachLocationIDTooltip then AttachLocationIDTooltip(itemsLocBox) end
 
+  -- Optional helper: auto-buy at vendors (configured here; executed on MERCHANT_SHOW)
+  local buyEnabled = CreateFrame("Button", nil, pItems, "UIPanelButtonTemplate")
+  buyEnabled:SetSize(110, 22)
+  buyEnabled:SetPoint("TOPLEFT", 12, -316)
+  buyEnabled:SetText("Auto Buy")
+  buyEnabled._enabled = false
+
+  function buyEnabled:GetChecked()
+    return self._enabled and true or false
+  end
+
+  function buyEnabled:SetChecked(v)
+    self._enabled = (v == true)
+    local fs = self.GetFontString and self:GetFontString() or nil
+    if fs and fs.SetTextColor then
+      if self._enabled then
+        fs:SetTextColor(1.0, 0.82, 0.0) -- yellow
+      else
+        fs:SetTextColor(0.65, 0.65, 0.65) -- grey
+      end
+    end
+  end
+
+  buyEnabled:SetChecked(false)
+
+  local buyMaxBox = CreateFrame("EditBox", nil, pItems, "InputBoxTemplate")
+  buyMaxBox:SetSize(60, 20)
+  buyMaxBox:SetPoint("TOPLEFT", 130, -316)
+  buyMaxBox:SetAutoFocus(false)
+  buyMaxBox:SetNumeric(true)
+  buyMaxBox:SetText("0")
+  buyMaxBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  buyMaxBox:SetTextInsets(6, 6, 0, 0)
+  if AddPlaceholder then AddPlaceholder(buyMaxBox, "Buy max") end
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(buyMaxBox) end
+
   if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
     -- Expansion dropdown
     local modernExpansion = UseModernMenuDropDown and UseModernMenuDropDown(expDrop, function(root)
@@ -833,6 +869,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
   pItems._sellExalted = sellExalted
   pItems._restedOnly = restedOnly
   pItems._locBox = itemsLocBox
+  pItems._buyEnabled = buyEnabled
+  pItems._buyMaxBox = buyMaxBox
   pItems._itemsFrameDrop = itemsFrameDrop
   pItems._itemsFactionDrop = itemsFactionDrop
   pItems._itemsColorDrop = itemsColorDrop
@@ -892,12 +930,37 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
     if UDDM_SetText and itemsLevelOpDrop then UDDM_SetText(itemsLevelOpDrop, "Off") end
     if itemsLevelBox then itemsLevelBox:SetText("0") end
 
+    if buyEnabled then buyEnabled:SetChecked(false) end
+    if buyMaxBox then buyMaxBox:SetText("0") end
+
     pItems._editingCustomIndex = nil
     pItems._editingDefaultBase = nil
     pItems._editingDefaultKey = nil
     if addItemBtn then addItemBtn:SetText("Add Item Entry") end
     if cancelItemEditBtn then cancelItemEditBtn:Hide() end
   end
+
+  local function SyncBuyControls()
+    local enabled = buyEnabled and buyEnabled:GetChecked() and true or false
+    if buyMaxBox then
+      if buyMaxBox.EnableMouse then buyMaxBox:EnableMouse(enabled) end
+      if buyMaxBox.SetAlpha then buyMaxBox:SetAlpha(enabled and 1 or 0.5) end
+    end
+  end
+
+  if buyEnabled then
+    buyEnabled:SetScript("OnClick", function(self)
+      self:SetChecked(not self:GetChecked())
+      SyncBuyControls()
+    end)
+  end
+  if buyMaxBox then
+    buyMaxBox:HookScript("OnTextChanged", function(_, userInput)
+      if not userInput then return end
+      SyncBuyControls()
+    end)
+  end
+  SyncBuyControls()
 
   addItemBtn:SetScript("OnClick", function()
     local itemID = tonumber(itemIDBox:GetText() or "")
@@ -926,6 +989,15 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
 
     local showWhenBelow = tonumber(itemShowBelowBox and itemShowBelowBox:GetText() or "")
     if showWhenBelow and showWhenBelow <= 0 then showWhenBelow = nil end
+
+    local buyCfg
+    do
+      local enabled = buyEnabled and buyEnabled.GetChecked and buyEnabled:GetChecked() and true or false
+      local maxQty = buyMaxBox and tonumber(buyMaxBox:GetText() or "") or 0
+      if not maxQty or maxQty < 0 then maxQty = 0 end
+      if maxQty <= 0 then enabled = false end
+      buyCfg = { enabled = enabled and true or false, max = maxQty }
+    end
 
     local targetFrame = tostring(pItems._targetFrameID or ""):gsub("%s+", "")
     if targetFrame == "" then targetFrame = "list1" end
@@ -1009,13 +1081,14 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       if type(rule.item.required) == "table" then req = tonumber(rule.item.required[1]) end
       req = req or 1
       local hide = hideAcquired:GetChecked() and true or false
-      rule.item.required = hide and { req, true } or req
+      rule.item.required = { req, hide, buyCfg.enabled, buyCfg.max }
       rule.item.hideWhenAcquired = nil
       rule.item.questID = questIDGate
       rule.item.afterQuestID = afterQuestIDGate
       rule.item.currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil
       rule.item.currencyRequired = nil
       rule.item.showWhenBelow = showWhenBelow
+      rule.item.buy = buyCfg
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
 
       pItems._editingCustomIndex = nil
@@ -1061,13 +1134,14 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       if type(rule.item.required) == "table" then req2 = tonumber(rule.item.required[1]) end
       req2 = req2 or 1
       local hide2 = hideAcquired:GetChecked() and true or false
-      rule.item.required = hide2 and { req2, true } or req2
+      rule.item.required = { req2, hide2, buyCfg.enabled, buyCfg.max }
       rule.item.hideWhenAcquired = nil
       rule.item.questID = questIDGate
       rule.item.afterQuestID = afterQuestIDGate
       rule.item.currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil
       rule.item.currencyRequired = nil
       rule.item.showWhenBelow = showWhenBelow
+      rule.item.buy = buyCfg
       if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
 
       if base and base.key ~= nil then rule.key = tostring(base.key) end
@@ -1102,11 +1176,12 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
         playerLevel = (op and lvl) and { op, lvl } or nil,
         item = {
           itemID = itemID,
-          required = (hideAcquired:GetChecked() and true or false) and { 1, true } or 1,
+          required = { 1, (hideAcquired:GetChecked() and true or false), buyCfg.enabled, buyCfg.max },
           questID = questIDGate,
           afterQuestID = afterQuestIDGate,
           currencyID = (currencyIDGate and currencyReqGate) and { currencyIDGate, currencyReqGate } or nil,
           showWhenBelow = showWhenBelow,
+          buy = buyCfg,
         },
         hideWhenCompleted = false,
       }

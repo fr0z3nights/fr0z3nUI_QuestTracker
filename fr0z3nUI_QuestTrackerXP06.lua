@@ -1,4 +1,4 @@
-﻿local addonName, ns = ...
+local addonName, ns = ...
 
 -- Auto-generated split from fr0z3nUI_QuestTracker_DB2.lua on 20260121_173032
 -- Expansion DB06 (Warlords of Draenor)
@@ -10,16 +10,41 @@ local EXPANSION_NAME = "Warlords of Draenor"
 
 local Y, N = true, false
 
+-- Currency gates (optional):
+--   item.currencyID = { currencyID, required }
+-- Amount sources (Retail):
+--   Character amount: C_CurrencyInfo.GetCurrencyInfo(id).quantity
+--   Warband total: C_CurrencyInfo.GetAccountCharacterCurrencyData(id)
+--     (requires RequestCurrencyDataForAccountCharacters() to be called earlier)
+--   Transferability: C_CurrencyInfo.GetCurrencyInfo(id).isAccountTransferable
+-- Notes:
+--   If isAccountTransferable is true, the tracker gates using the warband total (falls back to a cached
+--   account saved-variable snapshot if the live data isn't available yet).
+-- Placeholders usable in itemInfo/textInfo/spellInfo:
+--   {currency:name} {currency:req} {currency:char} {currency:wb} {currency} (gate amount)
+-- Shorthand (DB convenience):
+--   %p  -> {progress}
+--   $rq -> {currency:req}
+--   $nm -> {currency:name}
+--   $hv -> {currency} (gate/have amount)
+--   $ga -> {currency} (gate/have amount)
+--   $cc -> {currency:char}
+--   $wb -> {currency:wb}
+
+
+-- item.required tuple keys:
+--   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
+local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
 {["label"] = "SU  06  Garrison 01 A", ["frameID"] = "list1", ["key"] = "custom:q:36941:list1:17",
 ["questID"] = 36941, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n%c\n+ Warboard: The Dark Portal\\n + Talk to Battlemage\\n   - Portal Tower Entrance\\n   - After Port Abandom Quest\\n + Iron Horde Invasion (Zygor)",
+["questInfo"] = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Portal Tower Entrance\n   - After Port Abandom Quest\n + Iron Horde Invasion (Zygor)",
 ["faction"] = "Alliance", },
 
 {["label"] = "SU  06  Garrison 02 A", ["frameID"] = "list1", ["key"] = "custom:q:34586:list1:18",
 ["questID"] = 34586, ["prereq"] = { 36941, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n%c\n+ Warboard: The Dark Portal\\n + Talk to Battlemage\\n   - In Portal Tower Entrance\\n   - After Port Abandom Quest\\n   - Take Red Portal (Draenor)\\n   - Do Initial Quests",
+["questInfo"] = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - In Portal Tower Entrance\n   - After Port Abandom Quest\n   - Take Red Portal (Draenor)\n   - Do Initial Quests",
 ["faction"] = "Alliance", },
 
 {["label"] = "SU  06  Garrison 03 A", ["frameID"] = "list1", ["key"] = "custom:q:34775:list1:19",
@@ -29,12 +54,12 @@ local bakedRules = {
 
 {["label"] = "SU  06  Garrison 01 H", ["frameID"] = "list1", ["key"] = "custom:q:36940:list1:20",
 ["questID"] = 36940, ["prereq"] = { 47514, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n%c\n+ Warboard: The Dark Portal\\n + Talk to Battlemage\\n   - Lower Portal Room\\n   - After Port Abandom Quest\\n + Iron Horde Invasion (Zygor)",
+["questInfo"] = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Lower Portal Room\n   - After Port Abandom Quest\n + Iron Horde Invasion (Zygor)",
 ["faction"] = "Horde", },
 
 {["label"] = "SU  06  Garrison 02 H", ["frameID"] = "list1", ["key"] = "custom:q:34586:list1:21",
 ["questID"] = 34586, ["prereq"] = { 36940, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n%c\n+ Warboard: The Dark Portal\\n + Talk to Battlemage\\n   - Lower Portal Room\\n   - After Port Abandom Quest\\n   - Take Red Portal (Draenor)\\n   - Do Initial Quests",
+["questInfo"] = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Lower Portal Room\n   - After Port Abandom Quest\n   - Take Red Portal (Draenor)\n   - Do Initial Quests",
 ["faction"] = "Horde", },
 
 {["label"] = "SU  06  Garrison 03 H", ["frameID"] = "list1", ["key"] = "custom:q:34960:list1:22",

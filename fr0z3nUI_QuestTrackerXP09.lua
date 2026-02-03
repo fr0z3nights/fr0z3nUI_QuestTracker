@@ -1,4 +1,4 @@
-﻿local addonName, ns = ...
+local addonName, ns = ...
 
 -- Auto-generated split from fr0z3nUI_QuestTracker_DB2.lua on 20260121_173032
 -- Expansion DB09 (Shadowlands)
@@ -10,6 +10,31 @@ local EXPANSION_NAME = "Shadowlands"
 
 local Y, N = true, false
 
+-- Currency gates (optional):
+--   item.currencyID = { currencyID, required }
+-- Amount sources (Retail):
+--   Character amount: C_CurrencyInfo.GetCurrencyInfo(id).quantity
+--   Warband total: C_CurrencyInfo.GetAccountCharacterCurrencyData(id)
+--     (requires RequestCurrencyDataForAccountCharacters() to be called earlier)
+--   Transferability: C_CurrencyInfo.GetCurrencyInfo(id).isAccountTransferable
+-- Notes:
+--   If isAccountTransferable is true, the tracker gates using the warband total (falls back to a cached
+--   account saved-variable snapshot if the live data isn't available yet).
+-- Placeholders usable in itemInfo/textInfo/spellInfo:
+--   {currency:name} {currency:req} {currency:char} {currency:wb} {currency} (gate amount)
+-- Shorthand (DB convenience):
+--   %p  -> {progress}
+--   $rq -> {currency:req}
+--   $nm -> {currency:name}
+--   $hv -> {currency} (gate/have amount)
+--   $ga -> {currency} (gate/have amount)
+--   $cc -> {currency:char}
+--   $wb -> {currency:wb}
+
+
+-- item.required tuple keys:
+--   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
+local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
 {["label"] = "SU  09  Open", ["frameID"] = "list1", ["key"] = "custom:q:60151:list1:11",
@@ -17,8 +42,8 @@ local bakedRules = {
 ["questInfo"] = "Warboard   (Accept if there)\n    - Chromie\n    - Legion\n    - Warlords\n    - Jade Forest\n\nShadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n    - Skip Quests at Broker NPC\n    - Learn Professions\nToDo", },
 
 {["itemName"] = "The Brokers Angle'r", ["frameID"] = "list1", ["key"] = "custom:item:180136:list1:145",
-["itemInfo"] = "The Brokers Angle'r", ["itemID"] = 180136, ["required"] = 1, 
-["locationID"] = "1670", ["restedOnly"] = true, ["item"] = { ["required"] = { 1, true }, }, },
+["itemInfo"] = "The Brokers Angle'r",
+["locationID"] = "1670", ["restedOnly"] = true, ["item"] = { ["itemID"] = 180136, ["required"] = { 1, true, N, 0 }, }, },
 
 {["label"] = "Shadowlands Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:144",
 ["spellInfo"] = "Shadowlands Cooking", ["notSpellKnown"] = 309830, ["spellKnown"] = 264638, 

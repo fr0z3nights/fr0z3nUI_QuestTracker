@@ -89,7 +89,6 @@ ns.frames = ns.frames or {
     maxItems = 20,
     autoSize = true,
     hideWhenEmpty = false,
-    hideFrame = true,
   },
   {
     id = "list3",
