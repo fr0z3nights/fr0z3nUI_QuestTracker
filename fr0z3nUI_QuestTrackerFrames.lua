@@ -1734,20 +1734,17 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
     if not def then return end
 
     corner = NormalizeAnchorCornerLocal(corner)
-    def.anchorCorner = corner
-    def.growDir = DeriveGrowDirFromCorner(corner)
 
-    -- Follow the configured anchor rules (no screen-coordinate conversion).
-    do
-      local point = (corner == "tr" and "TOPRIGHT") or (corner == "bl" and "BOTTOMLEFT") or (corner == "br" and "BOTTOMRIGHT") or "TOPLEFT"
-      def.point = point
-      def.relPoint = point
-
-      -- Ensure any previously saved dragged position does not override the new anchor.
-      if type(ns.ClearSavedFramePosition) == "function" then
-        ns.ClearSavedFramePosition(id)
+    -- Capture current position so changing anchorCorner does not move the frame.
+    if type(ns.GetTrackerFrameByID) == "function" and type(ns.SaveFramePosition) == "function" then
+      local f = ns.GetTrackerFrameByID(id)
+      if f then
+        ns.SaveFramePosition(f)
       end
     end
+
+    def.anchorCorner = corner
+    def.growDir = DeriveGrowDirFromCorner(corner)
 
     SafeCall(RefreshAll)
     if RefreshFramesList then RefreshFramesList() end
@@ -1761,6 +1758,15 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
     local def = FindOrCreateCustomFrameDef(id)
     if not def then return end
     dir = NormalizeGrowDirLocal(dir)
+
+    -- Capture current position so changing derived anchorCorner does not move the frame.
+    if type(ns.GetTrackerFrameByID) == "function" and type(ns.SaveFramePosition) == "function" then
+      local f = ns.GetTrackerFrameByID(id)
+      if f then
+        ns.SaveFramePosition(f)
+      end
+    end
+
     def.growDir = dir
     def.anchorCorner = DeriveCornerFromGrowDir(dir)
     SafeCall(RefreshAll)

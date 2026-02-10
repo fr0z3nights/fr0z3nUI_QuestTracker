@@ -106,7 +106,7 @@ local bakedRules = {
 ["notInGroup"] = false, },
 
 {["label"] = "Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:91:base",
-["spellInfo"] = "Mining", ["missingPrimaryProfessions"] = false,
+["spellInfo"] = "Mining", ["missingPrimaryProfessions"] = true,
 ["hideWhenCompleted"] = false,
 ["notSpellKnown"] = 265844,
 ["notInGroup"] = false, },

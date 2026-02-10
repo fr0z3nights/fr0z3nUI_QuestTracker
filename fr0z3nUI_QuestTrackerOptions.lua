@@ -7202,31 +7202,19 @@ local function EnsureOptionsFrame()
     if not def then return end
 
     corner = NormalizeAnchorCornerLocal(corner)
+
+    -- Capture current position so changing anchorCorner does not move the frame.
+    if type(ns.GetTrackerFrameByID) == "function" and type(ns.SaveFramePosition) == "function" then
+      local f = ns.GetTrackerFrameByID(id)
+      if f then
+        ns.SaveFramePosition(f)
+      end
+    end
+
     def.anchorCorner = corner
 
     -- Unify grow direction with the chosen corner.
     def.growDir = DeriveGrowDirFromCorner(corner)
-
-    -- Follow the configured anchor rules (no screen-coordinate conversion).
-    -- Update the frame's stored anchor point and clear any saved dragged position
-    -- so the new anchor is actually applied.
-    do
-      local point
-      if corner == "tc" then
-        point = "TOP"
-      elseif corner == "bc" then
-        point = "BOTTOM"
-      else
-        point = (corner == "tr" and "TOPRIGHT") or (corner == "bl" and "BOTTOMLEFT") or (corner == "br" and "BOTTOMRIGHT") or "TOPLEFT"
-      end
-
-      def.point = point
-      def.relPoint = point
-
-      if type(ns.ClearSavedFramePosition) == "function" then
-        ns.ClearSavedFramePosition(id)
-      end
-    end
 
     RefreshAll()
     RefreshFramesList()
@@ -7241,6 +7229,15 @@ local function EnsureOptionsFrame()
     local def = FindOrCreateCustomFrameDef(id)
     if not def then return end
     dir = NormalizeGrowDirLocal(dir)
+
+    -- Capture current position so changing derived anchorCorner does not move the frame.
+    if type(ns.GetTrackerFrameByID) == "function" and type(ns.SaveFramePosition) == "function" then
+      local f = ns.GetTrackerFrameByID(id)
+      if f then
+        ns.SaveFramePosition(f)
+      end
+    end
+
     def.growDir = dir
     def.anchorCorner = DeriveCornerFromGrowDir(dir)
     RefreshAll()

@@ -107,7 +107,7 @@ ns.rules = {
       83364, 86563, -- Draenor
       83360, 86564, -- Legion
       88805, 88808, -- BFA
-      92647, -- Shadowlands (max/leveling placeholder)
+      92649, -- Shadowlands (max/leveling placeholder)
     },
     hideIfAnyQuestCompleted = {
       86731, 85947, -- Classic
@@ -118,7 +118,7 @@ ns.rules = {
       83364, 86563, -- Draenor
       83360, 86564, -- Legion
       88805, 88808, -- BFA
-      92647, -- Shadowlands (max/leveling placeholder)
+      92649, -- Shadowlands (max/leveling placeholder)
     },
     hideWhenCompleted = false,
   },
@@ -410,8 +410,7 @@ ns.rules = {
     },
   },
 
-  {label = "Darkmoon: Mining", ["frameID"] = "bar1", key = "custom:seq:q:29518:bar1:fevdmwk12",
-  questInfo = "DMF: Mining", questID = 29518, spellKnown = { 265843, }, },
+
 
   -- Legion
   {
@@ -503,7 +502,7 @@ ns.rules = {
 
   -- Shadowlands (single weekly listed)
   {
-    questID = 92647,
+    questID = 92649,
     frameID = "bar1",
     label = "Timewalking Shadowlands Max",
     questInfo = "Shadowlands",
@@ -540,7 +539,7 @@ ns.rules = {
       {
         questID = 92650,
         shape = "square",
-        overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
+        overlay = { itemIDs = { 253517, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
       },
     },
   },

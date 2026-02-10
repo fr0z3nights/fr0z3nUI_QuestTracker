@@ -2065,6 +2065,30 @@ local function ClearRememberedEventState()
   end
 end
 
+-- First character per account to log in after daily reset: clear remembered event state.
+-- We store the *next daily reset timestamp* (GetDailyResetAt) as a stable per-day stamp.
+local function MaybeAutoResetEventsOncePerDay()
+  NormalizeSV()
+  local acc = fr0z3nUI_QuestTracker_Acc
+  if not (type(acc) == "table" and type(acc.cache) == "table") then
+    return
+  end
+
+  local dailyResetAt = tonumber(GetDailyResetAt()) or 0
+  if dailyResetAt <= 0 then
+    return
+  end
+
+  local cache = acc.cache
+  local lastStamp = tonumber(cache.eventAutoResetDailyStamp) or 0
+  if lastStamp == dailyResetAt then
+    return
+  end
+
+  ClearRememberedEventState()
+  cache.eventAutoResetDailyStamp = dailyResetAt
+end
+
 ns.ClearRememberedTimewalkingKind = ClearRememberedTimewalkingKind
 ns.ClearRememberedEventState = ClearRememberedEventState
 
@@ -2720,6 +2744,10 @@ local function RenderIndicators(frame, rowIndex, baseFS, indicators, padPx)
   local blankText = IsEffectivelyBlankText(baseFS)
   local textWidth = blankText and 0 or (baseFS:GetStringWidth() or 0)
 
+  -- Icon-only rows (blank text) sit a bit low if top-aligned.
+  -- Nudge them up slightly (Timewalking token indicators use this path).
+  local yAdjust = blankText and 2 or 0
+
   -- Only add spacing between text and icons when there is real text.
   -- For icon-only rows, avoid reserving extra space.
   local outerGap = blankText and 0 or PAD
@@ -2729,7 +2757,7 @@ local function RenderIndicators(frame, rowIndex, baseFS, indicators, padPx)
   local width = leftInset + (count * ICON) + ((count - 1) * GAP)
 
   row.container:ClearAllPoints()
-  row.container:SetPoint("TOPLEFT", baseFS, "TOPLEFT", textWidth + outerGap, 0)
+  row.container:SetPoint("TOPLEFT", baseFS, "TOPLEFT", textWidth + outerGap, yAdjust)
   row.container:SetSize(width, ICON)
   row.container:Show()
 
@@ -3836,14 +3864,13 @@ local function SaveFramePosition(f)
   if not point then return end
 
   local store = GetFramePosStore()
-  local ref = (f.GetParent and f:GetParent()) or UIParent
-  local refName = (ref == UIParent) and "UIParent" or ((ref and ref.GetName and ref:GetName()) or "UIParent")
   store[tostring(f._id)] = {
     point = tostring(point),
     relPoint = tostring(relPoint or point),
     x = tonumber(x) or 0,
     y = tonumber(y) or 0,
-    parent = tostring(refName),
+    -- Always store relative to UIParent for consistent behavior across all frames.
+    parent = "UIParent",
   }
 end
 
@@ -3865,17 +3892,201 @@ local function ApplySavedFramePosition(f, def)
   if not point then return false end
 
   local ref = UIParent
-  if type(pos.parent) == "string" and pos.parent ~= "" then
-    if pos.parent ~= "UIParent" then
-      local p = _G and _G[pos.parent]
-      if p then ref = p end
-    end
-  else
-    ref = (f.GetParent and f:GetParent()) or UIParent
-  end
 
   f:ClearAllPoints()
   f:SetPoint(point, ref or UIParent, relPoint, tonumber(pos.x) or 0, tonumber(pos.y) or 0)
+  return true
+end
+
+local function ResolveFrameAnchor(def, defaultPoint)
+  if type(def) ~= "table" then
+    local p = tostring(defaultPoint or "CENTER")
+    return p, p, 0, 0
+  end
+
+  local point = def.point
+  local relPoint = def.relPoint or def.point
+  local x = def.x
+  local y = def.y
+
+  if not point then
+    local ap = AnchorCornerToPoint and AnchorCornerToPoint(def.anchorCorner)
+    if ap then
+      point = ap
+      relPoint = ap
+    end
+  end
+
+  if not point then
+    point = tostring(defaultPoint or "CENTER")
+    relPoint = point
+    x = x or 0
+    y = y or 0
+  end
+
+  return tostring(point), tostring(relPoint or point), tonumber(x) or 0, tonumber(y) or 0
+end
+
+local function ApplyFramePositionFromDef(f, def)
+  if not (f and f.ClearAllPoints and f.SetPoint) then return false end
+  -- Avoid fighting the user while actively dragging in edit mode.
+  if f.IsMoving and f:IsMoving() then return false end
+  if f._fqtIsMoving then return false end
+
+  -- Prefer saved offsets (dragged positions) but allow anchorCorner/point changes to take effect.
+  local store = GetFramePosStore()
+  local pos = store and f._id and store[tostring(f._id)]
+  if type(pos) == "table" then
+    local point, relPoint = pos.point, pos.relPoint
+    if type(def) == "table" and def.anchorCorner then
+      local ap = AnchorCornerToPoint and AnchorCornerToPoint(def.anchorCorner)
+      if ap then
+        -- If the user changes anchorCorner, keep the frame in the same on-screen spot
+        -- by converting the saved offsets from the old point to the new point.
+        if pos.point and tostring(pos.point) ~= tostring(ap) and f.GetLeft then
+          local left, right, top, bottom = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
+          local pl, pr, pt, pb = UIParent:GetLeft(), UIParent:GetRight(), UIParent:GetTop(), UIParent:GetBottom()
+          if left and right and top and bottom and pl and pr and pt and pb then
+            local cx, cy = (left + right) / 2, (bottom + top) / 2
+            local pcx, pcy = (pl + pr) / 2, (pb + pt) / 2
+
+            local function AnchorXYFromRect(pointStr, l, r, t, b, cX, cY)
+              pointStr = tostring(pointStr or "CENTER"):upper()
+              local x
+              if pointStr:find("LEFT", 1, true) then x = l
+              elseif pointStr:find("RIGHT", 1, true) then x = r
+              else x = cX end
+
+              local y
+              if pointStr:find("TOP", 1, true) then y = t
+              elseif pointStr:find("BOTTOM", 1, true) then y = b
+              else y = cY end
+
+              return x, y
+            end
+
+            local ax, ay = AnchorXYFromRect(ap, left, right, top, bottom, cx, cy)
+            local px, py = AnchorXYFromRect(ap, pl, pr, pt, pb, pcx, pcy)
+            if ax and ay and px and py then
+              pos.x = math.floor(((ax - px) or 0) + 0.5)
+              pos.y = math.floor(((ay - py) or 0) + 0.5)
+              pos.point = ap
+              pos.relPoint = ap
+              point = ap
+              relPoint = ap
+            end
+          end
+        end
+        point = ap
+        relPoint = ap
+      end
+    end
+    if not point and type(def) == "table" then point = def.point end
+    if not relPoint and type(def) == "table" then relPoint = def.relPoint or def.point end
+    if point then
+      local ref = UIParent
+      f:ClearAllPoints()
+      f:SetPoint(tostring(point), ref or UIParent, tostring(relPoint or point), tonumber(pos.x) or 0, tonumber(pos.y) or 0)
+      return true
+    end
+  end
+
+  -- No saved framePos entry: if an anchorCorner is set, keep the frame visually stationary by
+  -- computing the offsets for that anchor from the current on-screen rect.
+  if type(def) == "table" and def.anchorCorner and f.GetLeft and UIParent and UIParent.GetLeft then
+    local ap = AnchorCornerToPoint and AnchorCornerToPoint(def.anchorCorner)
+    if ap then
+      local left, right, top, bottom = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
+      local pl, pr, pt, pb = UIParent:GetLeft(), UIParent:GetRight(), UIParent:GetTop(), UIParent:GetBottom()
+      if left and right and top and bottom and pl and pr and pt and pb then
+        local cx, cy = (left + right) / 2, (bottom + top) / 2
+        local pcx, pcy = (pl + pr) / 2, (pb + pt) / 2
+
+        local function AnchorXYFromRect(pointStr, l, r, t, b, cX, cY)
+          pointStr = tostring(pointStr or "CENTER"):upper()
+          local x
+          if pointStr:find("LEFT", 1, true) then x = l
+          elseif pointStr:find("RIGHT", 1, true) then x = r
+          else x = cX end
+
+          local y
+          if pointStr:find("TOP", 1, true) then y = t
+          elseif pointStr:find("BOTTOM", 1, true) then y = b
+          else y = cY end
+
+          return x, y
+        end
+
+        local ax, ay = AnchorXYFromRect(ap, left, right, top, bottom, cx, cy)
+        local px, py = AnchorXYFromRect(ap, pl, pr, pt, pb, pcx, pcy)
+        if ax and ay and px and py then
+          local x = math.floor(((ax - px) or 0) + 0.5)
+          local y = math.floor(((ay - py) or 0) + 0.5)
+          -- Persist the converted offsets into the def so subsequent refreshes stay consistent.
+          def.point = ap
+          def.relPoint = ap
+          def.x = x
+          def.y = y
+        end
+      end
+    end
+  end
+
+  local point, relPoint, x, y = ResolveFrameAnchor(def, "CENTER")
+  local ref = (f.GetParent and f:GetParent()) or UIParent
+  f:ClearAllPoints()
+  f:SetPoint(point, ref or UIParent, relPoint, x, y)
+  return true
+end
+
+local function NudgeFrameOnScreen(f, pad)
+  if not (f and f.GetLeft and f.GetRight and f.GetTop and f.GetBottom and f.GetPoint and f.SetPoint and f.ClearAllPoints) then return false end
+  pad = tonumber(pad)
+  if not pad or pad < 0 then pad = 8 end
+
+  local scale = (f.GetEffectiveScale and f:GetEffectiveScale()) or 1
+  if not scale or scale <= 0 then scale = 1 end
+
+  local left, right, top, bottom = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
+  if not (left and right and top and bottom) then return false end
+
+  local sw = (GetScreenWidth and GetScreenWidth()) or (UIParent and UIParent.GetWidth and UIParent:GetWidth()) or 0
+  local sh = (GetScreenHeight and GetScreenHeight()) or (UIParent and UIParent.GetHeight and UIParent:GetHeight()) or 0
+  if not (sw and sh) or sw <= 0 or sh <= 0 then return false end
+
+  -- Convert into scaled screen space so comparisons stay correct under per-frame scaling.
+  left, right, top, bottom = left * scale, right * scale, top * scale, bottom * scale
+  local padS = pad * scale
+
+  local frameW = right - left
+  local frameH = top - bottom
+
+  local dxS, dyS = 0, 0
+
+  if frameW > (sw - 2 * padS) then
+    dxS = (padS - left)
+  else
+    if left < padS then dxS = (padS - left)
+    elseif right > (sw - padS) then dxS = ((sw - padS) - right) end
+  end
+
+  if frameH > (sh - 2 * padS) then
+    dyS = ((sh - padS) - top)
+  else
+    if bottom < padS then dyS = (padS - bottom)
+    elseif top > (sh - padS) then dyS = ((sh - padS) - top) end
+  end
+
+  if dxS == 0 and dyS == 0 then return false end
+
+  -- Convert correction back into unscaled anchor offsets.
+  local dx = dxS / scale
+  local dy = dyS / scale
+
+  local point, rel, relPoint, x, y = f:GetPoint(1)
+  if not point then return false end
+  f:ClearAllPoints()
+  f:SetPoint(point, rel or UIParent, relPoint or point, (tonumber(x) or 0) + dx, (tonumber(y) or 0) + dy)
   return true
 end
 
@@ -3921,10 +4132,12 @@ local function EnsureAnchorLabel(frame)
     if not editMode then return end
     local p = self:GetParent()
     if p and p.StartMoving then p:StartMoving() end
+    if p then p._fqtIsMoving = true end
   end)
   btn:SetScript("OnDragStop", function(self)
     local p = self:GetParent()
     if p and p.StopMovingOrSizing then p:StopMovingOrSizing() end
+    if p then p._fqtIsMoving = nil end
     if p then
       SaveFramePosition(p)
       UpdateAnchorLabel(p)
@@ -4365,8 +4578,12 @@ local function CreateBarFrame(def)
   f._id = def and def.id or nil
   f:SetSize(def.width or 300, def.height or 20)
   local ref = (f.GetParent and f:GetParent()) or UIParent
-  f:SetPoint(def.point or "TOP", ref or UIParent, def.relPoint or def.point or "TOP", def.x or 0, def.y or 0)
-  ApplySavedFramePosition(f, def)
+  do
+    local p, rp, x, y = ResolveFrameAnchor(def, "TOP")
+    f:SetPoint(p, ref or UIParent, rp, x, y)
+  end
+  ApplyFramePositionFromDef(f, def)
+  NudgeFrameOnScreen(f, 8)
 
   f._itemFont = "GameFontHighlightSmall"
   f.items = {}
@@ -4406,8 +4623,12 @@ local function CreateListFrame(def)
   end
   f:SetSize(def.width or 300, h)
   local ref = (f.GetParent and f:GetParent()) or UIParent
-  f:SetPoint(def.point or "TOPRIGHT", ref or UIParent, def.relPoint or def.point or "TOPRIGHT", def.x or -10, def.y or -120)
-  ApplySavedFramePosition(f, def)
+  do
+    local p, rp, x, y = ResolveFrameAnchor(def, "TOPRIGHT")
+    f:SetPoint(p, ref or UIParent, rp, x, y)
+  end
+  ApplyFramePositionFromDef(f, def)
+  NudgeFrameOnScreen(f, 8)
 
   f._itemFont = "GameFontHighlight"
   f.items = {}
@@ -5035,7 +5256,7 @@ local function RenderList(frameDef, frame, entries)
       if t and t.Hide then t:Hide() end
     end
   end
-  -- Lists always render in their natural order, top->bottom.
+  -- Lists render in natural order, top->bottom (content ordering is independent of frame anchoring).
   local growY = "down"
   local yCursor = 0
   local maxY = nil
@@ -5139,11 +5360,7 @@ local function RenderList(frameDef, frame, entries)
       -- In edit mode, keep a stable hitbox width while leaving room for [up][down][X].
       if fs.SetWidth then fs:SetWidth(textW) end
     end
-    if growY == "up" and not editMode then
-      fs:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, padBottom + yCursor)
-    else
-      fs:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -padTop - yCursor)
-    end
+    fs:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -padTop - yCursor)
 
     -- Zebra striping (only reliable when not wrapping).
     local zb = EnsureZebraRow(i)
@@ -5802,13 +6019,8 @@ RefreshAll = function()
         end
       end
 
-      -- late parent binding (useful when parent addon loads after us)
-      if type(def) == "table" and def.parentFrame then
-        local p = _G and _G[tostring(def.parentFrame)]
-        if p and f:GetParent() ~= p then
-          f:SetParent(p)
-        end
-      end
+      -- `parentFrame` is legacy; re-parenting was removed.
+      -- Keeping frames under UIParent avoids coordinate-space drift between edit mode and normal mode.
 
       if editMode then
         local a = (type(def) == "table") and tonumber(def.bgAlpha) or nil
@@ -5840,6 +6052,10 @@ RefreshAll = function()
 
       local forceHide = ApplyVisLink(f, def, baseScale)
 
+      -- Re-apply anchor/position after ApplyVisLink so parent/scale are stable.
+      -- This keeps edit-mode and normal-mode positioning consistent.
+      ApplyFramePositionFromDef(f, def)
+
       if forceHide then
         f:Hide()
       elseif type(def) == "table" and def.hideFrame == true then
@@ -5867,6 +6083,10 @@ RefreshAll = function()
       end
 
       UpdateAnchorLabel(f, def)
+
+      -- Auto-size (lists) and resolution/UI scale changes can leave frames off-screen.
+      -- Nudge them back on-screen without altering their anchor corner.
+      NudgeFrameOnScreen(f, 8)
     end
   end
 
@@ -6713,6 +6933,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
 
   if event == "PLAYER_LOGIN" then
     NormalizeSV()
+    MaybeAutoResetEventsOncePerDay()
     RequestWarbandCurrencyData()
     C_Timer.After(2.0, RefreshWarbandCurrencyCacheForAllKnownCurrencies)
     CreateAllFrames()
