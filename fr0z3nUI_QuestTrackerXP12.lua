@@ -37,7 +37,7 @@ local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
 {["label"] = "Cultist", ["frameID"] = "bar1", ["key"] = "12pxp:cultist:rare",
-["questID"] = 91795, ["requireInLog"] = false, ["hideWhenCompleted"] = false,
+["questID"] = 91795, ["requireInLog"] = false, ["hideWhenCompleted"] = false, ["showXWhenComplete"] = true,
 ["playerLevel"] = { ">=", 80, },
 ["progress"] = { ["objectiveIndex"] = 1 },},
 

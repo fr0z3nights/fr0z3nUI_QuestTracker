@@ -148,12 +148,12 @@ local bakedRules = {
 ["notInGroup"] = false, },
 
 {["label"] = "Delvez", ["frameID"] = "bar1", ["key"] = "wk:delves:bran",
-["questID"] = 82706, ["requireInLog"] = false, ["hideWhenCompleted"] = true,
+["questID"] = 82706, ["requireInLog"] = false, ["hideWhenCompleted"] = true, ["showXWhenComplete"] = true,
 ["playerLevel"] = { ">=", 70, },
 ["progress"] = { ["objectiveIndex"] = 1 },},
 
 {["label"] = "Reshii Wraps", ["frameID"] = "bar1", ["key"] = "custom:q:90938:bar1:1",
-["questID"] = 90938, ["requireInLog"] = false, ["hideWhenCompleted"] = true,
+["questID"] = 90938, ["requireInLog"] = false, ["hideWhenCompleted"] = true, ["showXWhenComplete"] = true,
 ["hideIfAnyQuestCompleted"] = { 90938, 84856, 84910 },
 ["playerLevel"] = { ">=", 80, }, ["color"] = { 0.2, 0.6, 1, },
 ["questInfo"] = "Reshii",},
