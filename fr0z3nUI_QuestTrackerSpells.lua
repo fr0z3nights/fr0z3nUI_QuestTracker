@@ -31,6 +31,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
 
   local AddPlaceholder = ctx.AddPlaceholder
   local HideInputBoxTemplateArt = ctx.HideInputBoxTemplateArt
+  local HideDropDownMenuArt = ctx.HideDropDownMenuArt
   local AttachLocationIDTooltip = ctx.AttachLocationIDTooltip
 
   local GetFontChoices = ctx.GetFontChoices
@@ -53,16 +54,32 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   spellsTitle:SetPoint("TOPLEFT", 12, -40)
   spellsTitle:SetText("Spells")
 
+  if spellsTitle.Hide then spellsTitle:Hide() end
+
   -- Expansion selector (stamped onto new/edited rules as _expansionID/_expansionName)
   local expLabel = pSpells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   expLabel:SetPoint("TOPRIGHT", pSpells, "TOPRIGHT", -12, -40)
   expLabel:SetText("Expansion")
 
+  expLabel:SetText("")
+  if expLabel.Hide then expLabel:Hide() end
+
   local expDrop = CreateFrame("Frame", nil, pSpells, "UIDropDownMenuTemplate")
-  expDrop:SetPoint("TOPRIGHT", pSpells, "TOPRIGHT", -6, -54)
+  expDrop:SetPoint("TOPRIGHT", pSpells, "TOPRIGHT", -6, -40)
   if UDDM_SetWidth then UDDM_SetWidth(expDrop, 180) end
   if UDDM_SetText then UDDM_SetText(expDrop, "") end
   pSpells._expansionDrop = expDrop
+  if HideDropDownMenuArt then HideDropDownMenuArt(expDrop) end
+
+  do
+    local keep = pSpells._keepOpenToggle
+    if keep and keep.ClearAllPoints then
+      expLabel:ClearAllPoints()
+      expLabel:SetPoint("TOPRIGHT", keep, "TOPLEFT", -6, 0)
+      expDrop:ClearAllPoints()
+      expDrop:SetPoint("TOPRIGHT", keep, "TOPLEFT", -2, -14)
+    end
+  end
 
   local function ResolveExpansionNameByID(id)
     id = tonumber(id)
@@ -84,7 +101,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
     if not name and id then
       name = ResolveExpansionNameByID(id)
     end
-    local label = name or "Weekly"
+    local label = name or "Choose Expansion"
     if UDDM_SetText and expDrop then UDDM_SetText(expDrop, label) end
   end
 
@@ -107,6 +124,17 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   local spellsInfoScroll = CreateFrame("ScrollFrame", nil, pSpells, "UIPanelScrollFrameTemplate")
   spellsInfoScroll:SetPoint("TOPLEFT", 12, -94)
   spellsInfoScroll:SetSize(530, 46)
+
+  if spellsInfoScroll.ScrollBar then
+    spellsInfoScroll.ScrollBar:Hide()
+    spellsInfoScroll.ScrollBar.Show = function() end
+    if spellsInfoScroll.ScrollBar.EnableMouse then spellsInfoScroll.ScrollBar:EnableMouse(false) end
+  end
+  spellsInfoScroll:EnableMouseWheel(true)
+  spellsInfoScroll:SetScript("OnMouseWheel", function(self, delta)
+    local cur = tonumber(self:GetVerticalScroll() or 0) or 0
+    self:SetVerticalScroll(math.max(0, cur - (delta * 20)))
+  end)
 
   local spellsInfoBox = CreateFrame("EditBox", nil, spellsInfoScroll)
   spellsInfoBox:SetMultiLine(true)
@@ -136,11 +164,12 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   classLabel:SetText("Class")
 
   local classDrop = CreateFrame("Frame", nil, pSpells, "UIDropDownMenuTemplate")
-  classDrop:SetPoint("TOPLEFT", -8, -174)
+  classDrop:SetPoint("TOPLEFT", 12, -174)
   if UDDM_SetWidth then UDDM_SetWidth(classDrop, 160) end
   if UDDM_SetText then UDDM_SetText(classDrop, "None") end
   panels.spells._class = nil
   panels.spells._classes = panels.spells._classes or {}
+  if HideDropDownMenuArt then HideDropDownMenuArt(classDrop) end
 
   local SPELL_CLASS_TOKENS = {
     "DEATHKNIGHT","DEMONHUNTER","DRUID","EVOKER","HUNTER","MAGE","MONK","PALADIN","PRIEST","ROGUE","SHAMAN","WARLOCK","WARRIOR",
@@ -216,6 +245,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   knownBox:SetAutoFocus(false)
   knownBox:SetNumeric(true)
   knownBox:SetText("0")
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(knownBox) end
 
   local notKnownLabel = pSpells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   notKnownLabel:SetPoint("TOPLEFT", 280, -146)
@@ -227,6 +257,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   notKnownBox:SetAutoFocus(false)
   notKnownBox:SetNumeric(true)
   notKnownBox:SetText("0")
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(notKnownBox) end
 
   local locLabel = pSpells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   locLabel:SetPoint("TOPLEFT", 380, -146)
@@ -238,6 +269,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   locBox:SetAutoFocus(false)
   locBox:SetText("0")
   if AttachLocationIDTooltip then AttachLocationIDTooltip(locBox) end
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(locBox) end
 
   local notInGroupCheck = CreateFrame("CheckButton", nil, pSpells, "UICheckButtonTemplate")
   notInGroupCheck:SetPoint("TOPLEFT", 12, -198)
@@ -273,6 +305,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   if UDDM_SetWidth then UDDM_SetWidth(spellsLevelOpDrop, 70) end
   if UDDM_SetText then UDDM_SetText(spellsLevelOpDrop, "Off") end
   panels.spells._playerLevelOp = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(spellsLevelOpDrop) end
 
   local spellsLevelBox = CreateFrame("EditBox", nil, pSpells, "InputBoxTemplate")
   spellsLevelBox:SetSize(50, 20)
@@ -280,47 +313,54 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   spellsLevelBox:SetAutoFocus(false)
   spellsLevelBox:SetNumeric(true)
   spellsLevelBox:SetText("0")
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(spellsLevelBox) end
 
   local spellsFrameDrop = CreateFrame("Frame", nil, pSpells, "UIDropDownMenuTemplate")
-  spellsFrameDrop:SetPoint("TOPLEFT", -8, -238)
+  spellsFrameDrop:SetPoint("TOPLEFT", 12, -238)
   if UDDM_SetWidth then UDDM_SetWidth(spellsFrameDrop, 160) end
-  if UDDM_SetText and GetFrameDisplayNameByID then UDDM_SetText(spellsFrameDrop, GetFrameDisplayNameByID("list1")) end
-  panels.spells._targetFrameID = "list1"
+  if UDDM_SetText then UDDM_SetText(spellsFrameDrop, "Bar/List") end
+  panels.spells._targetFrameID = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(spellsFrameDrop) end
 
   local spellsFactionDrop = CreateFrame("Frame", nil, pSpells, "UIDropDownMenuTemplate")
   spellsFactionDrop:SetPoint("TOPLEFT", 165, -238)
   if UDDM_SetWidth then UDDM_SetWidth(spellsFactionDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(spellsFactionDrop, "Both (Off)") end
+  if UDDM_SetText then UDDM_SetText(spellsFactionDrop, "Faction") end
   panels.spells._faction = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(spellsFactionDrop) end
 
   local spellsColorDrop = CreateFrame("Frame", nil, pSpells, "UIDropDownMenuTemplate")
   spellsColorDrop:SetPoint("TOPLEFT", 325, -238)
   if UDDM_SetWidth then UDDM_SetWidth(spellsColorDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(spellsColorDrop, "None") end
+  if UDDM_SetText then UDDM_SetText(spellsColorDrop, "Color") end
   panels.spells._color = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(spellsColorDrop) end
 
   local spellsFontLabel = pSpells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  spellsFontLabel:SetPoint("TOPLEFT", 500, -222)
-  spellsFontLabel:SetText("Font")
+  spellsFontLabel:SetPoint("TOPLEFT", 500, -202)
+  spellsFontLabel:SetText("")
+  if spellsFontLabel.Hide then spellsFontLabel:Hide() end
 
   local spellsFontDrop = CreateFrame("Frame", nil, pSpells, "UIDropDownMenuTemplate")
-  spellsFontDrop:SetPoint("TOPLEFT", 485, -238)
+  spellsFontDrop:SetPoint("TOPLEFT", 485, -218)
   if UDDM_SetWidth then UDDM_SetWidth(spellsFontDrop, 170) end
-  if UDDM_SetText then UDDM_SetText(spellsFontDrop, "Inherit") end
+  if UDDM_SetText then UDDM_SetText(spellsFontDrop, "Font") end
   panels.spells._fontDrop = spellsFontDrop
   panels.spells._fontKey = "inherit"
+  if HideDropDownMenuArt then HideDropDownMenuArt(spellsFontDrop) end
 
   local spellsSizeLabel = pSpells:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  spellsSizeLabel:SetPoint("TOPLEFT", 500, -202)
+  spellsSizeLabel:SetPoint("TOPLEFT", 440, -202)
   spellsSizeLabel:SetText("Size")
 
   local spellsSizeBox = CreateFrame("EditBox", nil, pSpells, "InputBoxTemplate")
   spellsSizeBox:SetSize(50, 20)
-  spellsSizeBox:SetPoint("TOPLEFT", 500, -218)
+  spellsSizeBox:SetPoint("TOPLEFT", 440, -218)
   spellsSizeBox:SetAutoFocus(false)
   spellsSizeBox:SetNumeric(true)
   spellsSizeBox:SetText("0")
   panels.spells._sizeBox = spellsSizeBox
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(spellsSizeBox) end
 
   -- Quick color palette for spell text color
   if CreateQuickColorPalette then
@@ -346,8 +386,9 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
     end
 
     local function SetSpellsColor(name)
-      if name == "None" then
+      if name == "None" or name == "Color" then
         panels.spells._color = nil
+        name = "Color"
       elseif name == "Green" then
         panels.spells._color = { 0.1, 1.0, 0.1 }
       elseif name == "Blue" then
@@ -360,7 +401,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
         panels.spells._color = { 0.2, 1.0, 1.0 }
       else
         panels.spells._color = nil
-        name = "None"
+        name = "Color"
       end
       if UDDM_SetText then UDDM_SetText(spellsColorDrop, name) end
     end
@@ -369,13 +410,39 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       key = tostring(key or "inherit")
       if key == "" then key = "inherit" end
       panels.spells._fontKey = key
-      local label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
+      local label
+      if key == "inherit" then
+        label = "Font"
+      else
+        label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
+      end
       if UDDM_SetText then UDDM_SetText(spellsFontDrop, label) end
     end
 
     local modernSpellsExpansion = type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(expDrop, function(root)
-      if root and root.CreateTitle then root:CreateTitle("Expansion") end
       local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+
+      do
+        local function IsSelected()
+          local curID, curName = nil, nil
+          if type(GetRuleCreateExpansion) == "function" then
+            curID, curName = GetRuleCreateExpansion()
+          end
+          curID = tonumber(curID)
+          return (curID == nil) and (curName == nil or curName == "")
+        end
+        local function SetSelected()
+          if type(SetRuleCreateExpansion) == "function" then
+            SetRuleCreateExpansion(nil, nil)
+          end
+        end
+        if root and root.CreateRadio then
+          root:CreateRadio("Choose Expansion", IsSelected, SetSelected)
+        elseif root and root.CreateButton then
+          root:CreateButton("Choose Expansion", SetSelected)
+        end
+      end
+
       for _, e in ipairs(choices) do
         if type(e) == "table" then
           local id, name = e.id, e.name
@@ -435,6 +502,19 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
 
     local modernSpellsFrame = type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(spellsFrameDrop, function(root)
       if root and root.CreateTitle then root:CreateTitle("Bar / List") end
+
+      if root and root.CreateRadio then
+        root:CreateRadio("Bar/List", function() return (panels.spells._targetFrameID == nil) end, function()
+          panels.spells._targetFrameID = nil
+          if UDDM_SetText then UDDM_SetText(spellsFrameDrop, "Bar/List") end
+        end)
+      elseif root and root.CreateButton then
+        root:CreateButton("Bar/List", function()
+          panels.spells._targetFrameID = nil
+          if UDDM_SetText then UDDM_SetText(spellsFrameDrop, "Bar/List") end
+        end)
+      end
+
       for _, def in ipairs((type(GetEffectiveFrames) == "function" and GetEffectiveFrames()) or {}) do
         if type(def) == "table" and def.id and root then
           local id = tostring(def.id)
@@ -470,7 +550,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
           end)
         end
       end
-      Add("Both (Off)", nil)
+      Add("Faction", nil)
       Add("Alliance", "Alliance")
       Add("Horde", "Horde")
     end)
@@ -478,7 +558,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
     local modernSpellsColor = type(UseModernMenuDropDown) == "function" and UseModernMenuDropDown(spellsColorDrop, function(root)
       if root and root.CreateTitle then root:CreateTitle("Color") end
       local opts = {
-        { "None", nil },
+        { "Color", nil },
         { "Green", { 0.1, 1.0, 0.1 } },
         { "Blue", { 0.2, 0.6, 1.0 } },
         { "Yellow", { 1.0, 0.9, 0.2 } },
@@ -488,7 +568,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       for _, opt in ipairs(opts) do
         local name, c = opt[1], opt[2]
         local function IsSelected()
-          if name == "None" then return panels.spells._color == nil end
+          if name == "Color" then return panels.spells._color == nil end
           if not c then return false end
           return ColorsMatch(panels.spells._color, c[1], c[2], c[3])
         end
@@ -509,7 +589,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       for _, opt in ipairs(choices) do
         if type(opt) == "table" and opt.key and root then
           local key = tostring(opt.key)
-          local label = tostring(opt.label or opt.key)
+          local label = (key == "inherit") and "Font" or tostring(opt.label or opt.key)
           if root.CreateRadio then
             root:CreateRadio(label, function() return (panels.spells._fontKey == key) end, function() SetFontKey(key) end)
           elseif root.CreateButton then
@@ -581,6 +661,26 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
     if not modernSpellsExpansion then
       UDDM_Initialize(expDrop, function(self, level)
         local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = nil, name = "Custom" } }
+
+        do
+          local info = UDDM_CreateInfo()
+          info.text = "Choose Expansion"
+          info.checked = function()
+            local curID, curName = nil, nil
+            if type(GetRuleCreateExpansion) == "function" then
+              curID, curName = GetRuleCreateExpansion()
+            end
+            curID = tonumber(curID)
+            return (curID == nil) and (curName == nil or curName == "")
+          end
+          info.func = function()
+            if type(SetRuleCreateExpansion) == "function" then
+              SetRuleCreateExpansion(nil, nil)
+            end
+          end
+          UDDM_AddButton(info)
+        end
+
         for _, e in ipairs(choices) do
           if type(e) == "table" then
             local id, name = e.id, e.name
@@ -613,6 +713,16 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
 
     if not modernSpellsFrame then
       UDDM_Initialize(spellsFrameDrop, function(self, level)
+        do
+          local info = UDDM_CreateInfo()
+          info.text = "Bar/List"
+          info.checked = (panels.spells._targetFrameID == nil) and true or false
+          info.func = function()
+            panels.spells._targetFrameID = nil
+            if UDDM_SetText then UDDM_SetText(spellsFrameDrop, "Bar/List") end
+          end
+          UDDM_AddButton(info)
+        end
         for _, def in ipairs((type(GetEffectiveFrames) == "function" and GetEffectiveFrames()) or {}) do
           if type(def) == "table" and def.id then
             local id = tostring(def.id)
@@ -633,11 +743,11 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       UDDM_Initialize(spellsFactionDrop, function(self, level)
         do
           local info = UDDM_CreateInfo()
-          info.text = "Both (Off)"
+          info.text = "Faction"
           info.checked = (panels.spells._faction == nil) and true or false
           info.func = function()
             panels.spells._faction = nil
-            if UDDM_SetText then UDDM_SetText(spellsFactionDrop, "Both (Off)") end
+            if UDDM_SetText then UDDM_SetText(spellsFactionDrop, "Faction") end
           end
           UDDM_AddButton(info)
         end
@@ -666,7 +776,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
 
     if not modernSpellsColor then
       UDDM_Initialize(spellsColorDrop, function(self, level)
-        for _, name in ipairs({ "None", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
+        for _, name in ipairs({ "Color", "Green", "Blue", "Yellow", "Red", "Cyan" }) do
           local info = UDDM_CreateInfo()
           info.text = name
           info.func = function() SetSpellsColor(name) end
@@ -682,7 +792,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
           if type(opt) == "table" and opt.key then
             local key = tostring(opt.key)
             local info = UDDM_CreateInfo()
-            info.text = tostring(opt.label or opt.key)
+            info.text = (key == "inherit") and "Font" or tostring(opt.label or opt.key)
             info.checked = (panels.spells._fontKey == key) and true or false
             info.func = function() SetFontKey(key) end
             UDDM_AddButton(info)
@@ -768,17 +878,17 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
     WipeTable(panels.spells._classes)
     RefreshSpellClassDropText()
 
-    panels.spells._targetFrameID = "list1"
-    if UDDM_SetText and spellsFrameDrop and GetFrameDisplayNameByID then UDDM_SetText(spellsFrameDrop, GetFrameDisplayNameByID("list1")) end
+    panels.spells._targetFrameID = nil
+    if UDDM_SetText and spellsFrameDrop then UDDM_SetText(spellsFrameDrop, "Bar/List") end
 
     panels.spells._faction = nil
-    if UDDM_SetText and spellsFactionDrop then UDDM_SetText(spellsFactionDrop, "Both (Off)") end
+    if UDDM_SetText and spellsFactionDrop then UDDM_SetText(spellsFactionDrop, "Faction") end
 
     panels.spells._color = nil
-    if UDDM_SetText and spellsColorDrop then UDDM_SetText(spellsColorDrop, "None") end
+    if UDDM_SetText and spellsColorDrop then UDDM_SetText(spellsColorDrop, "Color") end
 
     panels.spells._fontKey = "inherit"
-    if UDDM_SetText and spellsFontDrop then UDDM_SetText(spellsFontDrop, "Inherit") end
+    if UDDM_SetText and spellsFontDrop then UDDM_SetText(spellsFontDrop, "Font") end
     if spellsSizeBox then spellsSizeBox:SetText("0") end
 
     panels.spells._playerLevelOp = nil
@@ -885,8 +995,16 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
   end
 
   addSpellBtn:SetScript("OnClick", function()
-    local targetFrame = tostring(panels.spells._targetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = "list1" end
+    local targetFrameID = panels.spells._targetFrameID
+    local targetFrame = nil
+    if type(targetFrameID) == "string" then
+      local trimmed = targetFrameID:gsub("%s+", "")
+      if trimmed ~= "" then
+        targetFrame = trimmed
+      end
+    end
+    local targetFrameKey = targetFrame or "any"
+    local targetFrameLabel = targetFrame or "Bar/List"
 
     local known = tonumber(knownBox and knownBox:GetText() or "")
     if known and known <= 0 then known = nil end
@@ -1042,7 +1160,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       cancelSpellEditBtn:Hide()
       Print("Saved default spell rule edit.")
     else
-      local key = string.format("custom:spell:%s:%d", tostring(targetFrame), (#rules + 1))
+      local key = string.format("custom:spell:%s:%d", tostring(targetFrameKey), (#rules + 1))
 
       local op = panels.spells._playerLevelOp
       local lvl = spellsLevelBox and tonumber(spellsLevelBox:GetText() or "") or nil
@@ -1083,7 +1201,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       end
 
       rules[#rules + 1] = r
-      Print("Added spell rule -> " .. targetFrame)
+      Print("Added spell rule -> " .. targetFrameLabel)
     end
 
     if CreateAllFrames then CreateAllFrames() end

@@ -66,8 +66,10 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
   rulesTitle:SetText("Rules")
   optionsFrame._rulesTitle = rulesTitle
 
+  if rulesTitle.Hide then rulesTitle:Hide() end
+
   local rulesViewDrop = CreateFrame("Frame", nil, panels.rules, "UIDropDownMenuTemplate")
-  rulesViewDrop:SetPoint("TOPRIGHT", panels.rules, "TOPRIGHT", -6, -54)
+  rulesViewDrop:SetPoint("TOPRIGHT", panels.rules, "TOPRIGHT", -6, -40)
   if UDDM_SetWidth then UDDM_SetWidth(rulesViewDrop, 120) end
   if UDDM_SetText then UDDM_SetText(rulesViewDrop, "All") end
   optionsFrame._rulesViewDrop = rulesViewDrop
@@ -101,7 +103,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
   local rulesSearch = CreateFrame("EditBox", nil, panels.rules, "InputBoxTemplate")
   rulesSearch:SetAutoFocus(false)
   rulesSearch:SetSize(220, 18)
-  rulesSearch:SetPoint("TOPLEFT", 12, -56)
+  rulesSearch:SetPoint("TOPLEFT", 12, -40)
   rulesSearch:SetTextInsets(6, 6, 2, 2)
   optionsFrame._rulesSearch = rulesSearch
 
@@ -118,14 +120,29 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
   optionsFrame._rulesViewDropHit = rulesViewDropHit
 
   local hint = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  hint:SetPoint("TOPLEFT", 12, -74)
+  hint:SetPoint("TOPLEFT", 12, -60)
   hint:SetText("Create rules using the Quest / Items / Spell / Text tabs. Use this list to enable/disable and edit.")
 
   local rulesScroll = CreateFrame("ScrollFrame", nil, panels.rules, "UIPanelScrollFrameTemplate")
-  rulesScroll:SetPoint("TOPLEFT", 12, -86)
+  rulesScroll:SetPoint("TOPLEFT", 12, -74)
   rulesScroll:SetPoint("BOTTOMLEFT", 12, 44)
   rulesScroll:SetWidth(530)
   optionsFrame._rulesScroll = rulesScroll
+
+  rulesScroll:EnableMouseWheel(true)
+  rulesScroll:SetScript("OnMouseWheel", function(self, delta)
+    local cur = tonumber(self:GetVerticalScroll() or 0) or 0
+    local maxScroll = tonumber(self:GetVerticalScrollRange() or 0) or 0
+    local nextVal = cur - (delta * 24)
+    if nextVal < 0 then nextVal = 0 elseif nextVal > maxScroll then nextVal = maxScroll end
+    self:SetVerticalScroll(nextVal)
+  end)
+
+  if rulesScroll.ScrollBar then
+    rulesScroll.ScrollBar:Hide()
+    rulesScroll.ScrollBar.Show = function() end
+    if rulesScroll.ScrollBar.EnableMouse then rulesScroll.ScrollBar:EnableMouse(false) end
+  end
 
   local zebraRules = CreateFrame("Slider", nil, panels.rules, "UISliderTemplate")
   zebraRules:ClearAllPoints()
@@ -169,7 +186,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
   rulesScroll:SetScript("OnSizeChanged", function(self)
     if not optionsFrame or not optionsFrame._rulesContent then return end
     local w = tonumber(self:GetWidth() or 0) or 0
-    optionsFrame._rulesContent:SetWidth(math.max(1, w - 28))
+    optionsFrame._rulesContent:SetWidth(math.max(1, w - 4))
   end)
   optionsFrame._rulesContent = rulesContent
   optionsFrame._ruleRows = optionsFrame._ruleRows or {}

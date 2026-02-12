@@ -36,6 +36,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
 
   local AddPlaceholder = ctx.AddPlaceholder
   local HideInputBoxTemplateArt = ctx.HideInputBoxTemplateArt
+  local HideDropDownMenuArt = ctx.HideDropDownMenuArt
   local AttachLocationIDTooltip = ctx.AttachLocationIDTooltip
 
   local GetFontChoices = ctx.GetFontChoices
@@ -56,16 +57,32 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   textTitle:SetPoint("TOPLEFT", 12, -40)
   textTitle:SetText("Text")
 
+  if textTitle.Hide then textTitle:Hide() end
+
   -- Expansion selector (stamped onto new/edited rules as _expansionID/_expansionName)
   local expLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   expLabel:SetPoint("TOPRIGHT", panels.text, "TOPRIGHT", -12, -40)
   expLabel:SetText("Expansion")
 
+  expLabel:SetText("")
+  if expLabel.Hide then expLabel:Hide() end
+
   local expDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
-  expDrop:SetPoint("TOPRIGHT", panels.text, "TOPRIGHT", -6, -54)
+  expDrop:SetPoint("TOPRIGHT", panels.text, "TOPRIGHT", -6, -40)
   if UDDM_SetWidth then UDDM_SetWidth(expDrop, 180) end
   if UDDM_SetText then UDDM_SetText(expDrop, "") end
   panels.text._expansionDrop = expDrop
+  if HideDropDownMenuArt then HideDropDownMenuArt(expDrop) end
+
+  do
+    local keep = panels.text._keepOpenToggle
+    if keep and keep.ClearAllPoints then
+      expLabel:ClearAllPoints()
+      expLabel:SetPoint("TOPRIGHT", keep, "TOPLEFT", -6, 0)
+      expDrop:ClearAllPoints()
+      expDrop:SetPoint("TOPRIGHT", keep, "TOPLEFT", -2, -14)
+    end
+  end
 
   local function ResolveExpansionNameByID(id)
     id = tonumber(id)
@@ -87,7 +104,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     if not name and id then
       name = ResolveExpansionNameByID(id)
     end
-    local label = name or "Weekly"
+    local label = name or "Choose Expansion"
     if UDDM_SetText and expDrop then UDDM_SetText(expDrop, label) end
   end
 
@@ -300,7 +317,14 @@ function ns.FQTOptionsPanels.BuildText(ctx)
 
   local calendarBtn = CreateFrame("Button", nil, panels.text, "UIPanelButtonTemplate")
   calendarBtn:SetSize(90, 20)
-  calendarBtn:SetPoint("TOPRIGHT", panels.text, "TOPRIGHT", -12, -38)
+  do
+    local keep = panels.text._keepOpenToggle
+    if keep and keep.SetPoint then
+      calendarBtn:SetPoint("TOPRIGHT", keep, "TOPLEFT", -196, 2)
+    else
+      calendarBtn:SetPoint("TOPRIGHT", panels.text, "TOPRIGHT", -212, -38)
+    end
+  end
   calendarBtn:SetText("Calendar")
   calendarBtn:SetScript("OnClick", function()
     local pop = EnsureCalendarPopout()
@@ -326,6 +350,17 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   local textInfoScroll = CreateFrame("ScrollFrame", nil, panels.text, "UIPanelScrollFrameTemplate")
   textInfoScroll:SetPoint("TOPLEFT", 12, -94)
   textInfoScroll:SetSize(530, 46)
+
+  if textInfoScroll.ScrollBar then
+    textInfoScroll.ScrollBar:Hide()
+    textInfoScroll.ScrollBar.Show = function() end
+    if textInfoScroll.ScrollBar.EnableMouse then textInfoScroll.ScrollBar:EnableMouse(false) end
+  end
+  textInfoScroll:EnableMouseWheel(true)
+  textInfoScroll:SetScript("OnMouseWheel", function(self, delta)
+    local cur = tonumber(self:GetVerticalScroll() or 0) or 0
+    self:SetVerticalScroll(math.max(0, cur - (delta * 20)))
+  end)
 
   local textInfoBox = CreateFrame("EditBox", nil, textInfoScroll)
   textInfoBox:SetMultiLine(true)
@@ -354,33 +389,38 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   panels.text._textInfoScroll = textInfoScroll
 
   local textFrameDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
-  textFrameDrop:SetPoint("TOPLEFT", -8, -164)
+  textFrameDrop:SetPoint("TOPLEFT", 12, -164)
   if UDDM_SetWidth then UDDM_SetWidth(textFrameDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(textFrameDrop, GetFrameDisplayNameByID("list1")) end
-  panels.text._targetFrameID = "list1"
+  if UDDM_SetText then UDDM_SetText(textFrameDrop, "Bar/List") end
+  panels.text._targetFrameID = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(textFrameDrop) end
 
   local textFactionDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
   textFactionDrop:SetPoint("TOPLEFT", 165, -164)
   if UDDM_SetWidth then UDDM_SetWidth(textFactionDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(textFactionDrop, "Both (Off)") end
+  if UDDM_SetText then UDDM_SetText(textFactionDrop, "Faction") end
   panels.text._faction = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(textFactionDrop) end
 
   local textColorDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
   textColorDrop:SetPoint("TOPLEFT", 325, -164)
   if UDDM_SetWidth then UDDM_SetWidth(textColorDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(textColorDrop, "None") end
+  if UDDM_SetText then UDDM_SetText(textColorDrop, "Color") end
   panels.text._color = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(textColorDrop) end
 
   local textFontLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   textFontLabel:SetPoint("TOPLEFT", 500, -146)
-  textFontLabel:SetText("Font")
+  textFontLabel:SetText("")
+  if textFontLabel.Hide then textFontLabel:Hide() end
 
   local textFontDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
   textFontDrop:SetPoint("TOPLEFT", 485, -164)
   if UDDM_SetWidth then UDDM_SetWidth(textFontDrop, 170) end
-  if UDDM_SetText then UDDM_SetText(textFontDrop, "Inherit") end
+  if UDDM_SetText then UDDM_SetText(textFontDrop, "Font") end
   panels.text._fontDrop = textFontDrop
   panels.text._fontKey = "inherit"
+  if HideDropDownMenuArt then HideDropDownMenuArt(textFontDrop) end
 
   local textSizeLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   textSizeLabel:SetPoint("TOPLEFT", 500, -246)
@@ -418,12 +458,14 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   textRepFactionBox:SetAutoFocus(false)
   textRepFactionBox:SetNumeric(true)
   textRepFactionBox:SetText("0")
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(textRepFactionBox) end
 
   local textRepMinDrop = CreateFrame("Frame", nil, panels.text, "UIDropDownMenuTemplate")
   textRepMinDrop:SetPoint("TOPLEFT", 95, -232)
   if UDDM_SetWidth then UDDM_SetWidth(textRepMinDrop, 140) end
   if UDDM_SetText then UDDM_SetText(textRepMinDrop, "Off") end
   panels.text._repMinStanding = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(textRepMinDrop) end
 
   local textRestedOnly = CreateFrame("CheckButton", nil, panels.text, "UICheckButtonTemplate")
   textRestedOnly:SetPoint("TOPLEFT", 250, -246)
@@ -440,6 +482,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   textLocBox:SetAutoFocus(false)
   textLocBox:SetText("0")
   if AttachLocationIDTooltip then AttachLocationIDTooltip(textLocBox) end
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(textLocBox) end
 
   local textLevelLabel = panels.text:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   textLevelLabel:SetPoint("TOPLEFT", 400, -206)
@@ -450,6 +493,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   if UDDM_SetWidth then UDDM_SetWidth(textLevelOpDrop, 70) end
   if UDDM_SetText then UDDM_SetText(textLevelOpDrop, "Off") end
   panels.text._playerLevelOp = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(textLevelOpDrop) end
 
   local textLevelBox = CreateFrame("EditBox", nil, panels.text, "InputBoxTemplate")
   textLevelBox:SetSize(50, 20)
@@ -457,6 +501,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
   textLevelBox:SetAutoFocus(false)
   textLevelBox:SetNumeric(true)
   textLevelBox:SetText("0")
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(textLevelBox) end
 
   if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
     local function ColorsMatch(tbl, r, g, b)
@@ -481,7 +526,8 @@ function ns.FQTOptionsPanels.BuildText(ctx)
         panels.text._color = nil
         name = "None"
       end
-      if UDDM_SetText then UDDM_SetText(textColorDrop, name) end
+      local displayName = (name == "None") and "Color" or name
+      if UDDM_SetText then UDDM_SetText(textColorDrop, displayName) end
     end
 
     local function SetFontKey(key)
@@ -489,12 +535,34 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       if key == "" then key = "inherit" end
       panels.text._fontKey = key
       local label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
+      if key == "inherit" then label = "Font" end
       if UDDM_SetText then UDDM_SetText(textFontDrop, label) end
     end
 
     local modernTextExpansion = UseModernMenuDropDown and UseModernMenuDropDown(expDrop, function(root)
-      if root and root.CreateTitle then root:CreateTitle("Expansion") end
       local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+
+      do
+        local function IsSelected()
+          local curID, curName = nil, nil
+          if type(GetRuleCreateExpansion) == "function" then
+            curID, curName = GetRuleCreateExpansion()
+          end
+          curID = tonumber(curID)
+          return (curID == nil) and (curName == nil or curName == "")
+        end
+        local function SetSelected()
+          if type(SetRuleCreateExpansion) == "function" then
+            SetRuleCreateExpansion(nil, nil)
+          end
+        end
+        if root and root.CreateRadio then
+          root:CreateRadio("Choose Expansion", IsSelected, SetSelected)
+        elseif root and root.CreateButton then
+          root:CreateButton("Choose Expansion", SetSelected)
+        end
+      end
+
       for _, e in ipairs(choices) do
         if type(e) == "table" then
           local id, name = e.id, e.name
@@ -522,6 +590,26 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     if not modernTextExpansion then
       UDDM_Initialize(expDrop, function(self, level)
         local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+
+        do
+          local info = UDDM_CreateInfo()
+          info.text = "Choose Expansion"
+          info.checked = function()
+            local curID, curName = nil, nil
+            if type(GetRuleCreateExpansion) == "function" then
+              curID, curName = GetRuleCreateExpansion()
+            end
+            curID = tonumber(curID)
+            return (curID == nil) and (curName == nil or curName == "")
+          end
+          info.func = function()
+            if type(SetRuleCreateExpansion) == "function" then
+              SetRuleCreateExpansion(nil, nil)
+            end
+          end
+          UDDM_AddButton(info)
+        end
+
         for _, e in ipairs(choices) do
           if type(e) == "table" then
             local id, name = e.id, e.name
@@ -546,7 +634,18 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     end
 
     local modernTextFrame = UseModernMenuDropDown and UseModernMenuDropDown(textFrameDrop, function(root)
-      if root and root.CreateTitle then root:CreateTitle("Bar / List") end
+      if root and root.CreateTitle then root:CreateTitle("Bar/List") end
+      if root and root.CreateRadio then
+        root:CreateRadio("Bar/List", function() return (panels.text._targetFrameID == nil) end, function()
+          panels.text._targetFrameID = nil
+          if UDDM_SetText then UDDM_SetText(textFrameDrop, "Bar/List") end
+        end)
+      elseif root and root.CreateButton then
+        root:CreateButton("Bar/List", function()
+          panels.text._targetFrameID = nil
+          if UDDM_SetText then UDDM_SetText(textFrameDrop, "Bar/List") end
+        end)
+      end
       for _, def in ipairs(GetEffectiveFrames()) do
         if type(def) == "table" and def.id and root then
           local id = tostring(def.id)
@@ -573,12 +672,14 @@ function ns.FQTOptionsPanels.BuildText(ctx)
         if root.CreateRadio then
           root:CreateRadio(name, function() return (panels.text._faction == v) end, function()
             panels.text._faction = v
-            if UDDM_SetText then UDDM_SetText(textFactionDrop, name) end
+            local displayName = (v == nil) and "Faction" or name
+            if UDDM_SetText then UDDM_SetText(textFactionDrop, displayName) end
           end)
         elseif root.CreateButton then
           root:CreateButton(name, function()
             panels.text._faction = v
-            if UDDM_SetText then UDDM_SetText(textFactionDrop, name) end
+            local displayName = (v == nil) and "Faction" or name
+            if UDDM_SetText then UDDM_SetText(textFactionDrop, displayName) end
           end)
         end
       end
@@ -683,6 +784,16 @@ function ns.FQTOptionsPanels.BuildText(ctx)
 
     if not modernTextFrame then
       UDDM_Initialize(textFrameDrop, function(self, level)
+        do
+          local info = UDDM_CreateInfo()
+          info.text = "Bar/List"
+          info.checked = (panels.text._targetFrameID == nil) and true or false
+          info.func = function()
+            panels.text._targetFrameID = nil
+            if UDDM_SetText then UDDM_SetText(textFrameDrop, "Bar/List") end
+          end
+          UDDM_AddButton(info)
+        end
         for _, def in ipairs(GetEffectiveFrames()) do
           if type(def) == "table" and def.id then
             local id = tostring(def.id)
@@ -707,7 +818,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
           info.checked = (panels.text._faction == nil) and true or false
           info.func = function()
             panels.text._faction = nil
-            if UDDM_SetText then UDDM_SetText(textFactionDrop, "Both (Off)") end
+            if UDDM_SetText then UDDM_SetText(textFactionDrop, "Faction") end
           end
           UDDM_AddButton(info)
         end
@@ -836,17 +947,17 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     if textInfoBox then textInfoBox:SetText("") end
     if textInfoScroll and textInfoScroll.SetVerticalScroll then textInfoScroll:SetVerticalScroll(0) end
 
-    panels.text._targetFrameID = "list1"
-    if UDDM_SetText and textFrameDrop then UDDM_SetText(textFrameDrop, GetFrameDisplayNameByID("list1")) end
+    panels.text._targetFrameID = nil
+    if UDDM_SetText and textFrameDrop then UDDM_SetText(textFrameDrop, "Bar/List") end
 
     panels.text._faction = nil
-    if UDDM_SetText and textFactionDrop then UDDM_SetText(textFactionDrop, "Both (Off)") end
+    if UDDM_SetText and textFactionDrop then UDDM_SetText(textFactionDrop, "Faction") end
 
     panels.text._color = nil
-    if UDDM_SetText and textColorDrop then UDDM_SetText(textColorDrop, "None") end
+    if UDDM_SetText and textColorDrop then UDDM_SetText(textColorDrop, "Color") end
 
     panels.text._fontKey = "inherit"
-    if UDDM_SetText and textFontDrop then UDDM_SetText(textFontDrop, "Inherit") end
+    if UDDM_SetText and textFontDrop then UDDM_SetText(textFontDrop, "Font") end
     if textSizeBox then textSizeBox:SetText("0") end
 
     if textRepFactionBox then textRepFactionBox:SetText("0") end
@@ -879,8 +990,11 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     infoText = infoText:gsub("^%s+", ""):gsub("%s+$", "")
     local textInfo = (infoText ~= "" and infoText ~= nameText) and infoText or nil
 
+    ---@type string|nil
     local targetFrame = tostring(panels.text._targetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = "list1" end
+    if targetFrame == "" then targetFrame = nil end
+    local targetFrameKey = targetFrame or "any"
+    local targetFrameLabel = targetFrame or "Bar/List"
 
     local repFactionID = tonumber(textRepFactionBox:GetText() or "")
     if repFactionID and repFactionID <= 0 then repFactionID = nil end
@@ -993,7 +1107,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       cancelTextEditBtn:Hide()
       Print("Saved default text rule edit.")
     else
-      local key = string.format("custom:text:%s:%s:%d", tostring(targetFrame), tostring(nameText), (#rules + 1))
+      local key = string.format("custom:text:%s:%s:%d", targetFrameKey, tostring(nameText), (#rules + 1))
       local op = panels.text._playerLevelOp
       local lvl = textLevelBox and tonumber(textLevelBox:GetText() or "") or nil
       if lvl and lvl <= 0 then lvl = nil end
@@ -1021,7 +1135,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
 
       rules[#rules + 1] = r
 
-      Print("Added text entry -> " .. targetFrame)
+      Print("Added text entry -> " .. targetFrameLabel)
     end
 
     if CreateAllFrames then CreateAllFrames() end

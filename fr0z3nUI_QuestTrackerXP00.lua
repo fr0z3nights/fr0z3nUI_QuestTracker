@@ -36,6 +36,11 @@ local Y, N = true, false
 --   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
+
+
+
+
+
 }
 
 for i = 1, #bakedRules do

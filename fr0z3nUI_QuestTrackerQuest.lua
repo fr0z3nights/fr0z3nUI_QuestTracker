@@ -29,6 +29,8 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
   local SelectTab = ctx.SelectTab
 
   local AddPlaceholder = ctx.AddPlaceholder
+  local HideInputBoxTemplateArt = ctx.HideInputBoxTemplateArt
+  local HideDropDownMenuArt = ctx.HideDropDownMenuArt
   local AttachLocationIDTooltip = ctx.AttachLocationIDTooltip
 
   local GetFontChoices = ctx.GetFontChoices
@@ -54,16 +56,32 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
   questTitle:SetPoint("TOPLEFT", 12, -40)
   questTitle:SetText("Quest")
 
+  if questTitle.Hide then questTitle:Hide() end
+
   -- Expansion selector (stamped onto new/edited rules as _expansionID/_expansionName)
   local expLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   expLabel:SetPoint("TOPRIGHT", pQuest, "TOPRIGHT", -12, -40)
   expLabel:SetText("Expansion")
 
+  expLabel:SetText("")
+  if expLabel.Hide then expLabel:Hide() end
+
   local expDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
-  expDrop:SetPoint("TOPRIGHT", pQuest, "TOPRIGHT", -6, -54)
+  expDrop:SetPoint("TOPRIGHT", pQuest, "TOPRIGHT", -6, -40)
   if UDDM_SetWidth then UDDM_SetWidth(expDrop, 180) end
   if UDDM_SetText then UDDM_SetText(expDrop, "") end
   pQuest._expansionDrop = expDrop
+  if HideDropDownMenuArt then HideDropDownMenuArt(expDrop) end
+
+  do
+    local keep = pQuest._keepOpenToggle
+    if keep and keep.ClearAllPoints then
+      expLabel:ClearAllPoints()
+      expLabel:SetPoint("TOPRIGHT", keep, "TOPLEFT", -6, 0)
+      expDrop:ClearAllPoints()
+      expDrop:SetPoint("TOPRIGHT", keep, "TOPLEFT", -2, -14)
+    end
+  end
 
   local function ResolveExpansionNameByID(id)
     id = tonumber(id)
@@ -85,7 +103,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     if not name and id then
       name = ResolveExpansionNameByID(id)
     end
-    local label = name or "Weekly"
+    local label = name or "Choose Expansion"
     if UDDM_SetText and expDrop then UDDM_SetText(expDrop, label) end
   end
 
@@ -99,9 +117,23 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
   qiLabel:SetPoint("TOPLEFT", 12, -70)
   qiLabel:SetText("Quest Info")
 
+  qiLabel:SetText("")
+  if qiLabel.Hide then qiLabel:Hide() end
+
   local qiScroll = CreateFrame("ScrollFrame", nil, pQuest, "UIPanelScrollFrameTemplate")
-  qiScroll:SetPoint("TOPLEFT", 12, -90)
-  qiScroll:SetSize(530, 90)
+  qiScroll:SetPoint("TOPLEFT", 12, -70)
+  qiScroll:SetSize(530, 80)
+
+  if qiScroll.ScrollBar then
+    qiScroll.ScrollBar:Hide()
+    qiScroll.ScrollBar.Show = function() end
+    if qiScroll.ScrollBar.EnableMouse then qiScroll.ScrollBar:EnableMouse(false) end
+  end
+  qiScroll:EnableMouseWheel(true)
+  qiScroll:SetScript("OnMouseWheel", function(self, delta)
+    local cur = tonumber(self:GetVerticalScroll() or 0) or 0
+    self:SetVerticalScroll(math.max(0, cur - (delta * 20)))
+  end)
 
   local qiBox = CreateFrame("EditBox", nil, qiScroll)
   qiBox:SetMultiLine(true)
@@ -130,127 +162,161 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
   pQuest._questInfoScroll = qiScroll
 
   local qidLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  qidLabel:SetPoint("TOPLEFT", 12, -190)
+  qidLabel:SetPoint("TOPLEFT", 12, -156)
   qidLabel:SetText("QuestID")
+
+  qidLabel:SetText("")
+  if qidLabel.Hide then qidLabel:Hide() end
 
   local questIDBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
   questIDBox:SetSize(90, 20)
-  questIDBox:SetPoint("TOPLEFT", 12, -206)
+  questIDBox:SetPoint("TOPLEFT", 12, -172)
   questIDBox:SetAutoFocus(false)
   questIDBox:SetNumeric(true)
-  questIDBox:SetText("0")
+  questIDBox:SetText("")
+  if AddPlaceholder then AddPlaceholder(questIDBox, "QuestID") end
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(questIDBox) end
 
   local afterLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  afterLabel:SetPoint("TOPLEFT", 110, -190)
+  afterLabel:SetPoint("TOPLEFT", 110, -156)
   afterLabel:SetText("After Quest (optional)")
+
+  afterLabel:SetText("")
+  if afterLabel.Hide then afterLabel:Hide() end
 
   local afterBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
   afterBox:SetSize(120, 20)
-  afterBox:SetPoint("TOPLEFT", 110, -206)
+  afterBox:SetPoint("TOPLEFT", 110, -172)
   afterBox:SetAutoFocus(false)
   afterBox:SetNumeric(true)
-  afterBox:SetText("0")
+  afterBox:SetText("")
+  if AddPlaceholder then AddPlaceholder(afterBox, "After QuestID") end
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(afterBox) end
 
   local barLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  barLabel:SetPoint("TOPLEFT", 245, -190)
+  barLabel:SetPoint("TOPLEFT", 245, -156)
   barLabel:SetText("Bar / List")
 
+  barLabel:SetText("")
+  if barLabel.Hide then barLabel:Hide() end
+
   local factionLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  factionLabel:SetPoint("TOPLEFT", 410, -190)
-  factionLabel:SetText("Faction")
+  factionLabel:SetPoint("TOPLEFT", 410, -156)
+  factionLabel:SetText("")
+  if factionLabel.Hide then factionLabel:Hide() end
 
   local qTitleLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  qTitleLabel:SetPoint("TOPLEFT", 12, -230)
+  qTitleLabel:SetPoint("TOPLEFT", 12, -196)
   qTitleLabel:SetText("Title (optional)")
+
+  qTitleLabel:SetText("")
+  if qTitleLabel.Hide then qTitleLabel:Hide() end
 
   local qTitleBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
   qTitleBox:SetSize(220, 20)
-  qTitleBox:SetPoint("TOPLEFT", 12, -246)
+  qTitleBox:SetPoint("TOPLEFT", 12, -212)
   qTitleBox:SetAutoFocus(false)
   qTitleBox:SetText("")
   if AddPlaceholder then AddPlaceholder(qTitleBox, "Custom title (leave blank for quest name)") end
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(qTitleBox) end
 
   local colorLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  colorLabel:SetPoint("TOPLEFT", 12, -270)
-  colorLabel:SetText("Color")
+  colorLabel:SetPoint("TOPLEFT", 12, -236)
+  colorLabel:SetText("")
+  if colorLabel.Hide then colorLabel:Hide() end
 
   local qLevelLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  qLevelLabel:SetPoint("TOPLEFT", 180, -270)
+  qLevelLabel:SetPoint("TOPLEFT", 180, -236)
   qLevelLabel:SetText("Player level")
 
   local questFrameDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
-  questFrameDrop:SetPoint("TOPLEFT", 230, -218)
+  questFrameDrop:SetPoint("TOPLEFT", 230, -170)
 
   if UDDM_SetWidth then UDDM_SetWidth(questFrameDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(questFrameDrop, GetFrameDisplayNameByID("list1")) end
-  pQuest._questTargetFrameID = "list1"
+  if UDDM_SetText then UDDM_SetText(questFrameDrop, "Bar/List") end
+  pQuest._questTargetFrameID = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(questFrameDrop) end
 
   local questFactionDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
-  questFactionDrop:SetPoint("TOPLEFT", 395, -218)
+  questFactionDrop:SetPoint("TOPLEFT", 395, -166)
   if UDDM_SetWidth then UDDM_SetWidth(questFactionDrop, 140) end
-  if UDDM_SetText then UDDM_SetText(questFactionDrop, "Both (Off)") end
+  if UDDM_SetText then UDDM_SetText(questFactionDrop, "Faction") end
   pQuest._questFaction = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(questFactionDrop) end
 
   local questColorDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
-  questColorDrop:SetPoint("TOPLEFT", -8, -298)
+  questColorDrop:SetPoint("TOPLEFT", 12, -258)
   if UDDM_SetWidth then UDDM_SetWidth(questColorDrop, 160) end
-  if UDDM_SetText then UDDM_SetText(questColorDrop, "None") end
+  if UDDM_SetText then UDDM_SetText(questColorDrop, "Color") end
   pQuest._questColor = nil
   pQuest._questColorName = "None"
+  if HideDropDownMenuArt then HideDropDownMenuArt(questColorDrop) end
 
   local qLevelOpDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
-  qLevelOpDrop:SetPoint("TOPLEFT", 165, -298)
+  qLevelOpDrop:SetPoint("TOPLEFT", 165, -264)
   if UDDM_SetWidth then UDDM_SetWidth(qLevelOpDrop, 70) end
   if UDDM_SetText then UDDM_SetText(qLevelOpDrop, "Off") end
   pQuest._playerLevelOp = nil
+  if HideDropDownMenuArt then HideDropDownMenuArt(qLevelOpDrop) end
 
   local qLevelBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
   qLevelBox:SetSize(50, 20)
-  qLevelBox:SetPoint("TOPLEFT", 270, -294)
+  qLevelBox:SetPoint("TOPLEFT", 270, -260)
   qLevelBox:SetAutoFocus(false)
   qLevelBox:SetNumeric(true)
   qLevelBox:SetText("0")
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(qLevelBox) end
 
   local qLocLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  qLocLabel:SetPoint("TOPLEFT", 330, -270)
+  qLocLabel:SetPoint("TOPLEFT", 330, -236)
   qLocLabel:SetText("LocationID (uiMapID)")
 
   local qLocBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
   qLocBox:SetSize(90, 20)
-  qLocBox:SetPoint("TOPLEFT", 330, -294)
+  qLocBox:SetPoint("TOPLEFT", 330, -260)
   qLocBox:SetAutoFocus(false)
   qLocBox:SetText("0")
   if AttachLocationIDTooltip then AttachLocationIDTooltip(qLocBox) end
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(qLocBox) end
 
   local fontLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  fontLabel:SetPoint("TOPLEFT", 12, -318)
-  fontLabel:SetText("Font")
+  fontLabel:SetPoint("TOPLEFT", 12, -284)
+  fontLabel:SetText("")
+  if fontLabel.Hide then fontLabel:Hide() end
 
   local fontDrop = CreateFrame("Frame", nil, pQuest, "UIDropDownMenuTemplate")
-  fontDrop:SetPoint("TOPLEFT", -8, -346)
+  fontDrop:SetPoint("TOPLEFT", 12, -306)
   if UDDM_SetWidth then UDDM_SetWidth(fontDrop, 240) end
-  if UDDM_SetText then UDDM_SetText(fontDrop, "Inherit") end
+  if UDDM_SetText then UDDM_SetText(fontDrop, "Font") end
   pQuest._fontDrop = fontDrop
   pQuest._fontKey = "inherit"
+  if HideDropDownMenuArt then HideDropDownMenuArt(fontDrop) end
 
   local sizeLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  sizeLabel:SetPoint("TOPLEFT", 260, -318)
+  sizeLabel:SetPoint("TOPLEFT", 260, -284)
   sizeLabel:SetText("Size")
 
   local sizeBox = CreateFrame("EditBox", nil, pQuest, "InputBoxTemplate")
   sizeBox:SetSize(50, 20)
-  sizeBox:SetPoint("TOPLEFT", 260, -342)
+  sizeBox:SetPoint("TOPLEFT", 260, -308)
   sizeBox:SetAutoFocus(false)
   sizeBox:SetNumeric(true)
   sizeBox:SetText("0")
   pQuest._sizeBox = sizeBox
+  if HideInputBoxTemplateArt then HideInputBoxTemplateArt(sizeBox) end
 
   local function SetFontKey(key)
     key = tostring(key or "inherit")
     if key == "" then key = "inherit" end
     pQuest._fontKey = key
-    local label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
-    if UDDM_SetText then UDDM_SetText(fontDrop, label) end
+    if UDDM_SetText then
+      if key == "inherit" then
+        UDDM_SetText(fontDrop, "Font")
+      else
+        local label = (type(GetFontChoiceLabel) == "function") and GetFontChoiceLabel(key) or key
+        UDDM_SetText(fontDrop, label)
+      end
+    end
   end
 
   local function SetQuestColor(name)
@@ -272,7 +338,9 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     end
     pQuest._questColorName = name
     if UDDM_SetText then
-      if ColorLabel then
+      if name == "None" then
+        UDDM_SetText(questColorDrop, "Color")
+      elseif ColorLabel then
         UDDM_SetText(questColorDrop, ColorLabel(name))
       else
         UDDM_SetText(questColorDrop, name)
@@ -283,8 +351,28 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
   if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
     -- Expansion dropdown
     local modernExpansion = UseModernMenuDropDown and UseModernMenuDropDown(expDrop, function(root)
-      if root and root.CreateTitle then root:CreateTitle("Expansion") end
       local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+
+      do
+        local function IsSelected()
+          local curID, curName = nil, nil
+          if type(GetRuleCreateExpansion) == "function" then
+            curID, curName = GetRuleCreateExpansion()
+          end
+          curID = tonumber(curID)
+          return (curID == nil) and (curName == nil or curName == "")
+        end
+        local function SetSelected()
+          if type(SetRuleCreateExpansion) == "function" then
+            SetRuleCreateExpansion(nil, nil)
+          end
+        end
+        if root and root.CreateRadio then
+          root:CreateRadio("Choose Expansion", IsSelected, SetSelected)
+        elseif root and root.CreateButton then
+          root:CreateButton("Choose Expansion", SetSelected)
+        end
+      end
 
       for _, opt in ipairs(choices) do
         local id = (type(opt) == "table") and opt.id or -1
@@ -314,6 +402,26 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     if not modernExpansion then
       UDDM_Initialize(expDrop, function(self, level)
         local choices = (type(GetRuleExpansionChoices) == "function") and GetRuleExpansionChoices() or { { id = -1, name = "Weekly" } }
+
+        do
+          local info = UDDM_CreateInfo()
+          info.text = "Choose Expansion"
+          do
+            local curID, curName = nil, nil
+            if type(GetRuleCreateExpansion) == "function" then
+              curID, curName = GetRuleCreateExpansion()
+            end
+            curID = tonumber(curID)
+            info.checked = (curID == nil) and (curName == nil or curName == "")
+          end
+          info.func = function()
+            if type(SetRuleCreateExpansion) == "function" then
+              SetRuleCreateExpansion(nil, nil)
+            end
+          end
+          UDDM_AddButton(info)
+        end
+
         for _, opt in ipairs(choices) do
           local id = (type(opt) == "table") and opt.id or -1
           local name = (type(opt) == "table") and opt.name or "Weekly"
@@ -341,6 +449,19 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
 
     local modernQuestFrame = UseModernMenuDropDown and UseModernMenuDropDown(questFrameDrop, function(root)
       if root and root.CreateTitle then root:CreateTitle("Bar / List") end
+
+      if root and root.CreateRadio then
+        root:CreateRadio("Bar/List", function() return (pQuest._questTargetFrameID == nil) end, function()
+          pQuest._questTargetFrameID = nil
+          if UDDM_SetText then UDDM_SetText(questFrameDrop, "Bar/List") end
+        end)
+      elseif root and root.CreateButton then
+        root:CreateButton("Bar/List", function()
+          pQuest._questTargetFrameID = nil
+          if UDDM_SetText then UDDM_SetText(questFrameDrop, "Bar/List") end
+        end)
+      end
+
       for _, def in ipairs(GetEffectiveFrames()) do
         if type(def) == "table" and def.id and root then
           local id = tostring(def.id)
@@ -368,7 +489,9 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
           root:CreateRadio(name, function() return (pQuest._questFaction == v) end, function()
             pQuest._questFaction = v
             if UDDM_SetText then
-              if FactionLabel then
+              if v == nil then
+                UDDM_SetText(questFactionDrop, "Faction")
+              elseif FactionLabel then
                 UDDM_SetText(questFactionDrop, FactionLabel(v))
               else
                 UDDM_SetText(questFactionDrop, name)
@@ -379,7 +502,9 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
           root:CreateButton(name, function()
             pQuest._questFaction = v
             if UDDM_SetText then
-              if FactionLabel then
+              if v == nil then
+                UDDM_SetText(questFactionDrop, "Faction")
+              elseif FactionLabel then
                 UDDM_SetText(questFactionDrop, FactionLabel(v))
               else
                 UDDM_SetText(questFactionDrop, name)
@@ -448,6 +573,15 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     if not modernQuestFrame then
       UDDM_Initialize(questFrameDrop, function(self, level)
         local info = UDDM_CreateInfo()
+
+        info.text = "Bar/List"
+        info.checked = (pQuest._questTargetFrameID == nil) and true or false
+        info.func = function()
+          pQuest._questTargetFrameID = nil
+          if UDDM_SetText then UDDM_SetText(questFrameDrop, "Bar/List") end
+        end
+        UDDM_AddButton(info)
+
         for _, def in ipairs(GetEffectiveFrames()) do
           if type(def) == "table" and def.id then
             local id = tostring(def.id)
@@ -471,13 +605,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
           info.checked = (pQuest._questFaction == nil) and true or false
           info.func = function()
             pQuest._questFaction = nil
-            if UDDM_SetText then
-              if FactionLabel then
-                UDDM_SetText(questFactionDrop, FactionLabel(nil))
-              else
-                UDDM_SetText(questFactionDrop, "Both (Off)")
-              end
-            end
+            if UDDM_SetText then UDDM_SetText(questFactionDrop, "Faction") end
           end
           UDDM_AddButton(info)
         end
@@ -663,17 +791,17 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     if qTitleBox then qTitleBox:SetText("") end
     if qLocBox then qLocBox:SetText("0") end
 
-    pQuest._questTargetFrameID = "list1"
-    if UDDM_SetText and questFrameDrop then UDDM_SetText(questFrameDrop, GetFrameDisplayNameByID("list1")) end
+    pQuest._questTargetFrameID = nil
+    if UDDM_SetText and questFrameDrop then UDDM_SetText(questFrameDrop, "Bar/List") end
     if pQuest._questFrameFallbackBox then pQuest._questFrameFallbackBox:SetText("list1") end
 
     pQuest._questFaction = nil
-    if UDDM_SetText and questFactionDrop and FactionLabel then UDDM_SetText(questFactionDrop, FactionLabel(nil)) end
+    if UDDM_SetText and questFactionDrop then UDDM_SetText(questFactionDrop, "Faction") end
     if pQuest._questFactionFallbackBox then pQuest._questFactionFallbackBox:SetText("both") end
 
     pQuest._questColor = nil
     pQuest._questColorName = "None"
-    if UDDM_SetText and questColorDrop then UDDM_SetText(questColorDrop, "None") end
+    if UDDM_SetText and questColorDrop then UDDM_SetText(questColorDrop, "Color") end
     if pQuest._questColorFallbackBox then pQuest._questColorFallbackBox:SetText("none") end
 
     pQuest._playerLevelOp = nil
@@ -681,7 +809,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     if qLevelBox then qLevelBox:SetText("0") end
 
     pQuest._fontKey = "inherit"
-    if UDDM_SetText and fontDrop then UDDM_SetText(fontDrop, "Inherit") end
+    if UDDM_SetText and fontDrop then UDDM_SetText(fontDrop, "Font") end
     if sizeBox then sizeBox:SetText("0") end
   end
 
@@ -717,8 +845,15 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       return
     end
 
-    local targetFrame = tostring(pQuest._questTargetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = "list1" end
+    ---@type string|nil
+    local targetFrame = nil
+    do
+      local targetFrameID = pQuest._questTargetFrameID
+      if targetFrameID ~= nil then
+        local tf = tostring(targetFrameID):gsub("%s+", "")
+        if tf ~= "" then targetFrame = tf end
+      end
+    end
 
     local infoText = tostring(qiBox:GetText() or "")
     infoText = infoText:gsub("\r\n?", "\n")
@@ -829,7 +964,8 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       cancelQuestEditBtn:Hide()
       Print("Saved default quest rule edit.")
     else
-      local key = string.format("custom:q:%d:%s:%d", tostring(questID), tostring(targetFrame), (#rules + 1))
+      local targetFrameKey = (targetFrame ~= nil) and tostring(targetFrame) or "any"
+      local key = string.format("custom:q:%d:%s:%d", tostring(questID), targetFrameKey, (#rules + 1))
 
       local op = pQuest._playerLevelOp
       local lvl = qLevelBox and tonumber(qLevelBox:GetText() or "") or nil
@@ -854,7 +990,8 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
         hideWhenCompleted = true,
       }
 
-      Print("Added quest rule for quest " .. questID .. " -> " .. targetFrame)
+      local targetLabel = (targetFrame ~= nil) and tostring(targetFrame) or "Bar/List"
+      Print("Added quest rule for quest " .. questID .. " -> " .. targetLabel)
     end
 
     if CreateAllFrames then CreateAllFrames() end

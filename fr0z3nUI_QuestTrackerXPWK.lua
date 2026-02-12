@@ -107,7 +107,7 @@ ns.rules = {
       83364, 86563, -- Draenor
       83360, 86564, -- Legion
       88805, 88808, -- BFA
-      92649, -- Shadowlands (max/leveling placeholder)
+      92649, 92647, -- Shadowlands
     },
     hideIfAnyQuestCompleted = {
       86731, 85947, -- Classic
@@ -118,7 +118,7 @@ ns.rules = {
       83364, 86563, -- Draenor
       83360, 86564, -- Legion
       88805, 88808, -- BFA
-      92649, -- Shadowlands (max/leveling placeholder)
+      92649, 92647, -- Shadowlands
     },
     hideWhenCompleted = false,
   },
@@ -127,9 +127,19 @@ ns.rules = {
     key = "event:pet-battle-bonus-event",
     frameID = "bar1",
     label = "Pet Battle Bonus Event",
-    questInfo = "Pets",
+    questInfo = "Pet XP",
     aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true },
     playerLevel = { ">=", 20 },
+    hideWhenCompleted = false,
+  },
+
+    {
+    key = "event:delves-bonus-event",
+    frameID = "bar1",
+    label = "Delves Bonus Event",
+    questInfo = "Delves",
+    aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true },
+    playerLevel = { ">=", 70 },
     hideWhenCompleted = false,
   },
 

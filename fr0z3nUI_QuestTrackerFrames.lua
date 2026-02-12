@@ -1473,6 +1473,7 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
         if onChanged then onChanged(r, g, b, a) end
       end
 
+      ---@diagnostic disable-next-line: duplicate-set-field
       CPF.opacityFunc = function()
         local r, g, b = CPF:GetColorRGB()
         local a = Clamp01Local(CurrentOpacity())

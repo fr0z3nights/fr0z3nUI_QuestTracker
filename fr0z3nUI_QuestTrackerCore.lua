@@ -3519,7 +3519,7 @@ local function BuildRuleStatus(rule, ctx, opts)
   else
     local textName = (type(rule) == "table" and rule.label ~= nil and tostring(rule.label) ~= "") and tostring(rule.label) or "Task"
     rawTitle = textName
-    if type(rule) == "table" and rule.preferQuestInfoForTitle == true then
+    if type(rule) == "table" and (rule.preferQuestInfoForTitle == true or (type(rule.aura) == "table" and rule.aura.eventKind == "calendar")) then
       local qiLine = FirstNonEmptyLine(rule.questInfo)
       if qiLine then
         -- Intentionally allow NBSP/blank-like questInfo to suppress label text (used by TW token rows).
@@ -7030,10 +7030,12 @@ local function OpenColorPicker(r, g, b, onChanged)
   end
 
   -- Legacy API
+  ---@diagnostic disable-next-line: duplicate-set-field
   ColorPickerFrame.func = function()
     local nr, ng, nb = ColorPickerFrame:GetColorRGB()
     if type(onChanged) == "function" then onChanged(nr, ng, nb) end
   end
+  ---@diagnostic disable-next-line: duplicate-set-field
   ColorPickerFrame.cancelFunc = function(prev)
     if type(prev) == "table" and prev.r and prev.g and prev.b then
       if type(onChanged) == "function" then onChanged(prev.r, prev.g, prev.b) end
