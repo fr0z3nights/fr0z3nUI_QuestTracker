@@ -152,6 +152,28 @@ local bakedRules = {
 ["playerLevel"] = { ">=", 70, },
 ["progress"] = { ["objectiveIndex"] = 1 },},
 
+
+{["label"] = "Belt1", ["frameID"] = "bar1", ["key"] = "custom:q:91009:list1:Disc1", ["color"] = { 0.2, 0.6, 1, },
+["questID"] = 91009, ["hideWhenCompleted"] = true,["playerLevel"] = { ">=", 80, },
+["questInfo"] = "Belt1", },
+
+{["label"] = "Belt2", ["frameID"] = "bar1", ["key"] = "custom:q:91026:list1:Disc2", ["color"] = { 0.2, 0.6, 1, },
+["questID"] = 91026, ["prereq"] = { 91009, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { ">=", 80, },
+["questInfo"] = "Belt2", },
+
+{["label"] = "Belt3", ["frameID"] = "bar1", ["key"] = "custom:q:91030:list1:Disc3", ["color"] = { 0.2, 0.6, 1, },
+["questID"] = 91030, ["prereq"] = { 91026, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { ">=", 80, },
+["questInfo"] = "Belt3", },
+
+{["label"] = "Belt4", ["frameID"] = "bar1", ["key"] = "custom:q:91031:list1:Disc4", ["color"] = { 0.2, 0.6, 1, },
+["questID"] = 91031, ["prereq"] = { 91030, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { ">=", 80, },
+["questInfo"] = "Belt4", },
+
+
+
+
+
+
 {["label"] = "Reshii Wraps", ["frameID"] = "bar1", ["key"] = "custom:q:90938:bar1:1",
 ["questID"] = 90938, ["requireInLog"] = false, ["hideWhenCompleted"] = true, ["showXWhenComplete"] = true,
 ["hideIfAnyQuestCompleted"] = { 90938, 84856, 84910 },
