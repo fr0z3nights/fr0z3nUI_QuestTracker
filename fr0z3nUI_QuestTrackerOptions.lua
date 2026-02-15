@@ -214,13 +214,34 @@ local function EnsureOptionsFrame()
     SetCoreEditMode(true)
   end)
 
-  local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  title:SetPoint("TOPLEFT", 12, -10)
-  title:SetText("")
-  title:Hide()
+  local tabBarBG = CreateFrame("Frame", nil, f, "BackdropTemplate")
+  tabBarBG:SetPoint("TOPLEFT", f, "TOPLEFT", 4, -4)
+  tabBarBG:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4)
+  tabBarBG:SetHeight(26)
+  tabBarBG:SetBackdrop({
+    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+    tile = true,
+    tileSize = 16,
+    insets = { left = 0, right = 0, top = 0, bottom = 0 },
+  })
+  tabBarBG:SetBackdropColor(0, 0, 0, 0.92)
+  tabBarBG:SetFrameLevel((f.GetFrameLevel and f:GetFrameLevel() or 0) + 1)
+  f._tabBarBG = tabBarBG
 
   local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
-  close:SetPoint("TOPRIGHT", f, "TOPRIGHT", 2, 2)
+  close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -6)
+
+  local title = tabBarBG:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  title:SetPoint("RIGHT", close, "LEFT", -6, 0)
+  title:SetJustifyH("RIGHT")
+  title:SetText("|cff00ccff[FQT]|r")
+  do
+    local fontPath, fontSize, fontFlags = title:GetFont()
+    if fontPath and fontSize then
+      title:SetFont(fontPath, fontSize + 2, fontFlags)
+    end
+  end
+  title:Show()
 
   -- Tabs
   local function MakePanel()
@@ -453,13 +474,22 @@ local function EnsureOptionsFrame()
   local tabOrder = { "rules", "items", "quest", "spells", "text", "frames" }
   local tabText = {
     frames = "UI",
-    rules = "|cff00ccff[FQT]|r Quest Tracker",
+    rules = "Tracking",
     items = "Items",
     quest = "Quest",
     spells = "Spell",
     text = "Text",
   }
   local tabs = {}
+
+  local function SizeTabToText(btn)
+    if not btn then return end
+    local fs = (btn.GetFontString and btn:GetFontString()) or btn.Text or btn.text
+    local w = fs and fs.GetStringWidth and fs:GetStringWidth() or 0
+    w = (tonumber(w) or 0) + 24
+    if w < 60 then w = 60 end
+    btn:SetSize(w, 18)
+  end
 
   local function SelectTab(name)
     SetPanelShown(name)
@@ -470,9 +500,10 @@ local function EnsureOptionsFrame()
 
   for i, name in ipairs(tabOrder) do
     local btn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    btn:SetSize((name == "rules") and 140 or 70, 18)
     btn:SetText(tabText[name] or name)
     btn._tabName = name
+
+    SizeTabToText(btn)
 
     -- Keep the [FQT] header-looking button readable even when selected (disabled).
     if name == "rules" then
@@ -485,9 +516,9 @@ local function EnsureOptionsFrame()
     end
 
     if i == 1 then
-      btn:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -10)
+      btn:SetPoint("LEFT", tabBarBG, "LEFT", 8, 0)
     else
-      btn:SetPoint("LEFT", tabs[i - 1], "RIGHT", 4, 0)
+      btn:SetPoint("LEFT", tabs[i - 1], "RIGHT", -8, 0)
     end
     btn:SetScript("OnClick", function() SelectTab(name) end)
     tabs[i] = btn

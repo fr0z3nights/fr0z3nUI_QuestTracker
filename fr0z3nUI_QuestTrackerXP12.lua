@@ -38,7 +38,7 @@ local bakedRules = {
 
 {["label"] = "Cultist", ["frameID"] = "bar1", ["key"] = "12pxp:cultist:rare",
 ["questID"] = 91795, ["requireInLog"] = false, ["hideWhenCompleted"] = false, ["showXWhenComplete"] = true,
-["playerLevel"] = { ">=", 80, },
+["playerLevel"] = { ">=", 20, },
 ["progress"] = { ["objectiveIndex"] = 1 },},
 
 
