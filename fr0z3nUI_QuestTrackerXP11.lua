@@ -153,6 +153,17 @@ local bakedRules = {
 ["progress"] = { ["objectiveIndex"] = 1 },},
 
 
+
+{["label"] = "Archives: First Disc", ["frameID"] = "bar1", ["key"] = "11wk:archives:disc1",
+["questID"] = 82678, ["hideWhenCompleted"] = true, ["playerLevel"] = { ">=", 80, },
+["questInfo"] = "First Disc", },
+
+{["label"] = "Archives", ["frameID"] = "bar1", ["key"] = "11wk:archives:disc2",
+["questID"] = 82679, ["prereq"] = { 82678, }, ["requireInLog"] = false, ["hideWhenCompleted"] = true, ["showXWhenComplete"] = true,
+["questInfo"] = "Archive", ["playerLevel"] = { ">=", 80, }, ["progress"] = { ["objectiveIndex"] = 1 },},
+
+
+
 {["label"] = "Belt1", ["frameID"] = "bar1", ["key"] = "custom:q:91009:list1:Disc1", ["color"] = { 0.2, 0.6, 1, },
 ["questID"] = 91009, ["hideWhenCompleted"] = true,["playerLevel"] = { ">=", 80, },
 ["questInfo"] = "Belt1", },
