@@ -252,6 +252,7 @@ local function EnsureOptionsFrame()
 
   local panels = {
     quest = MakePanel(),
+    questx = MakePanel(),
     items = MakePanel(),
     text = MakePanel(),
     spells = MakePanel(),
@@ -336,6 +337,7 @@ local function EnsureOptionsFrame()
 
   -- Only show this on the edit tabs.
   panels.quest._keepOpenToggle = CreateKeepOpenToggle(panels.quest)
+  panels.questx._keepOpenToggle = CreateKeepOpenToggle(panels.questx)
   panels.items._keepOpenToggle = CreateKeepOpenToggle(panels.items)
   panels.text._keepOpenToggle = CreateKeepOpenToggle(panels.text)
   panels.spells._keepOpenToggle = CreateKeepOpenToggle(panels.spells)
@@ -432,6 +434,7 @@ local function EnsureOptionsFrame()
       end)
     end
     HookEditPanelScrollbarHide(panels.quest)
+    HookEditPanelScrollbarHide(panels.questx)
     HookEditPanelScrollbarHide(panels.items)
     HookEditPanelScrollbarHide(panels.text)
     HookEditPanelScrollbarHide(panels.spells)
@@ -442,11 +445,11 @@ local function EnsureOptionsFrame()
       p:SetShown(k == name)
     end
 
-    if name == "quest" or name == "items" or name == "text" or name == "spells" then
+    if name == "quest" or name == "questx" or name == "items" or name == "text" or name == "spells" then
       HideStrayEditTabScrollbars(panels[name])
     end
 
-    local showKeep = (name == "quest" or name == "items" or name == "text" or name == "spells") and true or false
+    local showKeep = (name == "quest" or name == "questx" or name == "items" or name == "text" or name == "spells") and true or false
     local keepVal = GetKeepEditFormOpen()
     for i = 1, #keepOpenToggles do
       local btn = keepOpenToggles[i]
@@ -471,12 +474,13 @@ local function EnsureOptionsFrame()
     end
   end
 
-  local tabOrder = { "rules", "items", "quest", "spells", "text", "frames" }
+  local tabOrder = { "rules", "items", "quest", "questx", "spells", "text", "frames" }
   local tabText = {
     frames = "UI",
     rules = "Tracking",
     items = "Items",
     quest = "Quest",
+    questx = "QuestX",
     spells = "Spell",
     text = "Text",
   }
@@ -1130,6 +1134,12 @@ local function EnsureOptionsFrame()
 
   end
 
+  -- QUESTX tab (QuestX module)
+  local useQuestXModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildQuestX) == "function"
+  if useQuestXModule then
+    ns.FQTOptionsPanels.BuildQuestX(GetOptionsCtx())
+  end
+
   -- ITEMS tab (Items module)
   local useItemsModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildItems) == "function"
   if useItemsModule then
@@ -1169,6 +1179,13 @@ local function EnsureOptionsFrame()
       panels.quest._editingDefaultKey = nil
       if panels.quest._addQuestBtn then panels.quest._addQuestBtn:SetText("Add Quest Rule") end
       if panels.quest._cancelEditBtn then panels.quest._cancelEditBtn:Hide() end
+    end
+    if panels.questx then
+      panels.questx._editingCustomIndex = nil
+      panels.questx._editingDefaultBase = nil
+      panels.questx._editingDefaultKey = nil
+      if panels.questx._addQuestXBtn then panels.questx._addQuestXBtn:SetText("Add QuestX/Y Rule") end
+      if panels.questx._cancelEditBtn then panels.questx._cancelEditBtn:Hide() end
     end
     if panels.items then
       panels.items._editingCustomIndex = nil
@@ -1228,6 +1245,7 @@ local function EnsureOptionsFrame()
 
   local function DetectRuleTypeLite(r)
     if type(r) ~= "table" then return "text" end
+    if r.questXY == "X" or r.questXY == "Y" then return "questx" end
     if tonumber(r.questID) and tonumber(r.questID) > 0 then return "quest" end
     if type(r.item) == "table" and tonumber(r.item.itemID) and tonumber(r.item.itemID) > 0 then return "item" end
     if r.spellKnown or r.notSpellKnown or r.SpellKnown or r.NotSpellKnown or r.locationID or r.class or r.notInGroup or r.restedOnly or r.missingPrimaryProfessions then return "spell" end
@@ -1249,6 +1267,24 @@ local function EnsureOptionsFrame()
     local t = DetectRuleTypeLite(rule)
     -- When editing, keep the rule-create Expansion dropdown in sync with this rule.
     SetRuleCreateExpansion(rule._expansionID, rule._expansionName)
+    if t == "questx" then
+      SelectTab("questx")
+      panels.questx._editingCustomIndex = customIndex
+      if panels.questx._addQuestXBtn then panels.questx._addQuestXBtn:SetText("Save QuestX/Y Rule") end
+      if panels.questx._cancelEditBtn then panels.questx._cancelEditBtn:Show() end
+
+      if panels.questx._questIDBox then panels.questx._questIDBox:SetText(tostring(tonumber(rule.questID) or 0)) end
+      if panels.questx._titleBox then panels.questx._titleBox:SetText(tostring(rule.label or "")) end
+      if panels.questx._locBox then panels.questx._locBox:SetText(tostring(rule.locationID or "0")) end
+
+      local frameID = tostring(rule.frameID or "list1")
+      panels.questx._questTargetFrameID = frameID
+      if UDDM_SetText and panels.questx._questFrameDrop then UDDM_SetText(panels.questx._questFrameDrop, GetFrameDisplayNameByID(frameID)) end
+
+      panels.questx._questXY = (rule.questXY == "Y") and "Y" or "X"
+      if panels.questx._syncModeUI then pcall(panels.questx._syncModeUI, panels.questx) end
+      return
+    end
     if t == "quest" then
       SelectTab("quest")
       panels.quest._editingCustomIndex = customIndex
@@ -1265,6 +1301,9 @@ local function EnsureOptionsFrame()
       end
       if panels.quest._questAfterBox then panels.quest._questAfterBox:SetText(tostring(after)) end
       if panels.quest._locBox then panels.quest._locBox:SetText(tostring(rule.locationID or "0")) end
+
+      panels.quest._qXept = (tostring(rule.qXept or "N"):upper():gsub("%s+", "") == "Y") and "Y" or "N"
+      if panels.quest._syncAcceptUI then pcall(panels.quest._syncAcceptUI, panels.quest) end
 
       local frameID = tostring(rule.frameID or "list1")
       panels.quest._questTargetFrameID = frameID
@@ -1652,6 +1691,25 @@ local function EnsureOptionsFrame()
     local t = DetectRuleTypeLite(rule)
     -- When editing, keep the rule-create Expansion dropdown in sync with this rule.
     SetRuleCreateExpansion(rule._expansionID, rule._expansionName)
+    if t == "questx" then
+      SelectTab("questx")
+      panels.questx._editingDefaultBase = baseRule
+      panels.questx._editingDefaultKey = key
+      if panels.questx._addQuestXBtn then panels.questx._addQuestXBtn:SetText("Save QuestX/Y Rule") end
+      if panels.questx._cancelEditBtn then panels.questx._cancelEditBtn:Show() end
+
+      if panels.questx._questIDBox then panels.questx._questIDBox:SetText(tostring(tonumber(rule.questID) or 0)) end
+      if panels.questx._titleBox then panels.questx._titleBox:SetText(tostring(rule.label or "")) end
+      if panels.questx._locBox then panels.questx._locBox:SetText(tostring(rule.locationID or "0")) end
+
+      local frameID = tostring(rule.frameID or "list1")
+      panels.questx._questTargetFrameID = frameID
+      if UDDM_SetText and panels.questx._questFrameDrop then UDDM_SetText(panels.questx._questFrameDrop, GetFrameDisplayNameByID(frameID)) end
+
+      panels.questx._questXY = (rule.questXY == "Y") and "Y" or "X"
+      if panels.questx._syncModeUI then pcall(panels.questx._syncModeUI, panels.questx) end
+      return
+    end
     if t == "quest" then
       SelectTab("quest")
       panels.quest._editingDefaultBase = baseRule
@@ -1669,6 +1727,9 @@ local function EnsureOptionsFrame()
       end
       if panels.quest._questAfterBox then panels.quest._questAfterBox:SetText(tostring(after)) end
       if panels.quest._locBox then panels.quest._locBox:SetText(tostring(rule.locationID or "0")) end
+
+      panels.quest._qXept = (tostring(rule.qXept or "N"):upper():gsub("%s+", "") == "Y") and "Y" or "N"
+      if panels.quest._syncAcceptUI then pcall(panels.quest._syncAcceptUI, panels.quest) end
 
       local frameID = tostring(rule.frameID or "list1")
       panels.quest._questTargetFrameID = frameID

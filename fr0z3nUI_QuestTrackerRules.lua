@@ -500,7 +500,14 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     end
     if type(rule) ~= "table" then return nil end
     if rule.key ~= nil then return tostring(rule.key) end
-    if rule.questID then return "q:" .. tostring(rule.questID) end
+    if rule.questID then
+      local qid = tonumber(rule.questID) or rule.questID
+      local xy = (rule.questXY ~= nil) and tostring(rule.questXY):upper() or nil
+      if xy == "X" or xy == "Y" then
+        return "qxy:" .. xy .. ":" .. tostring(qid)
+      end
+      return "q:" .. tostring(qid)
+    end
     if rule.label then return "label:" .. tostring(rule.label) end
     if rule.group then return "group:" .. tostring(rule.group) .. ":" .. tostring(rule.order or 0) end
     return nil
@@ -549,6 +556,25 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
   local function SetRulePrimaryFrame(baseRule, displayRule, newID, src)
     newID = tostring(newID or "")
     if newID == "" then return end
+
+    -- QuestX/QuestY entries are list-only (cannot target bar frames).
+    do
+      local xy = (type(displayRule) == "table") and displayRule.questXY or nil
+      if xy ~= nil then
+        xy = tostring(xy):upper()
+        if xy == "X" or xy == "Y" then
+          for _, def in ipairs((type(GetEffectiveFrames) == "function" and GetEffectiveFrames()) or {}) do
+            if type(def) == "table" and tostring(def.id or "") == newID then
+              local t = tostring(def.type or "list"):lower()
+              if t == "bar" then
+                return
+              end
+              break
+            end
+          end
+        end
+      end
+    end
 
     if src == "default" then
       local key = RuleKey(baseRule)
@@ -602,6 +628,10 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     elseif tonumber(r and r.questID) and tonumber(r.questID) > 0 then
       local q = tonumber(r.questID) or 0
       local base = (label ~= "") and label or ((type(GetQuestTitle) == "function" and GetQuestTitle(q)) or ("Quest " .. tostring(q)))
+      local xy = (type(r) == "table" and r.questXY ~= nil) and tostring(r.questXY):upper() or nil
+      if xy == "X" or xy == "Y" then
+        return string.format("%s: %s%s", xy, tostring(base), LevelSuffix(r))
+      end
       return string.format("Q: %s%s", tostring(base), LevelSuffix(r))
     elseif type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup) then
       local function PickSpellID(v)
@@ -1137,10 +1167,12 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     local zebraA = SafeZebraAlpha()
 
     local displayByID = {}
+    local frameTypeByID = {}
     for _, def in ipairs((type(GetEffectiveFrames) == "function" and GetEffectiveFrames()) or {}) do
       if type(def) == "table" and def.id then
         local id = tostring(def.id)
         displayByID[id] = (type(GetFrameDisplayNameByID) == "function") and GetFrameDisplayNameByID(id) or id
+        frameTypeByID[id] = tostring(def.type or "list"):lower()
       end
     end
 
@@ -1406,7 +1438,11 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
           if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
             UDDM_Initialize(row.frameDrop, function(_, level)
               if level ~= 1 then return end
+
+              local xy = (type(displayRule) == "table" and displayRule.questXY ~= nil) and tostring(displayRule.questXY):upper() or nil
+              local listOnly = (xy == "X" or xy == "Y")
               for _, id in ipairs(GetSortedFrameIDs(displayByID)) do
+                if (not listOnly) or (frameTypeByID[id] ~= "bar") then
                 local info = UDDM_CreateInfo()
                 info.text = displayByID[id] or id
                 info.checked = (primary == id)
@@ -1416,6 +1452,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
                   RefreshRulesListImpl()
                 end
                 UDDM_AddButton(info)
+                end
               end
             end)
           end

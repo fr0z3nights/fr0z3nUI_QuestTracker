@@ -200,6 +200,7 @@ for i = 1, #bakedRules do
   if type(r) == "table" then
     if r._expansionID == nil then r._expansionID = EXPANSION_ID end
     if r._expansionName == nil then r._expansionName = EXPANSION_NAME end
+    if r.questXY == nil and tonumber(r.questID) and r.qXept == nil then r.qXept = "N" end
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end

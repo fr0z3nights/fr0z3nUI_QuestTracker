@@ -240,6 +240,51 @@ end
 local function NormalizeRuleInPlace(rule)
   if type(rule) ~= "table" then return end
 
+  -- QuestX/QuestY marker (used by merged QuestX automation lists)
+  do
+    local xy = rule.questXY
+    if xy == nil and rule.questX ~= nil then xy = "X" end
+    if xy == nil and rule.questY ~= nil then xy = "Y" end
+    if xy ~= nil then
+      xy = tostring(xy):upper():gsub("%s+", "")
+      if xy == "QUESTX" then xy = "X" end
+      if xy == "QUESTY" then xy = "Y" end
+      if xy ~= "X" and xy ~= "Y" then
+        xy = nil
+      end
+    end
+    rule.questXY = xy
+    rule.questX = nil
+    rule.questY = nil
+
+    if xy ~= nil then
+      -- Default grouping in the Rules/Tracking list.
+      if rule.category == nil and rule._category == nil then
+        rule._category = (xy == "X") and "X:" or "Y:"
+      end
+      -- Default display routing: list-only.
+      if rule.display == nil then
+        rule.display = "list"
+      end
+    end
+  end
+
+  -- Quest accept toggle (QuestY-like behavior) for normal quest rules
+  do
+    local qid = tonumber(rule.questID)
+    if rule.questXY ~= nil then
+      -- QuestX/QuestY rules use questXY instead.
+      rule.qXept = nil
+    elseif qid and qid > 0 then
+      local v = rule.qXept
+      if v == nil then v = "N" end
+      v = tostring(v):upper():gsub("%s+", "")
+      if v == "TRUE" or v == "YES" then v = "Y" end
+      if v == "FALSE" or v == "NO" then v = "N" end
+      rule.qXept = (v == "Y") and "Y" or "N"
+    end
+  end
+
   if rule.locationID ~= nil then
     rule.locationID = NormalizeLocationID(rule.locationID)
   end
@@ -783,7 +828,14 @@ ns.RestoreWindowPosition = RestoreWindowPosition
 RuleKey = function(rule)
   if type(rule) ~= "table" then return nil end
   if rule.key ~= nil then return tostring(rule.key) end
-  if rule.questID then return "q:" .. tostring(rule.questID) end
+  if rule.questID then
+    local qid = tonumber(rule.questID) or rule.questID
+    local xy = (rule.questXY ~= nil) and tostring(rule.questXY):upper() or nil
+    if xy == "X" or xy == "Y" then
+      return "qxy:" .. xy .. ":" .. tostring(qid)
+    end
+    return "q:" .. tostring(qid)
+  end
   if rule.group then return "group:" .. tostring(rule.group) .. ":" .. tostring(rule.order or 0) end
 
   -- Additional stable keys for rules that don't have explicit `key`/`questID`/`label`.
@@ -932,17 +984,36 @@ local function IsQuestInLog(questID)
   return false
 end
 
-local function GetQuestObjectiveProgressText(questID, objectiveIndex)
+local function GetQuestObjectiveProgressText(questID, objectiveIndex, opts)
   if not (C_QuestLog and C_QuestLog.GetQuestObjectives) then return nil end
-  if not (questID and IsQuestInLog(questID)) then return nil end
+  if not questID then return nil end
+
+  local allowCompletedFallback = (type(opts) == "table" and opts.allowCompletedFallback == true) or false
+  local inLog = IsQuestInLog(questID)
+  if not inLog then
+    if allowCompletedFallback and IsQuestCompleted(questID) then
+      return "X"
+    end
+    return nil
+  end
 
   local idx = tonumber(objectiveIndex) or 1
-  local objectives = C_QuestLog.GetQuestObjectives(questID)
+  local objectives = nil
+  do
+    local ok, res = pcall(C_QuestLog.GetQuestObjectives, questID)
+    if ok then
+      objectives = res
+    end
+  end
   local obj = objectives and objectives[idx]
   local fulfilled = obj and tonumber(obj.numFulfilled)
   local required = obj and tonumber(obj.numRequired)
   if fulfilled and required then
-    return string.format("%d / %d", fulfilled, required)
+    return string.format("%d/%d", fulfilled, required)
+  end
+
+  if allowCompletedFallback and IsQuestCompleted(questID) then
+    return "X"
   end
   return nil
 end
@@ -1563,12 +1634,39 @@ local function GetCurrentMonthNumDays()
   return 31
 end
 
+local function SafeToString(v)
+  if v == nil then return "" end
+  if type(issecretvalue) == "function" and issecretvalue(v) then
+    return ""
+  end
+  local ok, s = pcall(tostring, v)
+  if ok and type(s) == "string" then
+    return s
+  end
+  return ""
+end
+
+local function SafeLowerString(v)
+  if v == nil then return "" end
+  if type(issecretvalue) == "function" and issecretvalue(v) then
+    return ""
+  end
+  local ok, s = pcall(string.lower, v)
+  if ok and type(s) == "string" then
+    return s
+  end
+  return SafeLowerString(SafeToString(v))
+end
+
 local function GetCalendarEventText(monthOffset, day, index)
   if not (C_Calendar and C_Calendar.GetDayEvent) then return nil end
   local ok, ev = pcall(C_Calendar.GetDayEvent, monthOffset, day, index)
   if not ok or type(ev) ~= "table" then return nil end
   local title = rawget(ev, "title")
-  if title then return tostring(title) end
+  if title then
+    local s = SafeToString(title)
+    if s ~= "" then return s end
+  end
   return nil
 end
 
@@ -1585,12 +1683,12 @@ local function IsHolidayDayEvent(monthOffset, day, index)
       return true
     end
   end
-  if type(eventType) == "string" and tostring(eventType):lower() == "holiday" then
+  if type(eventType) == "string" and SafeLowerString(eventType) == "holiday" then
     return true
   end
 
   local calendarType = rawget(ev, "calendarType")
-  if type(calendarType) == "string" and tostring(calendarType):lower() == "holiday" then
+  if type(calendarType) == "string" and SafeLowerString(calendarType) == "holiday" then
     return true
   end
 
@@ -1611,8 +1709,11 @@ local function GetCalendarHolidayText(monthOffset, day, index)
   local name = rawget(info, "name")
   local desc = rawget(info, "description")
   local out = ""
-  if name then out = out .. tostring(name) end
-  if desc then out = out .. "\n" .. tostring(desc) end
+  if name then out = out .. SafeToString(name) end
+  if desc then
+    local d = SafeToString(desc)
+    if d ~= "" then out = out .. "\n" .. d end
+  end
   if out == "" then return nil end
   return out
 end
@@ -1652,8 +1753,8 @@ local function IsAnyTimewalkingEventActive()
     for i = 1, n do
       local title = GetCalendarEventText(0, day, i) or ""
       local holidayText = GetCalendarHolidayText(0, day, i) or ""
-      local hay = (title .. "\n" .. holidayText):lower()
-      if hay:find("timewalking", 1, true) or hay:find("turbulent timeways", 1, true) then
+      local hay = string.lower(title .. "\n" .. holidayText)
+      if string.find(hay, "timewalking", 1, true) or string.find(hay, "turbulent timeways", 1, true) then
         found = true
         break
       end
@@ -1749,14 +1850,14 @@ local function IsCalendarEventActiveByKeywords(keywords, includeHolidayText)
       if includeHolidayText == true then
         holidayText = GetCalendarHolidayText(0, day, i) or ""
       end
-      local hay = title:lower()
-      if holidayText ~= "" then
-        hay = (hay .. "\n" .. holidayText:lower())
+      local hay = string.lower(title)
+      if string.len(holidayText) > 0 then
+        hay = (hay .. "\n" .. string.lower(holidayText))
       end
 
       for j = 1, #needles do
         local k = needles[j]
-        if k ~= "" and hay:find(k, 1, true) then
+        if k ~= "" and string.find(hay, k, 1, true) then
           found = true
           break
         end
@@ -2886,7 +2987,10 @@ local function BuildRuleStatus(rule, ctx, opts)
       end
     end
 
-    if ok then
+    local mode = (type(rule) == "table" and rule.completeMode ~= nil) and tostring(rule.completeMode):lower() or ""
+    if mode == "replace" then
+      completed = ok and true or false
+    elseif ok then
       completed = true
     end
   end
@@ -3364,9 +3468,56 @@ local function BuildRuleStatus(rule, ctx, opts)
   end
 
   -- Quest objective progress (for weekly/delve/timewalking style quests)
-  if type(rule.progress) == "table" and rule.progress.objectiveIndex then
-    local txt = GetQuestObjectiveProgressText(questID, rule.progress.objectiveIndex)
-    if txt then extra = txt end
+  if type(rule.progress) == "table" then
+    if rule.progress.objectiveIndex then
+      local txt = GetQuestObjectiveProgressText(questID, rule.progress.objectiveIndex)
+      if txt then extra = txt end
+    elseif type(rule.progress.merge) == "table" and rule.progress.merge[1] ~= nil then
+      local sep = (rule.progress.sep ~= nil) and tostring(rule.progress.sep) or " | "
+      local requireAll = (rule.progress.requireAll ~= false)
+
+      local parts = {}
+      local allOk = true
+
+      for _, spec in ipairs(rule.progress.merge) do
+        local qid, oidx
+        if type(spec) == "table" then
+          qid = tonumber(spec.questID or spec.questId or spec.qid or spec[1])
+          oidx = tonumber(spec.objectiveIndex or spec.objIndex or spec.objective or spec[2])
+        else
+          qid = tonumber(spec)
+        end
+        if not (qid and qid > 0) then
+          qid = questID
+        end
+        if not (oidx and oidx > 0) then
+          oidx = 1
+        end
+
+        local txt = (qid and oidx) and GetQuestObjectiveProgressText(qid, oidx, { allowCompletedFallback = true }) or nil
+        if not txt then
+          allOk = false
+          if requireAll then
+            break
+          end
+        end
+        parts[#parts + 1] = txt or ""
+      end
+
+      if (not requireAll) then
+        local nonEmpty = {}
+        for i = 1, #parts do
+          if parts[i] ~= "" then
+            nonEmpty[#nonEmpty + 1] = parts[i]
+          end
+        end
+        if nonEmpty[1] ~= nil then
+          extra = table.concat(nonEmpty, sep)
+        end
+      elseif allOk and parts[1] ~= nil then
+        extra = table.concat(parts, sep)
+      end
+    end
   end
 
   -- Optional quest shopping list (typically vendor mats).
@@ -4260,6 +4411,25 @@ local function AssignRuleToFrame(rule, frameID)
   if type(rule) ~= "table" then return false end
   frameID = tostring(frameID or "")
   if frameID == "" then return false end
+
+  -- QuestX/QuestY entries are not assignable to bars (list-only).
+  do
+    local xy = rule.questXY
+    if xy ~= nil then
+      xy = tostring(xy):upper()
+      if xy == "X" or xy == "Y" then
+        for _, def in ipairs(GetEffectiveFrames()) do
+          if type(def) == "table" and tostring(def.id or "") == frameID then
+            local t = tostring(def.type or "list"):lower()
+            if t == "bar" then
+              return false
+            end
+            break
+          end
+        end
+      end
+    end
+  end
 
   if type(rule.targets) == "table" then
     for _, v in ipairs(rule.targets) do
@@ -6850,6 +7020,112 @@ local function AutoBuyItemsAtMerchant()
   Print("Bought (Auto): " .. table.concat(parts, ", "))
 end
 
+-- QuestX/QuestY integration (QuestXY rules)
+local function GetActiveQuestOfferIDSafe()
+  local fn = _G and rawget(_G, "GetQuestID")
+  if type(fn) ~= "function" then return nil end
+  local ok, id = pcall(fn)
+  id = ok and tonumber(id) or nil
+  if id and id > 0 then
+    return id
+  end
+  return nil
+end
+
+local function TryAutoAcceptQuestYFromRules()
+  local qid = GetActiveQuestOfferIDSafe()
+  if not qid then return end
+
+  local acceptFunc = _G and rawget(_G, "AcceptQuest")
+  if type(acceptFunc) ~= "function" then return end
+
+  local rules = (type(GetEffectiveRules) == "function" and GetEffectiveRules()) or nil
+  if type(rules) ~= "table" then return end
+
+  local evalCtx = (type(BuildEvalContext) == "function") and BuildEvalContext() or nil
+
+  for _, rule in ipairs(rules) do
+    local isQuestY = (type(rule) == "table" and rule.questXY == "Y" and tonumber(rule.questID) == qid)
+    local isQuestAccept = (type(rule) == "table" and rule.questXY == nil and tostring(rule.qXept or "N"):upper():gsub("%s+", "") == "Y" and tonumber(rule.questID) == qid)
+
+    if isQuestY or isQuestAccept then
+      local status = BuildRuleStatus(rule, evalCtx, { forceNormalVisibility = true })
+      if status ~= nil then
+        local ok = pcall(acceptFunc)
+        if ok then
+          local title = (type(GetQuestTitle) == "function" and GetQuestTitle(qid)) or tostring(qid)
+          Print("Auto-accepted: " .. tostring(title))
+        end
+        return
+      end
+    end
+  end
+end
+
+local function TryAbandonQuestXFromRules()
+  if InCombatLockdown and InCombatLockdown() then return end
+
+  local rules = (type(GetEffectiveRules) == "function" and GetEffectiveRules()) or nil
+  if type(rules) ~= "table" then return end
+
+  local targets = {}
+  local evalCtx = (type(BuildEvalContext) == "function") and BuildEvalContext() or nil
+
+  for _, rule in ipairs(rules) do
+    if type(rule) == "table" and rule.questXY == "X" then
+      local qid = tonumber(rule.questID)
+      if qid and qid > 0 then
+        local status = BuildRuleStatus(rule, evalCtx, { forceNormalVisibility = true })
+        if status ~= nil then
+          targets[qid] = true
+        end
+      end
+    end
+  end
+
+  if not next(targets) then return end
+  if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetQuestIDForLogIndex) then return end
+
+  for i = 1, (C_QuestLog.GetNumQuestLogEntries() or 0) do
+    local qid = C_QuestLog.GetQuestIDForLogIndex(i)
+    if qid and targets[qid] then
+      local info = C_QuestLog.GetInfo and C_QuestLog.GetInfo(i) or nil
+      local qTitle = (info and info.title) or ((type(GetQuestTitle) == "function" and GetQuestTitle(qid)) or tostring(qid))
+
+      if C_QuestLog.SetSelectedQuest and C_QuestLog.SetAbandonQuest and C_QuestLog.AbandonQuest then
+        C_QuestLog.SetSelectedQuest(i)
+        C_QuestLog.SetAbandonQuest()
+        C_QuestLog.AbandonQuest()
+
+        if StaticPopup1 and StaticPopup1.which == "ABANDON_QUEST" and type(StaticPopup_OnClick) == "function" then
+          StaticPopup_OnClick(StaticPopup1, 1)
+        end
+
+        Print(tostring(qTitle) .. " Abandoned")
+      end
+    end
+  end
+end
+
+local function QueueTryAbandonQuestX()
+  if not (C_Timer and C_Timer.NewTimer) then
+    TryAbandonQuestXFromRules()
+    return
+  end
+  if frame and frame._questXAbandonTimer then
+    frame._questXAbandonTimer:Cancel()
+    frame._questXAbandonTimer = nil
+  end
+  if frame then
+    frame._questXAbandonTimer = C_Timer.NewTimer(0.5, function()
+      if frame then frame._questXAbandonTimer = nil end
+      TryAbandonQuestXFromRules()
+    end)
+  else
+    C_Timer.NewTimer(0.5, TryAbandonQuestXFromRules)
+  end
+end
+
 -- Events
 frame = CreateFrame("Frame")
 
@@ -6860,8 +7136,10 @@ end
 
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 frame:RegisterEvent("QUEST_LOG_UPDATE")
 frame:RegisterEvent("QUEST_ACCEPTED")
+frame:RegisterEvent("QUEST_DETAIL")
 frame:RegisterEvent("QUEST_TURNED_IN")
 frame:RegisterEvent("BAG_UPDATE_DELAYED")
 frame:RegisterEvent("UNIT_AURA")
@@ -6959,6 +7237,18 @@ frame:SetScript("OnEvent", function(_, event, ...)
     frame._didPostWorldWarm = true
     -- Calendar data can arrive slightly after login; do one delayed refresh.
     C_Timer.After(5.0, RefreshAll)
+  end
+
+  if event == "QUEST_DETAIL" then
+    if C_Timer and C_Timer.After then
+      C_Timer.After(0, TryAutoAcceptQuestYFromRules)
+    else
+      TryAutoAcceptQuestYFromRules()
+    end
+  end
+
+  if event == "QUEST_ACCEPTED" or event == "QUEST_LOG_UPDATE" or event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_REGEN_ENABLED" or event == "ZONE_CHANGED_NEW_AREA" then
+    QueueTryAbandonQuestX()
   end
 
   if event == "CALENDAR_UPDATE_EVENT_LIST" or event == "CALENDAR_UPDATE_EVENT" then

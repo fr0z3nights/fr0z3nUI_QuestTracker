@@ -220,6 +220,39 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
   if AddPlaceholder then AddPlaceholder(qTitleBox, "Custom title (leave blank for quest name)") end
   if HideInputBoxTemplateArt then HideInputBoxTemplateArt(qTitleBox) end
 
+  -- QuestY-style auto accept toggle for normal quest rules
+  local acceptBtn = CreateFrame("Button", nil, pQuest, "UIPanelButtonTemplate")
+  acceptBtn:SetSize(110, 20)
+  acceptBtn:SetPoint("TOPLEFT", 330, -212)
+  pQuest._qXept = "N"
+  pQuest._acceptBtn = acceptBtn
+
+  function pQuest:_syncAcceptUI()
+    local on = (self._qXept == "Y")
+    if on then
+      acceptBtn:SetText("|cffffff00Accept: ON|r")
+    else
+      acceptBtn:SetText("|cff888888Accept: OFF|r")
+    end
+  end
+  pQuest:_syncAcceptUI()
+
+  acceptBtn:SetScript("OnClick", function()
+    pQuest._qXept = (pQuest._qXept == "Y") and "N" or "Y"
+    if pQuest._syncAcceptUI then pQuest:_syncAcceptUI() end
+  end)
+  acceptBtn:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:ClearLines()
+    GameTooltip:AddLine("Auto Accept", 1, 1, 1)
+    GameTooltip:AddLine("When ON, this quest will be auto accepted when offered (QuestY behavior).", 0.7, 0.7, 0.7, true)
+    GameTooltip:Show()
+  end)
+  acceptBtn:SetScript("OnLeave", function()
+    if GameTooltip then GameTooltip:Hide() end
+  end)
+
   local colorLabel = pQuest:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   colorLabel:SetPoint("TOPLEFT", 12, -236)
   colorLabel:SetText("")
@@ -811,6 +844,9 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     pQuest._fontKey = "inherit"
     if UDDM_SetText and fontDrop then UDDM_SetText(fontDrop, "Font") end
     if sizeBox then sizeBox:SetText("0") end
+
+    pQuest._qXept = "N"
+    if pQuest._syncAcceptUI then pcall(pQuest._syncAcceptUI, pQuest) end
   end
 
   local cancelQuestEditBtn = CreateFrame("Button", nil, pQuest, "UIPanelButtonTemplate")
@@ -901,6 +937,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       rule.locationID = locationID
       rule.font = fontKey
       rule.size = fontSize
+      rule.qXept = (pQuest._qXept == "Y") and "Y" or "N"
       rule._expansionID = expID
       rule._expansionName = expName
 
@@ -939,6 +976,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       rule.locationID = locationID
       rule.font = fontKey
       rule.size = fontSize
+      rule.qXept = (pQuest._qXept == "Y") and "Y" or "N"
       rule._expansionID = expID
       rule._expansionName = expName
 
@@ -984,6 +1022,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
         locationID = locationID,
         font = fontKey,
         size = fontSize,
+        qXept = (pQuest._qXept == "Y") and "Y" or "N",
         _expansionID = expID,
         _expansionName = expName,
         playerLevel = (op and lvl) and { op, lvl } or nil,
