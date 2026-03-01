@@ -3,7 +3,7 @@
 ## Title: |cff00ccfffr0z3nUI|r QuestTracker
 ## Notes: Tracks quest completion with bar and list frames.
 ## Author: fr0z3n
-## Version: 0.1
+## Version: 2026.03.01
 ## SavedVariables: fr0z3nUI_QuestTracker_Acc
 ## SavedVariablesPerCharacter: fr0z3nUI_QuestTracker_Char
 

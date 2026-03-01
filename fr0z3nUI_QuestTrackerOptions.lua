@@ -194,12 +194,12 @@ local function EnsureOptionsFrame()
   end
 
   f:SetSize(560, 420)
-  f:SetPoint("CENTER")
+  f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -30)
   f:SetFrameStrata("DIALOG")
   f:SetClampedToScreen(true)
   f:SetMovable(true)
   f:EnableMouse(true)
-  RestoreWindowPosition("options", f, "CENTER", "CENTER", 0, 0)
+  RestoreWindowPosition("options", f, "TOPLEFT", "TOPLEFT", 30, -30)
   f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart", f.StartMoving)
   f:SetScript("OnDragStop", function(self)
@@ -209,7 +209,7 @@ local function EnsureOptionsFrame()
   ApplyFAOBackdrop(f, 0.85)
 
   f:HookScript("OnShow", function(self)
-    RestoreWindowPosition("options", self, "CENTER", "CENTER", 0, 0)
+    RestoreWindowPosition("options", self, "TOPLEFT", "TOPLEFT", 30, -30)
     editMode = true
     SetCoreEditMode(true)
   end)

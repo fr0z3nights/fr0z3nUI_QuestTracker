@@ -6376,6 +6376,7 @@ local function AutoBuyItemsAtMerchant()
   -- Session-local tracking to prevent duplicate buys when merchant/bag data updates lag behind.
   frame._autoBuyBaselineHave = (type(frame._autoBuyBaselineHave) == "table") and frame._autoBuyBaselineHave or {}
   frame._autoBuySessionBought = (type(frame._autoBuySessionBought) == "table") and frame._autoBuySessionBought or {}
+  frame._autoBuyPlanned = (type(frame._autoBuyPlanned) == "table") and frame._autoBuyPlanned or {}
 
   local function IsMerchantSessionOpen()
     if frame and frame._merchantOpen == true then return true end
@@ -6792,8 +6793,6 @@ local function AutoBuyItemsAtMerchant()
     end
   end
 
-  local boughtCountsByItemID = {}
-
   local function CanBuyFromMerchantInfo(info)
     if type(info) ~= "table" then return false end
     local isPurchasable = (info["isPurchasable"] ~= false)
@@ -6807,6 +6806,96 @@ local function AutoBuyItemsAtMerchant()
     have = (okCount and tonumber(c)) or 0
     if have < 0 then have = 0 end
     return have
+  end
+
+  local function ScheduleAutoBuyReport(delay, reason)
+    if not (C_Timer and C_Timer.NewTimer) then return end
+    delay = tonumber(delay) or 0.35
+    if not IsMerchantSessionOpen() then return end
+
+    if frame and frame._autoBuyReportTimer then
+      frame._autoBuyReportTimer:Cancel()
+      frame._autoBuyReportTimer = nil
+    end
+
+    frame._autoBuyReportAttempts = (tonumber(frame._autoBuyReportAttempts) or 0) + 1
+    Debug("scheduled report in " .. tostring(delay) .. "s" .. (reason and (" (" .. tostring(reason) .. ")") or ""))
+
+    frame._autoBuyReportTimer = C_Timer.NewTimer(delay, function()
+      if frame then frame._autoBuyReportTimer = nil end
+      if not IsMerchantSessionOpen() then return end
+
+      local planned = frame and frame._autoBuyPlanned
+      if type(planned) ~= "table" or not next(planned) then return end
+
+      local parts = {}
+      local totalGot = 0
+      local pending = false
+
+      for itemID, plannedCount in pairs(planned) do
+        itemID = tonumber(itemID)
+        plannedCount = tonumber(plannedCount) or 0
+        if itemID and itemID > 0 and plannedCount > 0 then
+          local base = frame._autoBuyBaselineHave and frame._autoBuyBaselineHave[itemID] or nil
+          if base == nil then
+            base = GetRawHaveCount(itemID)
+            if frame._autoBuyBaselineHave then
+              frame._autoBuyBaselineHave[itemID] = base
+            end
+          end
+
+          local rawNow = GetRawHaveCount(itemID)
+          local got = rawNow - (tonumber(base) or 0)
+          if got < 0 then got = 0 end
+
+          if got < plannedCount then
+            pending = true
+          end
+
+          if got > 0 then
+            local name
+            if C_Item and C_Item.GetItemNameByID then
+              local ok, n2 = pcall(C_Item.GetItemNameByID, itemID)
+              if ok and n2 and n2 ~= "" then
+                name = n2
+              end
+            end
+            parts[#parts + 1] = tostring(got) .. "x " .. tostring(name or ("itemID:" .. tostring(itemID)))
+            totalGot = totalGot + got
+          end
+        end
+      end
+
+      -- Bag counts often update after buy spam; wait until they likely settled (up to ~2-3s).
+      if pending then
+        local attempts = tonumber(frame and frame._autoBuyReportAttempts) or 0
+        if attempts < 10 then
+          ScheduleAutoBuyReport(0.25, "waiting for bag counts")
+          return
+        end
+      end
+
+      -- Avoid printing misleading 0x lines.
+      if not parts[1] then
+        frame._autoBuyPlanned = {}
+        frame._autoBuyReportAttempts = 0
+        return
+      end
+
+      table.sort(parts)
+      local key = table.concat(parts, ", ")
+      if frame._autoBuyLastReportKey == key then
+        frame._autoBuyPlanned = {}
+        frame._autoBuyReportAttempts = 0
+        return
+      end
+
+      frame._autoBuyLastReportKey = key
+      frame._autoBuyPlanned = {}
+      frame._autoBuyReportAttempts = 0
+
+      Print("Bought (Auto): " .. key)
+    end)
   end
 
   local function GetHaveCount(itemID)
@@ -6889,28 +6978,45 @@ local function AutoBuyItemsAtMerchant()
     local bundleQty = tonumber(info["stackCount"] or info["quantity"]) or 1
     if bundleQty <= 0 then bundleQty = 1 end
 
-    local purchases = math.floor((need + bundleQty - 1) / bundleQty)
+    -- Retail behavior (and what FLI relies on): BuyMerchantItem's quantity parameter is the
+    -- number of *items* to buy (not "purchases" / bundles). The merchant UI may display xN
+    -- stackCount, but addons can still request arbitrary item counts.
+    local buyCount = math.floor(tonumber(need) or 0)
+    if buyCount <= 0 then return end
+
     local numAvailable = tonumber(info["numAvailable"])
     if numAvailable and numAvailable >= 0 then
-      purchases = math.min(purchases, numAvailable)
+      buyCount = math.min(buyCount, numAvailable)
     end
 
     local price = tonumber(info["price"]) or 0
     if price > 0 and type(GetMoney) == "function" then
       local money = tonumber(GetMoney()) or 0
-      purchases = math.min(purchases, math.floor(money / price))
+      buyCount = math.min(buyCount, math.floor(money / price))
     end
 
-    if purchases and purchases > 0 then
-      local remaining = purchases
+    -- Safety cap to avoid runaway purchases if merchant APIs misreport.
+    if buyCount > 200 then buyCount = 200 end
+
+    if buyCount > 0 then
+      if frame and frame._autoBuyBaselineHave and frame._autoBuyBaselineHave[itemID] == nil then
+        frame._autoBuyBaselineHave[itemID] = GetRawHaveCount(itemID)
+      end
+      local remaining = buyCount
       while remaining > 0 do
         local chunk = math.min(remaining, 100)
         BuyMerchantItem(merchantIndex, chunk)
         remaining = remaining - chunk
       end
-      local got = (purchases * bundleQty)
-      boughtCountsByItemID[itemID] = (boughtCountsByItemID[itemID] or 0) + got
+      local got = buyCount
       frame._autoBuySessionBought[itemID] = (tonumber(frame._autoBuySessionBought[itemID]) or 0) + got
+      frame._autoBuyPlanned[itemID] = (tonumber(frame._autoBuyPlanned[itemID]) or 0) + got
+      frame._autoBuyReportAttempts = 0
+      ScheduleAutoBuyReport(0.35, "post-purchase")
+
+      if debug then
+        Debug(string.format("buy: idx=%s itemID=%s need=%s buy=%s bundleQty=%s avail=%s price=%s", tostring(merchantIndex), tostring(itemID), tostring(need), tostring(buyCount), tostring(bundleQty), tostring(numAvailable), tostring(price)))
+      end
     end
   end
 
@@ -6999,25 +7105,15 @@ local function AutoBuyItemsAtMerchant()
     end
   end
 
-  if not next(boughtCountsByItemID) then return end
+  if not (frame and frame._autoBuyPlanned and next(frame._autoBuyPlanned)) then return end
 
   -- Merchant data / bag counts can update after purchases; rerun once more shortly
   -- to catch delayed itemIDs or additional wants (prevents needing to reopen vendor).
   ScheduleRetry(0.25, "post-purchase refresh")
 
-  local parts = {}
-  for itemID, count in pairs(boughtCountsByItemID) do
-    local name
-    if C_Item and C_Item.GetItemNameByID then
-      local ok, n2 = pcall(C_Item.GetItemNameByID, itemID)
-      if ok and n2 and n2 ~= "" then
-        name = n2
-      end
-    end
-    parts[#parts + 1] = tostring(count) .. "x " .. tostring(name or ("itemID:" .. tostring(itemID)))
-  end
-  table.sort(parts)
-  Print("Bought (Auto): " .. table.concat(parts, ", "))
+  -- Safety: if some buys were scheduled but we didn't queue a report (e.g. early-return paths),
+  -- ensure we still emit one once bag counts settle.
+  ScheduleAutoBuyReport(0.35, "post-purchase")
 end
 
 -- QuestX/QuestY integration (QuestXY rules)
@@ -7167,6 +7263,13 @@ frame:SetScript("OnEvent", function(_, event, ...)
     frame._autoBuyAttempts = 0
     frame._autoBuyBaselineHave = {}
     frame._autoBuySessionBought = {}
+    frame._autoBuyPlanned = {}
+    frame._autoBuyLastReportKey = nil
+    frame._autoBuyReportAttempts = 0
+    if frame._autoBuyReportTimer then
+      frame._autoBuyReportTimer:Cancel()
+      frame._autoBuyReportTimer = nil
+    end
     -- Sell items flagged with rep.sellWhenExalted once the merchant opens.
     AutoSellItemsAtMerchant()
     AutoBuyItemsAtMerchant()
@@ -7178,6 +7281,13 @@ frame:SetScript("OnEvent", function(_, event, ...)
     frame._autoBuyAttempts = nil
     frame._autoBuyBaselineHave = nil
     frame._autoBuySessionBought = nil
+    frame._autoBuyPlanned = nil
+    frame._autoBuyLastReportKey = nil
+    frame._autoBuyReportAttempts = nil
+    if frame._autoBuyReportTimer then
+      frame._autoBuyReportTimer:Cancel()
+      frame._autoBuyReportTimer = nil
+    end
     if frame._autoBuyUpdateTimer then
       frame._autoBuyUpdateTimer:Cancel()
       frame._autoBuyUpdateTimer = nil
