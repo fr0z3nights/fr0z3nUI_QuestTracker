@@ -249,7 +249,7 @@ local function NormalizeRuleInPlace(rule)
       xy = tostring(xy):upper():gsub("%s+", "")
       if xy == "QUESTX" then xy = "X" end
       if xy == "QUESTY" then xy = "Y" end
-      if xy ~= "X" and xy ~= "Y" then
+      if xy ~= "X" and xy ~= "Y" and xy ~= "K" then
         xy = nil
       end
     end
@@ -260,12 +260,13 @@ local function NormalizeRuleInPlace(rule)
     if xy ~= nil then
       -- Default grouping in the Rules/Tracking list.
       if rule.category == nil and rule._category == nil then
-        rule._category = (xy == "X") and "X:" or "Y:"
+        rule._category = (xy == "X") and "X:" or ((xy == "Y") and "Y:" or "K:")
       end
-      -- Default display routing: list-only.
-      if rule.display == nil then
-        rule.display = "list"
-      end
+
+      -- QuestXY rules are automation-only; never route them to frames.
+      rule.display = nil
+      rule.frameID = nil
+      rule.targets = nil
     end
   end
 
@@ -614,6 +615,16 @@ end
 
 ns.GetCustomRules = GetCustomRules
 
+function ns.GetCharCustomRules()
+  NormalizeSV()
+  local t = fr0z3nUI_QuestTracker_Char.settings.customRules
+  if type(t) ~= "table" then
+    t = {}
+    fr0z3nUI_QuestTracker_Char.settings.customRules = t
+  end
+  return t
+end
+
 local function GetCustomRulesTrash()
   NormalizeSV()
   local t = fr0z3nUI_QuestTracker_Acc.settings.customRulesTrash
@@ -625,6 +636,16 @@ local function GetCustomRulesTrash()
 end
 
 ns.GetCustomRulesTrash = GetCustomRulesTrash
+
+function ns.GetCharCustomRulesTrash()
+  NormalizeSV()
+  local t = fr0z3nUI_QuestTracker_Char.settings.customRulesTrash
+  if type(t) ~= "table" then
+    t = {}
+    fr0z3nUI_QuestTracker_Char.settings.customRulesTrash = t
+  end
+  return t
+end
 
 local function GetCustomFrames()
   NormalizeSV()
@@ -684,6 +705,7 @@ local function GetEffectiveRules()
   local out = {}
   for _, r in ipairs(GetEffectiveDefaultRules()) do out[#out + 1] = r end
   for _, r in ipairs(GetCustomRules()) do out[#out + 1] = r end
+  for _, r in ipairs(ns.GetCharCustomRules()) do out[#out + 1] = r end
 
   return out
 end
@@ -5988,19 +6010,24 @@ RefreshAll = function()
   end
 
   for _, rule in ipairs(rules) do
-    local status = BuildRuleStatus(rule, evalCtx)
-    if status and (editMode or (not IsHiddenByCompletion(status))) then
-      if type(rule.targets) == "table" then
-        for _, frameID in ipairs(rule.targets) do
-          Stage(tostring(frameID), rule, status)
-        end
-      elseif rule.frameID then
-        Stage(tostring(rule.frameID), rule, status)
-      else
-        local display = tostring(rule.display or "list"):lower()
-        if display ~= "bar" then display = "list" end
-        for _, frameID in ipairs(frameIDsByType[display]) do
-          Stage(frameID, rule, status)
+    -- QuestX/QuestY/KeepList rules are automation-only and should not be staged into any list/bar frames.
+    if type(rule) == "table" and (rule.questXY == "X" or rule.questXY == "Y" or rule.questXY == "K") then
+      -- skip
+    else
+      local status = BuildRuleStatus(rule, evalCtx)
+      if status and (editMode or (not IsHiddenByCompletion(status))) then
+        if type(rule.targets) == "table" then
+          for _, frameID in ipairs(rule.targets) do
+            Stage(tostring(frameID), rule, status)
+          end
+        elseif rule.frameID then
+          Stage(tostring(rule.frameID), rule, status)
+        else
+          local display = tostring(rule.display or "list"):lower()
+          if display ~= "bar" then display = "list" end
+          for _, frameID in ipairs(frameIDsByType[display]) do
+            Stage(frameID, rule, status)
+          end
         end
       end
     end
@@ -6023,19 +6050,23 @@ RefreshAll = function()
     end
 
     for _, rule in ipairs(rules) do
-      local status = BuildRuleStatus(rule, evalCtx, { forceNormalVisibility = true })
-      if status and (not IsHiddenByCompletion(status)) then
-        if type(rule.targets) == "table" then
-          for _, frameID in ipairs(rule.targets) do
-            StageActive(tostring(frameID), rule, status)
-          end
-        elseif rule.frameID then
-          StageActive(tostring(rule.frameID), rule, status)
-        else
-          local display = tostring(rule.display or "list"):lower()
-          if display ~= "bar" then display = "list" end
-          for _, frameID in ipairs(frameIDsByType[display]) do
-            StageActive(frameID, rule, status)
+      if type(rule) == "table" and (rule.questXY == "X" or rule.questXY == "Y" or rule.questXY == "K") then
+        -- skip
+      else
+        local status = BuildRuleStatus(rule, evalCtx, { forceNormalVisibility = true })
+        if status and (not IsHiddenByCompletion(status)) then
+          if type(rule.targets) == "table" then
+            for _, frameID in ipairs(rule.targets) do
+              StageActive(tostring(frameID), rule, status)
+            end
+          elseif rule.frameID then
+            StageActive(tostring(rule.frameID), rule, status)
+          else
+            local display = tostring(rule.display or "list"):lower()
+            if display ~= "bar" then display = "list" end
+            for _, frameID in ipairs(frameIDsByType[display]) do
+              StageActive(frameID, rule, status)
+            end
           end
         end
       end
@@ -7158,11 +7189,44 @@ local function TryAutoAcceptQuestYFromRules()
   end
 end
 
+local function AbandonQuestByLogIndex(i, qid)
+  if not qid then return false end
+  if C_QuestLog.CanAbandonQuest and not C_QuestLog.CanAbandonQuest(qid) then
+    return false
+  end
+
+  local info = C_QuestLog.GetInfo and C_QuestLog.GetInfo(i) or nil
+  local qTitle = (info and info.title) or ((type(GetQuestTitle) == "function" and GetQuestTitle(qid)) or tostring(qid))
+
+  if C_QuestLog.SetSelectedQuest and C_QuestLog.SetAbandonQuest and C_QuestLog.AbandonQuest then
+    local ok = pcall(C_QuestLog.SetSelectedQuest, qid)
+    if not ok then
+      -- Compatibility fallback: some environments may still accept log index.
+      ok = pcall(C_QuestLog.SetSelectedQuest, i)
+    end
+    if not ok then return false end
+
+    C_QuestLog.SetAbandonQuest()
+    C_QuestLog.AbandonQuest()
+
+    if StaticPopup1 and StaticPopup1.which == "ABANDON_QUEST" and type(StaticPopup_OnClick) == "function" then
+      StaticPopup_OnClick(StaticPopup1, 1)
+    end
+
+    Print(tostring(qTitle) .. " Abandoned")
+    return true
+  end
+
+  return false
+end
+
 local function TryAbandonQuestXFromRules()
   if InCombatLockdown and InCombatLockdown() then return end
 
   local rules = (type(GetEffectiveRules) == "function" and GetEffectiveRules()) or nil
   if type(rules) ~= "table" then return end
+
+  if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetQuestIDForLogIndex) then return end
 
   local targets = {}
   local evalCtx = (type(BuildEvalContext) == "function") and BuildEvalContext() or nil
@@ -7180,27 +7244,145 @@ local function TryAbandonQuestXFromRules()
   end
 
   if not next(targets) then return end
-  if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetQuestIDForLogIndex) then return end
 
   for i = 1, (C_QuestLog.GetNumQuestLogEntries() or 0) do
     local qid = C_QuestLog.GetQuestIDForLogIndex(i)
     if qid and targets[qid] then
-      local info = C_QuestLog.GetInfo and C_QuestLog.GetInfo(i) or nil
-      local qTitle = (info and info.title) or ((type(GetQuestTitle) == "function" and GetQuestTitle(qid)) or tostring(qid))
+      AbandonQuestByLogIndex(i, qid)
+    end
+  end
+end
 
-      if C_QuestLog.SetSelectedQuest and C_QuestLog.SetAbandonQuest and C_QuestLog.AbandonQuest then
-        C_QuestLog.SetSelectedQuest(i)
-        C_QuestLog.SetAbandonQuest()
-        C_QuestLog.AbandonQuest()
+local function RunQuestXKeepListAbandonFromRules()
+  if InCombatLockdown and InCombatLockdown() then return end
 
-        if StaticPopup1 and StaticPopup1.which == "ABANDON_QUEST" and type(StaticPopup_OnClick) == "function" then
-          StaticPopup_OnClick(StaticPopup1, 1)
-        end
+  local rules = (type(GetEffectiveRules) == "function" and GetEffectiveRules()) or nil
+  if type(rules) ~= "table" then return end
 
-        Print(tostring(qTitle) .. " Abandoned")
+  if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetQuestIDForLogIndex) then return end
+
+  local keep = {}
+  for _, rule in ipairs(rules) do
+    if type(rule) == "table" and rule.questXY == "K" then
+      local qid = tonumber(rule.questID)
+      if qid and qid > 0 then
+        keep[qid] = true
       end
     end
   end
+
+  if next(keep) == nil then
+    Print("Keep List is empty.")
+    return
+  end
+
+  local toAbandon = {}
+  for i = 1, (C_QuestLog.GetNumQuestLogEntries() or 0) do
+    local info = (C_QuestLog.GetInfo and C_QuestLog.GetInfo(i)) or nil
+    local qid = (info and info.questID) or C_QuestLog.GetQuestIDForLogIndex(i)
+    qid = tonumber(qid)
+    if qid and qid > 0 and not keep[qid] then
+      local isHeader = info and info.isHeader
+      local isHidden = info and info.isHidden
+      if not isHeader and not isHidden then
+        if (not C_QuestLog.CanAbandonQuest) or C_QuestLog.CanAbandonQuest(qid) == true then
+          toAbandon[#toAbandon + 1] = qid
+        end
+      end
+    end
+  end
+
+  if #toAbandon == 0 then
+    Print("Nothing to abandon (everything is kept/protected/unabandonable).")
+    return
+  end
+
+  local function FindLogIndexByQuestID(qid)
+    qid = tonumber(qid)
+    if not qid or qid <= 0 then return nil end
+    if C_QuestLog.GetLogIndexForQuestID then
+      local ok, idx = pcall(C_QuestLog.GetLogIndexForQuestID, qid)
+      idx = ok and tonumber(idx) or nil
+      if idx and idx > 0 then return idx end
+    end
+    for i = 1, (C_QuestLog.GetNumQuestLogEntries() or 0) do
+      local info = (C_QuestLog.GetInfo and C_QuestLog.GetInfo(i)) or nil
+      local id = tonumber((info and info.questID) or C_QuestLog.GetQuestIDForLogIndex(i))
+      if id and id == qid then
+        return i
+      end
+    end
+    return nil
+  end
+
+  local function RunAbandonBatch()
+    local stepDelay = 0.20
+    local idx = 1
+
+    if frame and frame._questXKeepAbandonTimer then
+      frame._questXKeepAbandonTimer:Cancel()
+      frame._questXKeepAbandonTimer = nil
+    end
+
+    local function Step()
+      local qid = toAbandon[idx]
+      idx = idx + 1
+      if not qid then
+        if frame then frame._questXKeepAbandonTimer = nil end
+        return
+      end
+
+      local logIndex = FindLogIndexByQuestID(qid)
+      if logIndex then
+        AbandonQuestByLogIndex(logIndex, qid)
+      end
+
+      if C_Timer and C_Timer.NewTimer then
+        if frame then
+          frame._questXKeepAbandonTimer = C_Timer.NewTimer(stepDelay, Step)
+        else
+          C_Timer.NewTimer(stepDelay, Step)
+        end
+      else
+        Step()
+      end
+    end
+
+    Step()
+  end
+
+  local function ShouldBypassConfirm()
+    if IsShiftKeyDown then return IsShiftKeyDown() == true end
+    return false
+  end
+
+  if ShouldBypassConfirm() or #toAbandon < 2 then
+    RunAbandonBatch()
+    return
+  end
+
+  if StaticPopupDialogs and StaticPopup_Show then
+    StaticPopupDialogs["FQT_KEEP_ABANDON_CONFIRM"] = StaticPopupDialogs["FQT_KEEP_ABANDON_CONFIRM"] or {
+      text = "",
+      button1 = YES,
+      button2 = NO,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+    }
+    StaticPopupDialogs["FQT_KEEP_ABANDON_CONFIRM"].text = string.format("Abandon %d quest(s) (Keep List)?", #toAbandon)
+    StaticPopupDialogs["FQT_KEEP_ABANDON_CONFIRM"].OnAccept = RunAbandonBatch
+    StaticPopup_Show("FQT_KEEP_ABANDON_CONFIRM")
+    return
+  end
+
+  -- Fallback: no popup available; run immediately.
+  RunAbandonBatch()
+end
+
+ns.RunQuestXKeepListAbandon = function()
+  RunQuestXKeepListAbandonFromRules()
 end
 
 local function QueueTryAbandonQuestX()

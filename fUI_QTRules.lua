@@ -121,7 +121,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
   local hint = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   hint:SetPoint("TOPLEFT", 12, -60)
-  hint:SetText("Create rules using the Quest / Items / Spell / Text tabs. Use this list to enable/disable and edit.")
+  hint:SetText("Create Tracking rules using the Quest / Items / Spell / Text tabs. XQuest rules are listed separately under XRules.")
 
   local rulesScroll = CreateFrame("ScrollFrame", nil, panels.rules, "UIPanelScrollFrameTemplate")
   rulesScroll:SetPoint("TOPLEFT", 12, -74)
@@ -706,29 +706,46 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
     local list = {}
     local sourceOf = nil
+    local function IsXQuestRule(rule)
+      if type(rule) ~= "table" then return false end
+      local xy = (rule.questXY ~= nil) and tostring(rule.questXY):upper() or nil
+      return xy == "X" or xy == "Y" or xy == "K"
+    end
+
     if view == "defaults" then
       for _, r in ipairs(ns.rules or {}) do
-        list[#list + 1] = r
+        if not IsXQuestRule(r) then
+          list[#list + 1] = r
+        end
       end
     elseif view == "trash" then
       for _, r in ipairs(((type(GetCustomRulesTrash) == "function") and GetCustomRulesTrash()) or {}) do
-        list[#list + 1] = r
+        if not IsXQuestRule(r) then
+          list[#list + 1] = r
+        end
       end
     elseif view == "custom" then
       for _, r in ipairs(((type(GetCustomRules) == "function") and GetCustomRules()) or {}) do
-        list[#list + 1] = r
+        if not IsXQuestRule(r) then
+          list[#list + 1] = r
+        end
       end
     else
       sourceOf = {}
       for _, r in ipairs(ns.rules or {}) do
-        list[#list + 1] = r
-        sourceOf[r] = "default"
+        if not IsXQuestRule(r) then
+          list[#list + 1] = r
+          sourceOf[r] = "default"
+        end
       end
       for _, r in ipairs(((type(GetCustomRules) == "function") and GetCustomRules()) or {}) do
-        list[#list + 1] = r
-        sourceOf[r] = "custom"
+        if not IsXQuestRule(r) then
+          list[#list + 1] = r
+          sourceOf[r] = "custom"
+        end
       end
     end
+
 
     -- Build filter choices (expansion/category) from the unfiltered set for this view.
     local function RuleExpansionName(rule, src)
@@ -1420,6 +1437,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       end
 
       local src = (view == "defaults") and "default" or (view == "trash") and "trash" or (view == "custom") and "custom" or (sourceOf and sourceOf[r])
+
       local displayRule = (src == "default") and GetEffectiveDefaultRule(r) or r
 
       if row.frameDrop then
@@ -1468,7 +1486,8 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         end
       end
 
-      local disabled = (type(IsRuleDisabled) == "function") and IsRuleDisabled(r) or false
+      local disabled = false
+      disabled = (type(IsRuleDisabled) == "function") and IsRuleDisabled(r) or false
       row.toggle:SetChecked(not disabled)
       if disabled then
         row.text:SetFontObject("GameFontDisableSmall")
@@ -1508,7 +1527,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         if dropW <= 0 then dropW = 110 end
         -- Left side: up/down + (optional) checkbox.
         local leftPad = (view == "trash") and (18 + 2 + 18 + 4) or (18 + 2 + 18 + 2 + 18 + 4)
-        local rightPad = 2 + dropW + 4
+        local rightPad = (2 + dropW + 4)
         local maxW = totalW - leftPad - rightPad
         if maxW < 50 then maxW = 50 end
         row.text:SetWidth(maxW)
@@ -1593,7 +1612,17 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         end)
       end
 
-      if view == "custom" then
+      if src == "protected" then
+        DisableMoveButtons(row)
+        if row.action then
+          row.action:Hide()
+          row.action:SetScript("OnClick", nil)
+        end
+        if row.del then
+          row.del:Hide()
+          row.del:SetScript("OnClick", nil)
+        end
+      elseif view == "custom" then
         ApplyRulesTabReorderButtons()
         row.action:SetText("Edit")
         row.action:Show()

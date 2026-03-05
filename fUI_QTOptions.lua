@@ -19,7 +19,9 @@ local ResetFramePositionsToDefaults = ns.ResetFramePositionsToDefaults
 local GetEffectiveRules = ns.GetEffectiveRules
 local GetEffectiveFrames = ns.GetEffectiveFrames
 local GetCustomRules = ns.GetCustomRules
+local GetCharCustomRules = ns.GetCharCustomRules
 local GetCustomRulesTrash = ns.GetCustomRulesTrash
+local GetCharCustomRulesTrash = ns.GetCharCustomRulesTrash
 local GetCustomFrames = ns.GetCustomFrames
 local ShallowCopyTable = ns.ShallowCopyTable
 local DeepCopyValue = ns.DeepCopyValue
@@ -136,6 +138,7 @@ end
 -- Locals populated by EnsureOptionsFrame()
 local optionsFrame
 local RefreshRulesList
+local RefreshXRulesList
 local RefreshFramesList
 local RefreshActiveTab
 
@@ -144,6 +147,14 @@ local RefreshActiveTab
 RefreshRulesList = function()
   local f = optionsFrame
   local fn = f and f._refreshRulesList
+  if type(fn) == "function" then
+    return fn()
+  end
+end
+
+RefreshXRulesList = function()
+  local f = optionsFrame
+  local fn = f and f._refreshXRulesList
   if type(fn) == "function" then
     return fn()
   end
@@ -163,6 +174,8 @@ RefreshActiveTab = function()
   local t = tostring(f._activeTab or "")
   if t == "rules" then
     if RefreshRulesList then return RefreshRulesList() end
+  elseif t == "xrules" then
+    if RefreshXRulesList then return RefreshXRulesList() end
   elseif t == "frames" then
     if RefreshFramesList then return RefreshFramesList() end
   end
@@ -253,6 +266,7 @@ local function EnsureOptionsFrame()
   local panels = {
     quest = MakePanel(),
     questx = MakePanel(),
+    xrules = MakePanel(),
     items = MakePanel(),
     text = MakePanel(),
     spells = MakePanel(),
@@ -469,18 +483,21 @@ local function EnsureOptionsFrame()
     end
     if name == "rules" then
       if RefreshRulesList then RefreshRulesList() end
+    elseif name == "xrules" then
+      if RefreshXRulesList then RefreshXRulesList() end
     elseif name == "frames" then
       if RefreshFramesList then RefreshFramesList() end
     end
   end
 
-  local tabOrder = { "rules", "items", "quest", "questx", "spells", "text", "frames" }
+  local tabOrder = { "rules", "items", "quest", "spells", "text", "frames", "xrules", "questx" }
   local tabText = {
     frames = "UI",
     rules = "Tracking",
     items = "Items",
     quest = "Quest",
-    questx = "QuestX",
+    xrules = "XRules",
+    questx = "XQuest",
     spells = "Spell",
     text = "Text",
   }
@@ -1055,7 +1072,9 @@ local function EnsureOptionsFrame()
       SetCheckButtonLabel = SetCheckButtonLabel,
 
       GetCustomRules = GetCustomRules,
+      GetCharCustomRules = GetCharCustomRules,
       GetCustomRulesTrash = GetCustomRulesTrash,
+      GetCharCustomRulesTrash = GetCharCustomRulesTrash,
       EnsureUniqueKeyForCustomRule = EnsureUniqueKeyForCustomRule,
       IsRuleDisabled = IsRuleDisabled,
       ToggleRuleDisabled = ToggleRuleDisabled,
@@ -1064,12 +1083,23 @@ local function EnsureOptionsFrame()
           return ns.OpenCustomRuleInTab(...)
         end
       end,
+      OpenCharCustomRuleInTab = function(...)
+        if ns and ns.OpenCharCustomRuleInTab then
+          return ns.OpenCharCustomRuleInTab(...)
+        end
+      end,
       OpenDefaultRuleInTab = function(...)
         if ns and ns.OpenDefaultRuleInTab then
           return ns.OpenDefaultRuleInTab(...)
         end
       end,
       DeepCopyValue = DeepCopyValue,
+      GetEffectiveDefaultRules = function()
+        if ns and ns.GetEffectiveDefaultRules then
+          return ns.GetEffectiveDefaultRules() or {}
+        end
+        return {}
+      end,
       GetDefaultRuleEdits = function()
         if ns and ns.GetDefaultRuleEdits then
           return ns.GetDefaultRuleEdits() or {}
@@ -1092,6 +1122,12 @@ local function EnsureOptionsFrame()
       SetRefreshRulesList = function(fn)
         if type(fn) == "function" then
           RefreshRulesList = fn
+        end
+      end,
+      RefreshXRulesList = function() if RefreshXRulesList then return RefreshXRulesList() end end,
+      SetRefreshXRulesList = function(fn)
+        if type(fn) == "function" then
+          RefreshXRulesList = fn
         end
       end,
 
@@ -1140,6 +1176,12 @@ local function EnsureOptionsFrame()
     ns.FQTOptionsPanels.BuildQuestX(GetOptionsCtx())
   end
 
+  -- XRULES tab (XQuest rules list)
+  local useXRulesModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildXRules) == "function"
+  if useXRulesModule then
+    ns.FQTOptionsPanels.BuildXRules(GetOptionsCtx())
+  end
+
   -- ITEMS tab (Items module)
   local useItemsModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildItems) == "function"
   if useItemsModule then
@@ -1184,7 +1226,8 @@ local function EnsureOptionsFrame()
       panels.questx._editingCustomIndex = nil
       panels.questx._editingDefaultBase = nil
       panels.questx._editingDefaultKey = nil
-      if panels.questx._addQuestXBtn then panels.questx._addQuestXBtn:SetText("Add QuestX/Y Rule") end
+      panels.questx._editingCustomIsChar = nil
+      if panels.questx._syncModeUI then pcall(panels.questx._syncModeUI, panels.questx) end
       if panels.questx._cancelEditBtn then panels.questx._cancelEditBtn:Hide() end
     end
     if panels.items then
@@ -1245,7 +1288,7 @@ local function EnsureOptionsFrame()
 
   local function DetectRuleTypeLite(r)
     if type(r) ~= "table" then return "text" end
-    if r.questXY == "X" or r.questXY == "Y" then return "questx" end
+    if r.questXY == "X" or r.questXY == "Y" or r.questXY == "K" then return "questx" end
     if tonumber(r.questID) and tonumber(r.questID) > 0 then return "quest" end
     if type(r.item) == "table" and tonumber(r.item.itemID) and tonumber(r.item.itemID) > 0 then return "item" end
     if r.spellKnown or r.notSpellKnown or r.SpellKnown or r.NotSpellKnown or r.locationID or r.class or r.notInGroup or r.restedOnly or r.missingPrimaryProfessions then return "spell" end
@@ -1270,19 +1313,23 @@ local function EnsureOptionsFrame()
     if t == "questx" then
       SelectTab("questx")
       panels.questx._editingCustomIndex = customIndex
-      if panels.questx._addQuestXBtn then panels.questx._addQuestXBtn:SetText("Save QuestX/Y Rule") end
       if panels.questx._cancelEditBtn then panels.questx._cancelEditBtn:Show() end
 
       if panels.questx._questIDBox then panels.questx._questIDBox:SetText(tostring(tonumber(rule.questID) or 0)) end
-      if panels.questx._titleBox then panels.questx._titleBox:SetText(tostring(rule.label or "")) end
-      if panels.questx._locBox then panels.questx._locBox:SetText(tostring(rule.locationID or "0")) end
 
-      local frameID = tostring(rule.frameID or "list1")
-      panels.questx._questTargetFrameID = frameID
-      if UDDM_SetText and panels.questx._questFrameDrop then UDDM_SetText(panels.questx._questFrameDrop, GetFrameDisplayNameByID(frameID)) end
-
-      panels.questx._questXY = (rule.questXY == "Y") and "Y" or "X"
+      panels.questx._questXY = (rule.questXY == "Y") and "Y" or (rule.questXY == "K") and "K" or "X"
       if panels.questx._syncModeUI then pcall(panels.questx._syncModeUI, panels.questx) end
+
+      -- Sync QuestX scope button from the rule being edited.
+      if panels.questx._questXY ~= "Y" then
+        if rule.restedOnly == true then
+          panels.questx._questXScopeMode = "RESTING"
+        elseif rule.locationID ~= nil then
+          panels.questx._questXScopeMode = "MAP"
+        end
+        if panels.questx._updateScopeButton then pcall(panels.questx._updateScopeButton) end
+        if panels.questx._syncScopeUI then pcall(panels.questx._syncScopeUI, panels.questx) end
+      end
       return
     end
     if t == "quest" then
@@ -1669,7 +1716,51 @@ local function EnsureOptionsFrame()
     end
   end
 
+    local function OpenCharCustomRuleInTab(customIndex)
+      if not optionsFrame then return end
+      local rules = GetCharCustomRules()
+      local rule = rules[customIndex]
+      if type(rule) ~= "table" then return end
+
+      if optionsFrame._ruleEditorFrame then
+        optionsFrame._ruleEditorFrame._skipRestore = true
+        optionsFrame._ruleEditorFrame:Hide()
+      end
+      ClearTabEdits()
+
+      local t = DetectRuleTypeLite(rule)
+      SetRuleCreateExpansion(rule._expansionID, rule._expansionName)
+
+      if t == "questx" then
+        SelectTab("questx")
+        panels.questx._editingCustomIndex = customIndex
+        panels.questx._editingCustomIsChar = true
+        if panels.questx._cancelEditBtn then panels.questx._cancelEditBtn:Show() end
+
+        if panels.questx._questIDBox then panels.questx._questIDBox:SetText(tostring(tonumber(rule.questID) or 0)) end
+
+        panels.questx._questXY = (rule.questXY == "Y") and "Y" or (rule.questXY == "K") and "K" or "X"
+        if panels.questx._syncModeUI then pcall(panels.questx._syncModeUI, panels.questx) end
+
+        if panels.questx._questXY == "X" then
+          if rule.restedOnly == true then
+            panels.questx._questXScopeMode = "RESTING"
+          elseif rule.locationID ~= nil then
+            panels.questx._questXScopeMode = "MAP"
+          end
+          if panels.questx._updateScopeButton then pcall(panels.questx._updateScopeButton) end
+          if panels.questx._syncScopeUI then pcall(panels.questx._syncScopeUI, panels.questx) end
+        end
+        return
+      end
+
+      -- Minimal fallback: jump to Rules tab; character-scoped editing for other rule types not wired yet.
+      SelectTab("rules")
+      Print("Character-scoped rule editing is currently available for QuestX/Y/K only.")
+    end
+
   ns.OpenCustomRuleInTab = OpenCustomRuleInTab
+  ns.OpenCharCustomRuleInTab = OpenCharCustomRuleInTab
 
   local function OpenDefaultRuleInTab(baseRule)
     if not optionsFrame then return end
@@ -1695,19 +1786,23 @@ local function EnsureOptionsFrame()
       SelectTab("questx")
       panels.questx._editingDefaultBase = baseRule
       panels.questx._editingDefaultKey = key
-      if panels.questx._addQuestXBtn then panels.questx._addQuestXBtn:SetText("Save QuestX/Y Rule") end
       if panels.questx._cancelEditBtn then panels.questx._cancelEditBtn:Show() end
 
       if panels.questx._questIDBox then panels.questx._questIDBox:SetText(tostring(tonumber(rule.questID) or 0)) end
-      if panels.questx._titleBox then panels.questx._titleBox:SetText(tostring(rule.label or "")) end
-      if panels.questx._locBox then panels.questx._locBox:SetText(tostring(rule.locationID or "0")) end
 
-      local frameID = tostring(rule.frameID or "list1")
-      panels.questx._questTargetFrameID = frameID
-      if UDDM_SetText and panels.questx._questFrameDrop then UDDM_SetText(panels.questx._questFrameDrop, GetFrameDisplayNameByID(frameID)) end
-
-      panels.questx._questXY = (rule.questXY == "Y") and "Y" or "X"
+      panels.questx._questXY = (rule.questXY == "Y") and "Y" or (rule.questXY == "K") and "K" or "X"
       if panels.questx._syncModeUI then pcall(panels.questx._syncModeUI, panels.questx) end
+
+      -- Sync QuestX scope button from the rule being edited.
+      if panels.questx._questXY ~= "Y" then
+        if rule.restedOnly == true then
+          panels.questx._questXScopeMode = "RESTING"
+        elseif rule.locationID ~= nil then
+          panels.questx._questXScopeMode = "MAP"
+        end
+        if panels.questx._updateScopeButton then pcall(panels.questx._updateScopeButton) end
+        if panels.questx._syncScopeUI then pcall(panels.questx._syncScopeUI, panels.questx) end
+      end
       return
     end
     if t == "quest" then

@@ -36,11 +36,11 @@ local Y, N = true, false
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{["label"] = "Cultist", ["frameID"] = "bar1", ["key"] = "12pxp:cultist:rare",
-["questID"] = 91795, ["requireInLog"] = false, ["hideWhenCompleted"] = false, ["showXWhenComplete"] = true,
-["questInfo"] = "Cultist %p", ["playerLevel"] = { ">=", 20, },
-["progress"] = { ["merge"] = { { ["questID"] = 91795, ["objectiveIndex"] = 1 }, { ["questID"] = 87308, ["objectiveIndex"] = 1 }, }, ["sep"] = " | ", ["requireAll"] = true, },
-["complete"] = { ["all"] = { { ["questID"] = 91795 }, { ["questID"] = 87308 }, }, }, ["completeMode"] = "replace",},
+--{["label"] = "Cultist", ["frameID"] = "bar1", ["key"] = "12pxp:cultist:rare",
+--["questID"] = 91795, ["requireInLog"] = false, ["hideWhenCompleted"] = false, ["showXWhenComplete"] = true,
+--["questInfo"] = "Cultist %p", ["playerLevel"] = { ">=", 20, },
+--["progress"] = { ["merge"] = { { ["questID"] = 91795, ["objectiveIndex"] = 1 }, { ["questID"] = 87308, ["objectiveIndex"] = 1 }, }, ["sep"] = " | ", ["requireAll"] = true, },
+--["complete"] = { ["all"] = { { ["questID"] = 91795 }, { ["questID"] = 87308 }, }, }, ["completeMode"] = "replace",},
 
 
 
