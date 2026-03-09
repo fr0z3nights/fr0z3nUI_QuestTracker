@@ -2,6 +2,24 @@
 
 Format: `YYMMDD-###` (sanity stamp) — short summary.
 
+## 260307-001
+- XQuest tab: restored Trade-style mode/scope button and fixed the QuestID input placeholder overlap (no default "0").
+- XQuest tab: moved Character/Account actions into a Trade-style bottom row and shortened labels.
+- Keep List abandon: if Keep List is empty, the button now abandons all abandonable quests (with confirmation) instead of doing nothing.
+
+## 260307-002
+- XQuest tab: Character/Account buttons now behave like FAO (left-click add/disable, right-click remove custom) with color-coded state and dynamic tooltips.
+- Quest disable: added account-scoped `disabledRules` (Account disables apply to all characters; Character disables apply to just that character).
+
+## 260307-003
+- XQuest tab: moved the main X/Y/Keep mode button down so it no longer sits over the tabs.
+- XQuest tab: moved Character/Account buttons under the quest info display (quest title), matching the expected flow.
+
+## 260307-004
+- XQuest tab: moved MAP/RESTING scope button next to Character and kept it visible (tooltip notes it applies to Auto Abandon).
+- XQuest tab: added a bottom-left "Completed" toggle (yellow/grey) to skip completed quests when abandoning.
+- XQuest tab: renamed/moved "Abandon" to "Abandon All Quests" (bottom-center) and added tooltip; added bottom-right "Reload UI".
+
 ## 260304-001
 - Keep List (K): no longer runs automatically; added a manual QuestX tab button to abandon quests using the Keep List.
 

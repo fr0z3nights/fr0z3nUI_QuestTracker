@@ -486,6 +486,7 @@ local function NormalizeSV()
   fr0z3nUI_QuestTracker_Acc.settings.customRules = fr0z3nUI_QuestTracker_Acc.settings.customRules or {}
   fr0z3nUI_QuestTracker_Acc.settings.customRulesTrash = fr0z3nUI_QuestTracker_Acc.settings.customRulesTrash or {}
   fr0z3nUI_QuestTracker_Acc.settings.defaultRuleEdits = fr0z3nUI_QuestTracker_Acc.settings.defaultRuleEdits or {}
+  fr0z3nUI_QuestTracker_Acc.settings.disabledRules = fr0z3nUI_QuestTracker_Acc.settings.disabledRules or {}
   fr0z3nUI_QuestTracker_Acc.settings.customFrames = fr0z3nUI_QuestTracker_Acc.settings.customFrames or {}
   fr0z3nUI_QuestTracker_Char.settings = fr0z3nUI_QuestTracker_Char.settings or {}
 
@@ -853,7 +854,7 @@ RuleKey = function(rule)
   if rule.questID then
     local qid = tonumber(rule.questID) or rule.questID
     local xy = (rule.questXY ~= nil) and tostring(rule.questXY):upper() or nil
-    if xy == "X" or xy == "Y" then
+    if xy == "X" or xy == "Y" or xy == "K" then
       return "qxy:" .. xy .. ":" .. tostring(qid)
     end
     return "q:" .. tostring(qid)
@@ -921,21 +922,87 @@ end
 
 ns.RuleKey = RuleKey
 
-local function IsRuleDisabled(rule)
+function ns.IsRuleDisabledInScope(rule, isAccount)
   NormalizeSV()
   local key = RuleKey(rule)
   if not key then return false end
-  return fr0z3nUI_QuestTracker_Char.settings.disabledRules[key] and true or false
+
+  local settings = (isAccount and fr0z3nUI_QuestTracker_Acc and fr0z3nUI_QuestTracker_Acc.settings) or (fr0z3nUI_QuestTracker_Char and fr0z3nUI_QuestTracker_Char.settings) or nil
+  local t = (type(settings) == "table") and settings.disabledRules or nil
+  if type(t) ~= "table" then
+    t = {}
+    if type(settings) == "table" then settings.disabledRules = t end
+  end
+
+  if t[key] then return true end
+
+  -- Back-compat for Keep List rules that previously keyed as q:<questID>
+  if type(rule) == "table" and rule.questID ~= nil and tostring(rule.questXY or ""):upper() == "K" then
+    local qid = tonumber(rule.questID) or rule.questID
+    local legacy = "q:" .. tostring(qid)
+    if t[legacy] then return true end
+  end
+
+  return false
+end
+
+function ns.ClearRuleDisabledInScope(rule, isAccount)
+  NormalizeSV()
+  local key = RuleKey(rule)
+  if not key then return end
+
+  local settings = (isAccount and fr0z3nUI_QuestTracker_Acc and fr0z3nUI_QuestTracker_Acc.settings) or (fr0z3nUI_QuestTracker_Char and fr0z3nUI_QuestTracker_Char.settings) or nil
+  local t = (type(settings) == "table") and settings.disabledRules or nil
+  if type(t) ~= "table" then
+    t = {}
+    if type(settings) == "table" then settings.disabledRules = t end
+  end
+
+  t[key] = nil
+
+  if type(rule) == "table" and rule.questID ~= nil and tostring(rule.questXY or ""):upper() == "K" then
+    local qid = tonumber(rule.questID) or rule.questID
+    local legacy = "q:" .. tostring(qid)
+    t[legacy] = nil
+  end
+end
+
+function ns.ToggleRuleDisabledInScope(rule, isAccount)
+  NormalizeSV()
+  local key = RuleKey(rule)
+  if not key then return end
+
+  local settings = (isAccount and fr0z3nUI_QuestTracker_Acc and fr0z3nUI_QuestTracker_Acc.settings) or (fr0z3nUI_QuestTracker_Char and fr0z3nUI_QuestTracker_Char.settings) or nil
+  local t = (type(settings) == "table") and settings.disabledRules or nil
+  if type(t) ~= "table" then
+    t = {}
+    if type(settings) == "table" then settings.disabledRules = t end
+  end
+
+  t[key] = not t[key]
+
+  -- If toggling a Keep List rule, normalize away the legacy key.
+  if type(rule) == "table" and rule.questID ~= nil and tostring(rule.questXY or ""):upper() == "K" then
+    local qid = tonumber(rule.questID) or rule.questID
+    local legacy = "q:" .. tostring(qid)
+    t[legacy] = nil
+  end
+end
+
+local function IsRuleDisabled(rule)
+  -- A rule is disabled if either:
+  --  - Account disabledRules contains the key (disables for all characters), OR
+  --  - Character disabledRules contains the key (disables for this character only)
+  return (ns and ns.IsRuleDisabledInScope and ns.IsRuleDisabledInScope(rule, true)) or (ns and ns.IsRuleDisabledInScope and ns.IsRuleDisabledInScope(rule, false))
 end
 
 ns.IsRuleDisabled = IsRuleDisabled
 
 local function ToggleRuleDisabled(rule)
-  NormalizeSV()
-  local key = RuleKey(rule)
-  if not key then return end
-  local t = fr0z3nUI_QuestTracker_Char.settings.disabledRules
-  t[key] = not t[key]
+  -- Preserve existing behavior: toggles CHARACTER disabled state.
+  if ns and ns.ToggleRuleDisabledInScope then
+    ns.ToggleRuleDisabledInScope(rule, false)
+  end
 end
 
 ns.ToggleRuleDisabled = ToggleRuleDisabled
@@ -7253,8 +7320,10 @@ local function TryAbandonQuestXFromRules()
   end
 end
 
-local function RunQuestXKeepListAbandonFromRules()
+local function RunQuestXKeepListAbandonFromRules(forceBypassConfirm)
   if InCombatLockdown and InCombatLockdown() then return end
+
+  local skipCompleted = (type(GetUISetting) == "function") and (GetUISetting("keepAbandonSkipCompleted", true) == true) or false
 
   local rules = (type(GetEffectiveRules) == "function" and GetEffectiveRules()) or nil
   if type(rules) ~= "table" then return end
@@ -7271,10 +7340,7 @@ local function RunQuestXKeepListAbandonFromRules()
     end
   end
 
-  if next(keep) == nil then
-    Print("Keep List is empty.")
-    return
-  end
+  local keepEmpty = (next(keep) == nil)
 
   local toAbandon = {}
   for i = 1, (C_QuestLog.GetNumQuestLogEntries() or 0) do
@@ -7286,7 +7352,29 @@ local function RunQuestXKeepListAbandonFromRules()
       local isHidden = info and info.isHidden
       if not isHeader and not isHidden then
         if (not C_QuestLog.CanAbandonQuest) or C_QuestLog.CanAbandonQuest(qid) == true then
-          toAbandon[#toAbandon + 1] = qid
+          local isComplete = false
+          if info and info.isComplete ~= nil then
+            isComplete = (info.isComplete == true) or ((tonumber(info.isComplete) or 0) == 1)
+          end
+
+          -- "Completed" should also treat ready-to-turn-in quests as complete.
+          if (not isComplete) and C_QuestLog.ReadyForTurnIn then
+            local ok, v = pcall(C_QuestLog.ReadyForTurnIn, qid)
+            if ok then
+              isComplete = (v == true) or (v == 1) or ((tonumber(v) or 0) == 1)
+            end
+          end
+
+          if (not isComplete) and C_QuestLog.IsComplete then
+            local ok, v = pcall(C_QuestLog.IsComplete, qid)
+            if ok then
+              isComplete = (v == true) or (v == 1) or ((tonumber(v) or 0) == 1)
+            end
+          end
+
+          if (not skipCompleted) or (not isComplete) then
+            toAbandon[#toAbandon + 1] = qid
+          end
         end
       end
     end
@@ -7352,6 +7440,9 @@ local function RunQuestXKeepListAbandonFromRules()
   end
 
   local function ShouldBypassConfirm()
+    if forceBypassConfirm == true then
+      return true
+    end
     if IsShiftKeyDown then return IsShiftKeyDown() == true end
     return false
   end
@@ -7371,7 +7462,11 @@ local function RunQuestXKeepListAbandonFromRules()
       hideOnEscape = true,
       preferredIndex = 3,
     }
-    StaticPopupDialogs["FQT_KEEP_ABANDON_CONFIRM"].text = string.format("Abandon %d quest(s) (Keep List)?", #toAbandon)
+    if keepEmpty then
+      StaticPopupDialogs["FQT_KEEP_ABANDON_CONFIRM"].text = string.format("Keep List is empty. Abandon %d quest(s)?", #toAbandon)
+    else
+      StaticPopupDialogs["FQT_KEEP_ABANDON_CONFIRM"].text = string.format("Abandon %d quest(s) (Keep List)?", #toAbandon)
+    end
     StaticPopupDialogs["FQT_KEEP_ABANDON_CONFIRM"].OnAccept = RunAbandonBatch
     StaticPopup_Show("FQT_KEEP_ABANDON_CONFIRM")
     return
@@ -7382,7 +7477,12 @@ local function RunQuestXKeepListAbandonFromRules()
 end
 
 ns.RunQuestXKeepListAbandon = function()
-  RunQuestXKeepListAbandonFromRules()
+  RunQuestXKeepListAbandonFromRules(false)
+end
+
+-- Slash-only helper: Abandon All Quests (Keep List) without confirmation.
+ns.RunQuestXKeepListAbandonNoConfirm = function()
+  RunQuestXKeepListAbandonFromRules(true)
 end
 
 local function QueueTryAbandonQuestX()
@@ -7812,6 +7912,24 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     return
   end
 
+  if cmd == "aaq" then
+    if type(ns) == "table" and type(ns.RunQuestXKeepListAbandon) == "function" then
+      ns.RunQuestXKeepListAbandon()
+    else
+      Print("Abandon All Quests is unavailable.")
+    end
+    return
+  end
+
+  if cmd == "aaqs" then
+    if type(ns) == "table" and type(ns.RunQuestXKeepListAbandonNoConfirm) == "function" then
+      ns.RunQuestXKeepListAbandonNoConfirm()
+    else
+      Print("Abandon All Quests is unavailable.")
+    end
+    return
+  end
+
   if cmd == "twdebug" then
     Print("Timewalking debug:")
     EnsureCalendarOpened()
@@ -8094,6 +8212,6 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     return
   end
 
-  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt debug autobuy [on|off], /fqt debug hitboxes [on|off], /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
+  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug autobuy [on|off], /fqt debug hitboxes [on|off], /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
   end)
 end
