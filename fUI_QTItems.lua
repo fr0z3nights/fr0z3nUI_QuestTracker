@@ -1103,9 +1103,8 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       buyCfg = { enabled = enabled and true or false, max = maxQty }
     end
 
-    ---@type string|nil
-    local targetFrame = tostring(pItems._targetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = nil end
+    local _targetFrame = tostring(pItems._targetFrameID or ""):gsub("%s+", "")
+    local targetFrame = (_targetFrame ~= "") and _targetFrame or nil
     local targetFrameKey = targetFrame or "any"
     local targetFrameLabel = targetFrame or "Bar/List"
 

@@ -990,9 +990,8 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     infoText = infoText:gsub("^%s+", ""):gsub("%s+$", "")
     local textInfo = (infoText ~= "" and infoText ~= nameText) and infoText or nil
 
-    ---@type string|nil
-    local targetFrame = tostring(panels.text._targetFrameID or ""):gsub("%s+", "")
-    if targetFrame == "" then targetFrame = nil end
+    local _targetFrame = tostring(panels.text._targetFrameID or ""):gsub("%s+", "")
+    local targetFrame = (_targetFrame ~= "") and _targetFrame or nil
     local targetFrameKey = targetFrame or "any"
     local targetFrameLabel = targetFrame or "Bar/List"
 

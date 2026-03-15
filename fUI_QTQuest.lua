@@ -881,7 +881,6 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       return
     end
 
-    ---@type string|nil
     local targetFrame = nil
     do
       local targetFrameID = pQuest._questTargetFrameID
