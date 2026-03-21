@@ -137,8 +137,8 @@ local bakedRules = {
 {["group"] = "housing:vendor:lumberaxe", ["order"] = 1,
 ["label"]   = "No Axe (Housing)", ["frameID"] = "bar1", ["key"] = "custom:item:253580:list1:0116",
 ["itemInfo"] = "Housing Axe", ["restedOnly"] = N,
-["item"] = { ["itemID"] = 253580, ["required"] = { 1, Y, Y, 1 }, },
-["complete"] = { ["any"] = { { ["item"] = { ["itemID"] = 253580, ["count"] = 1 } }, }, }, },
+["item"] = { ["itemID"] = 253580, ["required"] = { 1, Y, Y, 1 }, ["cachePurchased"] = Y, ["cachePurchasedFromBag"] = N, ["knownTooltip"] = Y, },
+["complete"] = { ["any"] = { { ["item"] = { ["itemID"] = 253580, ["count"] = 1, ["cachePurchased"] = Y, ["cachePurchasedFromBag"] = N } }, }, }, },
 
 {["group"] = "classic:vendor:red-rider", ["order"] = 1,
 ["label"]   = "Red Rider Air RIfle", ["frameID"] = "list1", ["key"] = "custom:item:46725:list1:0116",

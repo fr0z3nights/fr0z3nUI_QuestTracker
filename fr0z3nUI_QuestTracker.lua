@@ -507,6 +507,11 @@ local function NormalizeSV()
     fr0z3nUI_QuestTracker_Acc.cache.twWeekly = {}
   end
 
+  -- Character cache: one-time purchases / known items (used to hide vendor items
+  -- after they are learned/consumed and no longer sit in bags).
+  fr0z3nUI_QuestTracker_Char.cache = fr0z3nUI_QuestTracker_Char.cache or {}
+  fr0z3nUI_QuestTracker_Char.cache.purchasedItems = fr0z3nUI_QuestTracker_Char.cache.purchasedItems or {}
+
   -- Explicit-only frame anchor/grow settings (no runtime auto-anchoring).
   do
     local function NormalizeAnchorCornerLocal(v)
@@ -1420,32 +1425,185 @@ end
 
 ns.GetQuestTitle = GetQuestTitle
 
-local function GetItemCountSafe(itemID, includeBank)
+function ns.GetPurchasedItemsCacheTable()
+  local c = fr0z3nUI_QuestTracker_Char
+  if type(c) ~= "table" then
+    fr0z3nUI_QuestTracker_Char = fr0z3nUI_QuestTracker_Char or {}
+    c = fr0z3nUI_QuestTracker_Char
+  end
+  c.cache = (type(c.cache) == "table") and c.cache or {}
+  c.cache.purchasedItems = (type(c.cache.purchasedItems) == "table") and c.cache.purchasedItems or {}
+  return c.cache.purchasedItems
+end
+
+function ns.IsItemCachedPurchased(itemID)
+  itemID = tonumber(itemID)
+  if not itemID or itemID <= 0 then return false end
+  local t = ns.GetPurchasedItemsCacheTable()
+  return (t and t[itemID] ~= nil) and true or false
+end
+
+function ns.MarkItemCachedPurchased(itemID)
+  itemID = tonumber(itemID)
+  if not itemID or itemID <= 0 then return end
+  local t = ns.GetPurchasedItemsCacheTable()
+  if not t then return end
+  if t[itemID] ~= nil then return end
+  t[itemID] = true
+
+  -- Ensure the rule UI updates immediately (otherwise this may only show up after /reload).
+  if C_Timer and C_Timer.After then
+    if ns._cachePurchasedRefreshPending then return end
+    ns._cachePurchasedRefreshPending = true
+    C_Timer.After(0.05, function()
+      ns._cachePurchasedRefreshPending = nil
+      if ns and type(ns.RefreshAll) == "function" then
+        ns.RefreshAll()
+      end
+    end)
+  elseif ns and type(ns.RefreshAll) == "function" then
+    ns.RefreshAll()
+  end
+end
+
+function ns.IsMerchantFrameOpenSafe()
+  if frame and frame._merchantOpen == true then return true end
+  local mf = rawget(_G, "MerchantFrame")
+  if mf and mf.IsShown and mf:IsShown() then return true end
+  return false
+end
+
+function ns.MerchantItemIsAlreadyKnown(merchantIndex)
+  merchantIndex = tonumber(merchantIndex)
+  if not merchantIndex or merchantIndex <= 0 then return false end
+
+  local needles = {}
+  local function AddNeedle(v)
+    if type(v) == "string" and v ~= "" then
+      needles[#needles + 1] = v:lower()
+    end
+  end
+  AddNeedle(rawget(_G, "ITEM_SPELL_KNOWN"))
+  AddNeedle(rawget(_G, "ITEM_PET_KNOWN"))
+  AddNeedle(rawget(_G, "SPELL_ALREADY_KNOWN"))
+  AddNeedle("already known")
+
+  local function LineHasNeedle(s)
+    s = tostring(s or "")
+    if s == "" then return false end
+    local l = s:lower()
+    for i = 1, #needles do
+      local n = needles[i]
+      if n ~= "" and l:find(n, 1, true) then
+        return true
+      end
+    end
+    return false
+  end
+
+  if _G and rawget(_G, "C_TooltipInfo") and type(_G.C_TooltipInfo.GetMerchantItem) == "function" then
+    local ok, tip = pcall(_G.C_TooltipInfo.GetMerchantItem, merchantIndex)
+    if ok and type(tip) == "table" and type(tip.lines) == "table" then
+      for _, line in ipairs(tip.lines) do
+        if type(line) == "table" then
+          if LineHasNeedle(line.leftText) or LineHasNeedle(line.rightText) or LineHasNeedle(line.text) then
+            return true
+          end
+        end
+      end
+    end
+  end
+
+  if not (GameTooltip and GameTooltip.SetOwner and GameTooltip.SetMerchantItem and GameTooltip.NumLines) then
+    return false
+  end
+
+  ns._autoBuyScanTip = ns._autoBuyScanTip or CreateFrame("GameTooltip", "FQT_AutoBuyScanTip", UIParent, "GameTooltipTemplate")
+  local tip = ns._autoBuyScanTip
+  if not tip then return false end
+
+  tip:SetOwner(UIParent, "ANCHOR_NONE")
+  tip:ClearLines()
+  pcall(tip.SetMerchantItem, tip, merchantIndex)
+
+  local n = tonumber(tip:NumLines()) or 0
+  for i = 1, n do
+    local fs = _G["FQT_AutoBuyScanTipTextLeft" .. tostring(i)]
+    if fs and fs.GetText and LineHasNeedle(fs:GetText()) then
+      tip:Hide()
+      return true
+    end
+    local fs2 = _G["FQT_AutoBuyScanTipTextRight" .. tostring(i)]
+    if fs2 and fs2.GetText and LineHasNeedle(fs2:GetText()) then
+      tip:Hide()
+      return true
+    end
+  end
+  tip:Hide()
+  return false
+end
+
+local GetItemCountSafe
+
+function ns.SchedulePostBuyCacheCheck(itemID, merchantIndex, spec)
+  if not (C_Timer and C_Timer.After) then return end
+  if type(spec) ~= "table" or spec.cachePurchased ~= true then return end
+  itemID = tonumber(itemID)
+  if not itemID or itemID <= 0 then return end
+
+  C_Timer.After(0.65, function()
+    if not ns.IsMerchantFrameOpenSafe() then return end
+    if type(spec) == "table" and spec.knownTooltip == true and merchantIndex then
+      if ns.MerchantItemIsAlreadyKnown(merchantIndex) then
+        ns.MarkItemCachedPurchased(itemID)
+      end
+    end
+    if type(GetItemCountSafe) == "function" then
+      GetItemCountSafe(itemID, false, { cachePurchased = true, cachePurchasedFromBag = (type(spec) == "table") and spec.cachePurchasedFromBag or nil })
+    end
+  end)
+end
+
+GetItemCountSafe = function(itemID, includeBank, opts)
   itemID = tonumber(itemID)
   if not itemID then return 0 end
 
   includeBank = (includeBank == true)
+
+  local function ApplyPurchasedCache(raw)
+    if type(opts) == "table" and opts.cachePurchased == true then
+      if (tonumber(raw) or 0) > 0 and opts.cachePurchasedFromBag ~= false then
+        ns.MarkItemCachedPurchased(itemID)
+      end
+      if ns.IsItemCachedPurchased(itemID) then
+        return math.max(tonumber(raw) or 0, 1)
+      end
+    end
+    return tonumber(raw) or 0
+  end
+
+  local raw = 0
 
   -- Prefer the global API when available; it typically counts bags + equipped.
   local GetItemCountFn = _G and rawget(_G, "GetItemCount")
   if type(GetItemCountFn) == "function" then
     local ok, v = pcall(GetItemCountFn, itemID, includeBank, false, false)
     v = ok and tonumber(v) or 0
-    if v and v > 0 then return v end
+    if v and v > 0 then raw = v end
   end
 
-  if C_Item and C_Item.GetItemCount then
+  if raw <= 0 and C_Item and C_Item.GetItemCount then
     local ok, v = pcall(C_Item.GetItemCount, itemID, includeBank, false, false)
     v = ok and tonumber(v) or 0
-    if v and v > 0 then return v end
+    if v and v > 0 then raw = v end
   end
 
   -- Last-resort: consider equipped items (not all count APIs include equipment).
-  if GetInventoryItemID and GetInventoryItemID("player", 19) == itemID then
-    return 1
+  if raw <= 0 and GetInventoryItemID and GetInventoryItemID("player", 19) == itemID then
+    raw = 1
   end
 
-  return 0
+  return ApplyPurchasedCache(raw)
 end
 
 local function GetCurrencyInfoSafe(currencyID)
@@ -2643,7 +2801,7 @@ local function EvaluateRuleCondition(node)
     local need = tonumber(node.count) or tonumber(node.required) or 1
     local any = false
     for _, itemID in ipairs(node.itemIDs) do
-      if GetItemCountSafe(tonumber(itemID), includeBank) >= need then
+      if GetItemCountSafe(tonumber(itemID), includeBank, node) >= need then
         any = true
         break
       end
@@ -2656,7 +2814,7 @@ local function EvaluateRuleCondition(node)
   if node.itemID then
     hadCondition = true
     local need = tonumber(node.count) or tonumber(node.required) or 1
-    if GetItemCountSafe(tonumber(node.itemID), includeBank) < need then
+    if GetItemCountSafe(tonumber(node.itemID), includeBank, node) < need then
       return false
     end
   end
@@ -2666,7 +2824,7 @@ local function EvaluateRuleCondition(node)
     local itemID = tonumber(node.item.itemID)
     local need = tonumber(node.item.count) or tonumber(node.item.required) or 1
     local inc = (node.item.includeBank == true) or includeBank
-    if GetItemCountSafe(itemID, inc) < need then
+    if GetItemCountSafe(itemID, inc, node.item) < need then
       return false
     end
   end
@@ -3521,7 +3679,7 @@ local function BuildRuleStatus(rule, ctx, opts)
       end
     end
 
-    local count = GetItemCountSafe(itemID, (rule.item.includeBank == true))
+    local count = GetItemCountSafe(itemID, (rule.item.includeBank == true), rule.item)
 
     if applyGates then
       local showBelow = tonumber(rule.item.showWhenBelow)
@@ -6671,6 +6829,17 @@ local function AutoBuyItemsAtMerchant()
       dst.yieldCount = (yieldCount and yieldCount > 0) and yieldCount or (tonumber(dst.yieldCount) or 1)
       if dst.yieldCount <= 0 then dst.yieldCount = 1 end
     end
+
+    if src.cachePurchased == true then
+      dst.cachePurchased = true
+    end
+    if src.cachePurchasedFromBag == false then
+      dst.cachePurchasedFromBag = false
+    end
+    if src.knownTooltip == true then
+      dst.knownTooltip = true
+      dst.cachePurchased = true
+    end
     return dst
   end
 
@@ -6713,7 +6882,19 @@ local function AutoBuyItemsAtMerchant()
           local yieldCount = tonumber(buy.yieldCount)
 
           if itemID and itemID > 0 and maxQty and maxQty > 0 then
-            local spec = { max = maxQty, min = minQty, target = targetQty, yieldItemID = yieldItemID, yieldCount = yieldCount }
+            local spec = {
+              max = maxQty,
+              min = minQty,
+              target = targetQty,
+              yieldItemID = yieldItemID,
+              yieldCount = yieldCount,
+              cachePurchased = (rule.item.cachePurchased == true) and true or false,
+              cachePurchasedFromBag = (rule.item.cachePurchasedFromBag == false) and false or true,
+              knownTooltip = (rule.item.knownTooltip == true) and true or false,
+            }
+            if spec.knownTooltip then
+              spec.cachePurchased = true
+            end
 
             local cheapestIDs = NormalizeIDList(buy.cheapestOf)
             if cheapestIDs and cheapestIDs[1] then
@@ -6813,7 +6994,10 @@ local function AutoBuyItemsAtMerchant()
   local okN, n = pcall(GetNumMerchantItems)
   n = (okN and tonumber(n)) or 0
   if n <= 0 then
-    Debug("merchant has 0 items")
+    Debug("merchant has 0 items; will retry")
+    -- Some clients populate merchant lists a tick after MERCHANT_SHOW without firing
+    -- a reliable MERCHANT_UPDATE. Retry a few times so the user doesn't have to reopen.
+    ScheduleRetry(0.25, "merchant has 0 items")
     return
   end
 
@@ -6996,11 +7180,20 @@ local function AutoBuyItemsAtMerchant()
     end)
   end
 
-  local function GetHaveCount(itemID)
+  local function GetHaveCount(itemID, spec)
     itemID = tonumber(itemID)
     if not itemID or itemID <= 0 then return 0 end
 
     local raw = GetRawHaveCount(itemID)
+
+    if type(spec) == "table" and spec.cachePurchased == true then
+      if raw > 0 and spec.cachePurchasedFromBag ~= false then
+        ns.MarkItemCachedPurchased(itemID)
+      end
+      if ns.IsItemCachedPurchased(itemID) then
+        raw = math.max(raw, 1)
+      end
+    end
 
     local base = frame._autoBuyBaselineHave[itemID]
     if base == nil then
@@ -7022,7 +7215,7 @@ local function AutoBuyItemsAtMerchant()
     if type(spec) ~= "table" then return 0 end
     if type(itemIDs) ~= "table" or not itemIDs[1] then
       local itemID = tonumber(spec.itemID)
-      return (itemID and itemID > 0) and GetHaveCount(itemID) or 0
+      return (itemID and itemID > 0) and GetHaveCount(itemID, spec) or 0
     end
 
     local yieldItemID = tonumber(spec.yieldItemID)
@@ -7030,12 +7223,12 @@ local function AutoBuyItemsAtMerchant()
     if yieldCount <= 0 then yieldCount = 1 end
 
     if yieldItemID and yieldItemID > 0 then
-      local haveYield = GetHaveCount(yieldItemID)
+      local haveYield = GetHaveCount(yieldItemID, spec)
       local haveContainers = 0
       for i = 1, #itemIDs do
         local id = tonumber(itemIDs[i])
         if id and id > 0 and id ~= yieldItemID then
-          haveContainers = haveContainers + GetHaveCount(id)
+          haveContainers = haveContainers + GetHaveCount(id, spec)
         end
       end
       return haveYield + (haveContainers * yieldCount)
@@ -7043,7 +7236,7 @@ local function AutoBuyItemsAtMerchant()
 
     local haveTotal = 0
     for i = 1, #itemIDs do
-      haveTotal = haveTotal + GetHaveCount(itemIDs[i])
+      haveTotal = haveTotal + GetHaveCount(itemIDs[i], spec)
     end
     return haveTotal
   end
@@ -7144,6 +7337,9 @@ local function AutoBuyItemsAtMerchant()
       end
 
       if chosenItemID and chosenIndex and chosenInfo then
+        if g.knownTooltip == true and ns.MerchantItemIsAlreadyKnown(chosenIndex) then
+          ns.MarkItemCachedPurchased(chosenItemID)
+        end
         local haveTotal = GetEffectiveHaveForSpec(g, g.ids)
         local need = ComputeNeed(g, haveTotal)
         if need > 0 then
@@ -7166,6 +7362,7 @@ local function AutoBuyItemsAtMerchant()
           if need > 0 then
             Debug(string.format("cheapestOf: chose itemID=%d price=%s need=%d", chosenItemID, tostring(chosenPrice), need))
             BuyFromMerchant(chosenIndex, chosenInfo, chosenItemID, need)
+            ns.SchedulePostBuyCacheCheck(chosenItemID, chosenIndex, g)
           end
         end
       end
@@ -7178,7 +7375,11 @@ local function AutoBuyItemsAtMerchant()
     if merchantIndex then
       local info = merchantInfoByIndex[merchantIndex]
       if CanBuyFromMerchantInfo(info) then
-        local have = GetHaveCount(itemID)
+        if spec.knownTooltip == true and ns.MerchantItemIsAlreadyKnown(merchantIndex) then
+          ns.MarkItemCachedPurchased(itemID)
+        end
+
+        local have = GetHaveCount(itemID, spec)
         local need = ComputeNeed(spec, have)
 
         local yieldItemID = tonumber(spec.yieldItemID)
@@ -7198,6 +7399,7 @@ local function AutoBuyItemsAtMerchant()
 
         if need > 0 then
           BuyFromMerchant(merchantIndex, info, itemID, need)
+          ns.SchedulePostBuyCacheCheck(itemID, merchantIndex, spec)
         end
       end
     end
@@ -8151,6 +8353,43 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     Print("Rule debug key='" .. key .. "':")
     Print("  completed=" .. tostring(status.completed and true or false) .. "; hideWhenCompleted=" .. tostring(status.hideWhenCompleted and true or false))
     Print("  title=" .. tostring((status.rawTitle or status.title) or ""))
+    return
+  end
+
+  if cmd == "cache" then
+    NormalizeSV()
+    local sub, rest2 = rest:match("^(%S+)%s*(.-)$")
+    sub = tostring(sub or ""):lower()
+    rest2 = tostring(rest2 or "")
+    local itemID = tonumber((rest2:match("^(%d+)") or ""))
+
+    if sub == "status" or sub == "show" then
+      if not itemID then
+        Print("Usage: /fqt cache status <itemID>")
+        return
+      end
+      local t = (ns and ns.GetPurchasedItemsCacheTable) and ns.GetPurchasedItemsCacheTable() or nil
+      local cached = (type(t) == "table" and t[itemID] ~= nil) and true or false
+      local have = (type(C_Item) == "table" and C_Item.GetItemCount) and (tonumber(C_Item.GetItemCount(itemID, false, false, false)) or 0) or 0
+      Print(string.format("Cache status itemID=%d cached=%s have=%d", itemID, tostring(cached), tonumber(have) or 0))
+      return
+    end
+
+    if sub == "clear" or sub == "rm" or sub == "del" then
+      if not itemID then
+        Print("Usage: /fqt cache clear <itemID>")
+        return
+      end
+      local t = (ns and ns.GetPurchasedItemsCacheTable) and ns.GetPurchasedItemsCacheTable() or nil
+      if type(t) == "table" then
+        t[itemID] = nil
+      end
+      RefreshAll()
+      Print("Cleared cached purchased flag for itemID=" .. tostring(itemID))
+      return
+    end
+
+    Print("Usage: /fqt cache status <itemID> | /fqt cache clear <itemID>")
     return
   end
 

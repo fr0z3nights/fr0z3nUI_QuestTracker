@@ -2,6 +2,18 @@
 
 Format: `YYMMDD-###` (sanity stamp) — short summary.
 
+## 260318-001
+- AutoBuy (vendor): fix first-open reliability by retrying when the merchant list reports 0 items (no more needing to reopen the vendor).
+
+## 260319-001
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTXP01.lua`.
+- AutoBuy: add optional per-character purchased caching and merchant tooltip “Already known” detection to skip one-time learns.
+- Rule (Classic): itemID `253580` (Housing Axe) now caches as purchased/known per character so it won’t be re-bought and will hide even if it’s no longer in bags.
+
+## 260319-002
+- AutoBuy purchased cache: add `cachePurchasedFromBag=false` option so rules can avoid treating “had it once in bags” as permanently acquired.
+- Added `/fqt cache status <itemID>` and `/fqt cache clear <itemID>` to inspect/clear per-character cached purchases.
+
 ## 260307-001
 - XQuest tab: restored Trade-style mode/scope button and fixed the QuestID input placeholder overlap (no default "0").
 - XQuest tab: moved Character/Account actions into a Trade-style bottom row and shortened labels.
