@@ -3850,7 +3850,9 @@ local function BuildRuleStatus(rule, ctx, opts)
         ws = ws:gsub("\t", NBSP .. NBSP .. NBSP .. NBSP)
         return ws
       end
+      ---@diagnostic disable-next-line: param-type-mismatch
       s = s:gsub("^([ \t]+)", Conv)
+      ---@diagnostic disable-next-line: param-type-mismatch
       s = s:gsub("\n([ \t]+)", function(ws) return "\n" .. Conv(ws) end)
       return s
     end
@@ -8370,7 +8372,7 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
       end
       local t = (ns and ns.GetPurchasedItemsCacheTable) and ns.GetPurchasedItemsCacheTable() or nil
       local cached = (type(t) == "table" and t[itemID] ~= nil) and true or false
-      local have = (type(C_Item) == "table" and C_Item.GetItemCount) and (tonumber(C_Item.GetItemCount(itemID, false, false, false)) or 0) or 0
+      local have = (type(C_Item) == "table" and C_Item.GetItemCount) and (tonumber(C_Item.GetItemCount(itemID, false, false, false, false)) or 0) or 0
       Print(string.format("Cache status itemID=%d cached=%s have=%d", itemID, tostring(cached), tonumber(have) or 0))
       return
     end

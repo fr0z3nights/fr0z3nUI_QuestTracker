@@ -84,3 +84,9 @@ Format: `YYMMDD-###` (sanity stamp) — short summary.
 
 ## 260301-001
 - Added this changelog file (no functional changes).
+
+## 260328-001
+- Files: `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`
+- Cache debug: call `C_Item.GetItemCount` with the full argument set for better client/stub compatibility.
+- Tooltip formatting: suppress LuaLS false-positives for `string.gsub(..., function)` whitespace preservation helpers.
+- Bumped TOC `## Version` to `2026.03.28.01`.
