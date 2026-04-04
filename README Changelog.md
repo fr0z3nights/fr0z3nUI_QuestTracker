@@ -2,6 +2,51 @@
 
 Format: `YYMMDD-###` (sanity stamp) — short summary.
 
+## 260404-001
+- Files: `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Keep List abandon (`/fqt aaq` / `/fqt aaqs`): normalize `questXY` when building the keep set so older/hand-edited rules like `k` (lowercase) correctly protect kept quests.
+
+## 260404-002
+- Files: `fUI_QTXRules.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XRules browser: only treat rules as X/Y/Keep when `questXY` is explicitly set, so normal tracking rules (like Timewalking quest trackers) don’t show up under XQuest (Auto Abandon).
+
+## 260404-003
+- Files: `fUI_QTXRulesDB.lua`, `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XQuest DB: added explicit X/Y/K scope sets and seed DB-backed QuestX/Y/Keep rules so they show up in XRules and can be toggled/edited.
+- Keep List abandon: now ignores disabled Keep rules (so toggling a Keep entry off actually stops protecting that quest).
+
+## 260404-004
+- Files: `fUI_QTXRulesDB.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XQuest DB: added copy/paste examples for Keep/X/Y; DB-seeded XQuest rules can now optionally carry `locationID`/`restedOnly` gates via `__meta`.
+
+## 260404-005
+- Files: `fUI_QTXRulesDB.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XQuest DB authoring: renamed Keep helper to `KQuest(...)`; `XQuest(...)` now means Rested-only by default, and `LQuest(...)` is the location-gated helper (optional Rested-only override).
+
+## 260404-006
+- Files: `fUI_QTXRules.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XRules list: renamed group titles to `Auto Abandon` (XQuest/LQuest), `Auto Accept` (YQuest), and `Abandon All Keep` (KQuest).
+
+## 260404-007
+- Files: `fUI_QTXRules.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XRules list: removed quest titles from entry rows (show label + questID only).
+
+## 260404-008
+- Files: `fUI_QTXRules.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XRules list: entry rows now show quest title + questID only (removed per-row mode label like `Abandon All Keep`).
+
+## 260404-009
+- Files: `fUI_QTXRules.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XRules list: for DB-only entries, prefer the name authored in the addon DB (`__meta.name`); if blank/missing or user-added, fall back to the live quest title/fallback.
+
+## 260404-010
+- Files: `fUI_QTXRules.lua`, `fr0z3nUI_QuestTracker.toc`.
+- XRules list: sort entries alphabetically (by displayed title) within each zone.
+
+## 260404-011
+- Files: `fUI_QTQuestX.lua`, `fr0z3nUI_QuestTracker.toc`.
+- QuestX: MAP/RESTING scope button now only shows in Auto Abandon (X) mode.
+
 ## 260318-001
 - AutoBuy (vendor): fix first-open reliability by retrying when the merchant list reports 0 items (no more needing to reopen the vendor).
 

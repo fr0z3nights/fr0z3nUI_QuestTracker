@@ -3,9 +3,11 @@ local addonName, ns = ...
 ns.FQTOptionsPanels = ns.FQTOptionsPanels or {}
 
 local function NormalizeQuestXY(v)
-  v = tostring(v or "X"):upper():gsub("%s+", "")
+  if v == nil then return nil end
+  v = tostring(v):upper():gsub("%s+", "")
+  if v == "" then return nil end
   if v == "QUESTX" then v = "X" end
-  if v ~= "Y" and v ~= "K" then v = "X" end
+  if v ~= "X" and v ~= "Y" and v ~= "K" then return nil end
   return v
 end
 
@@ -16,7 +18,9 @@ local function IsXQuestRule(rule)
 end
 
 local function EntryKey(xy, questID)
-  return tostring(NormalizeQuestXY(xy)) .. ":" .. tostring(tonumber(questID) or 0)
+  xy = NormalizeQuestXY(xy)
+  if not xy then return nil end
+  return tostring(xy) .. ":" .. tostring(tonumber(questID) or 0)
 end
 
 local function Trim(s)
@@ -276,11 +280,28 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
     return nil
   end
 
+  local function GetDbQuestName(qid)
+    qid = tonumber(qid)
+    if not qid or qid <= 0 then return nil end
+    local qdb = ns and ns.db and ns.db.xquest and ns.db.xquest.quests
+    if type(qdb) ~= "table" then return nil end
+    local entry = qdb[qid]
+    if type(entry) ~= "table" then return nil end
+    local meta = entry.__meta
+    if type(meta) ~= "table" then return nil end
+    local nm = Trim(meta.name)
+    if nm ~= "" then
+      return nm
+    end
+    return nil
+  end
+
   local function CollectByKey()
     local byKey = {}
 
     local function ensure(xy, questID)
       local key = EntryKey(xy, questID)
+      if not key then return nil end
       local e = byKey[key]
       if not e then
         e = { key = key, questID = tonumber(questID) or 0, questXY = NormalizeQuestXY(xy) }
@@ -294,6 +315,7 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
       local questID = tonumber(rule.questID) or 0
       local xy = NormalizeQuestXY(rule.questXY)
       local e = ensure(xy, questID)
+      if not e then return end
 
       if scope == "default" then
         if not e.defRule then e.defRule = rule end
@@ -354,10 +376,38 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
   local function BuildNodes(byKey)
     EnsureTreeState()
 
+    local titleCache = {}
+    local function SortTitleForEntry(e)
+      local qid = tonumber(e and e.questID) or 0
+      local hasDef = e and (e.defRule ~= nil) or false
+      local hasAcc = e and (e.accRule ~= nil) or false
+      local hasChar = e and (e.charRule ~= nil) or false
+      local dbOnly = hasDef and (not hasAcc) and (not hasChar)
+
+      local cacheKey = tostring(qid) .. ":" .. (dbOnly and "db" or "live")
+      if titleCache[cacheKey] ~= nil then
+        return titleCache[cacheKey]
+      end
+
+      local t
+      if dbOnly then
+        t = GetDbQuestName(qid)
+      end
+      if (type(t) ~= "string" or t == "") and type(GetQuestTitle) == "function" and qid > 0 then
+        t = GetQuestTitle(qid)
+      end
+      if type(t) ~= "string" or t == "" then
+        t = (qid > 0) and ("Quest " .. tostring(qid)) or ""
+      end
+
+      titleCache[cacheKey] = t
+      return t
+    end
+
     local roots = {
-      { xy = "X", label = "XQuest" },
-      { xy = "Y", label = "YQuest" },
-      { xy = "K", label = "Keep" },
+      { xy = "X", label = "Auto Abandon" },
+      { xy = "Y", label = "Auto Accept" },
+      { xy = "K", label = "Abandon All Keep" },
     }
 
     local groups = {}
@@ -448,6 +498,12 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
 
               if zoneExpanded then
                 table.sort(zn.entries, function(a, b)
+                  local ta = SortTitleForEntry(a)
+                  local tb = SortTitleForEntry(b)
+                  local sa = tostring(ta):lower()
+                  local sb = tostring(tb):lower()
+                  if sa ~= sb then return sa < sb end
+                  if tostring(ta) ~= tostring(tb) then return tostring(ta) < tostring(tb) end
                   if (a.questID or 0) ~= (b.questID or 0) then return (a.questID or 0) < (b.questID or 0) end
                   return tostring(a.key) < tostring(b.key)
                 end)
@@ -556,6 +612,15 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
 
           local dbOnly = hasDef and (not hasAcc) and (not hasChar)
 
+          -- Prefer DB-provided name for DB-only entries.
+          -- If DB name is blank/missing (or the entry is user-added), keep the current title resolution.
+          if dbOnly then
+            local dbName = GetDbQuestName(qid)
+            if type(dbName) == "string" and dbName ~= "" then
+              qTitle = dbName
+            end
+          end
+
           local defDisabled = false
           if hasDef and type(IsRuleDisabled) == "function" then
             local ok, v = pcall(IsRuleDisabled, e.defRule)
@@ -573,7 +638,7 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
             if ok and v then charDisabled = true end
           end
 
-          local line = string.format("%s: %s |cff999999(%d)|r", (xy == "K") and "Keep" or (xy == "Y") and "YQuest" or "XQuest", tostring(qTitle), qid)
+          local line = string.format("%s |cff999999(%d)|r", tostring(qTitle), qid)
           if hasDef and not dbOnly then
             line = line .. " |cff999999[DB]|r"
           end

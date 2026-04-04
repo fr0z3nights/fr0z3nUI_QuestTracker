@@ -7535,11 +7535,18 @@ local function RunQuestXKeepListAbandonFromRules(forceBypassConfirm)
   if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetQuestIDForLogIndex) then return end
 
   local keep = {}
+  local IsRuleDisabled = (type(ns) == "table") and ns.IsRuleDisabled or nil
   for _, rule in ipairs(rules) do
-    if type(rule) == "table" and rule.questXY == "K" then
-      local qid = tonumber(rule.questID)
-      if qid and qid > 0 then
-        keep[qid] = true
+    if type(rule) == "table" then
+      local xy = tostring(rule.questXY or ""):upper():gsub("%s+", "")
+      if xy == "K" then
+        local disabled = (type(IsRuleDisabled) == "function") and (IsRuleDisabled(rule) == true) or false
+        if not disabled then
+          local qid = tonumber(rule.questID)
+          if qid and qid > 0 then
+            keep[qid] = true
+          end
+        end
       end
     end
   end
