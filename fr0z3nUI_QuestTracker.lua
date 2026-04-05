@@ -6624,8 +6624,7 @@ local function AutoBuyItemsAtMerchant()
   local debugSetting = fr0z3nUI_QuestTracker_Acc
     and fr0z3nUI_QuestTracker_Acc.settings
     and fr0z3nUI_QuestTracker_Acc.settings.debugAutoBuy == true
-  local debugShift = (type(IsShiftKeyDown) == "function") and (IsShiftKeyDown() == true) or false
-  local debug = (debugSetting or debugShift) and true or false
+  local debug = debugSetting and true or false
   local function Debug(msg)
     if not debug then return end
     Print("AutoBuy: " .. tostring(msg))

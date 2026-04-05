@@ -2,6 +2,12 @@
 
 Format: `YYMMDD-###` (sanity stamp) — short summary.
 
+## 260405-001
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTItems.lua`, `fr0z3nUI_QuestTracker.toc`.
+- AutoBuy debug: no longer triggers just by holding SHIFT when opening a vendor.
+- Items tab: added a bottom-left `Debug` toggle button with tooltip to control AutoBuy debug output.
+- Bumped TOC `## Version` to `2026.04.05.01`.
+
 ## 260404-001
 - Files: `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Keep List abandon (`/fqt aaq` / `/fqt aaqs`): normalize `questXY` when building the keep set so older/hand-edited rules like `k` (lowercase) correctly protect kept quests.

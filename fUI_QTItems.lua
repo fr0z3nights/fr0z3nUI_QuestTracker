@@ -542,6 +542,92 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
   if AddPlaceholder then AddPlaceholder(buyMaxBox, "Buy max") end
   if HideInputBoxTemplateArt then HideInputBoxTemplateArt(buyMaxBox) end
 
+  -- Debug toggle (AutoBuy vendor helper)
+  local debugBtn = CreateFrame("Button", nil, pItems, "UIPanelButtonTemplate")
+  debugBtn:SetSize(80, 22)
+  debugBtn:SetPoint("BOTTOMLEFT", 12, 12)
+  debugBtn:SetText("Debug")
+  debugBtn._enabled = false
+
+  local function EnsureAutoBuyDebugSetting()
+    local acc = rawget(_G, "fr0z3nUI_QuestTracker_Acc")
+    if type(acc) ~= "table" then
+      _G.fr0z3nUI_QuestTracker_Acc = { settings = {} }
+      acc = _G.fr0z3nUI_QuestTracker_Acc
+    end
+    if type(acc.settings) ~= "table" then
+      acc.settings = {}
+    end
+    if acc.settings.debugAutoBuy == nil then
+      acc.settings.debugAutoBuy = false
+    end
+    acc.settings.debugAutoBuy = (acc.settings.debugAutoBuy == true)
+    return acc.settings
+  end
+
+  local function GetAutoBuyDebugEnabled()
+    local s = EnsureAutoBuyDebugSetting()
+    return s and s.debugAutoBuy == true
+  end
+
+  local function SetAutoBuyDebugEnabled(v)
+    local s = EnsureAutoBuyDebugSetting()
+    if s then
+      s.debugAutoBuy = (v == true)
+    end
+  end
+
+  function debugBtn:SetChecked(v)
+    self._enabled = (v == true)
+    local fs = self.GetFontString and self:GetFontString() or nil
+    if fs and fs.SetTextColor then
+      if self._enabled then
+        local c = rawget(_G, "GREEN_FONT_COLOR")
+        if c and type(c.GetRGB) == "function" then
+          local r, g, b = c:GetRGB()
+          fs:SetTextColor(r or 0.20, g or 1.00, b or 0.20)
+        elseif type(c) == "table" and c.r and c.g and c.b then
+          fs:SetTextColor(c.r, c.g, c.b)
+        else
+          fs:SetTextColor(0.20, 1.00, 0.20)
+        end
+      else
+        fs:SetTextColor(0.65, 0.65, 0.65)
+      end
+    end
+  end
+
+  local function SyncDebugButton()
+    if not debugBtn then return end
+    debugBtn:SetChecked(GetAutoBuyDebugEnabled())
+  end
+
+  debugBtn:SetScript("OnClick", function(self)
+    SetAutoBuyDebugEnabled(not GetAutoBuyDebugEnabled())
+    SyncDebugButton()
+  end)
+
+  debugBtn:SetScript("OnEnter", function(self)
+    local tip = rawget(_G, "GameTooltip")
+    if not (tip and tip.SetOwner and tip.AddLine) then return end
+    tip:SetOwner(self, "ANCHOR_RIGHT")
+    tip:AddLine("AutoBuy debug", 1, 1, 1, true)
+    tip:AddLine("Toggles extra AutoBuy vendor prints.", 0.85, 0.85, 0.85, true)
+    tip:AddLine("Status: " .. (GetAutoBuyDebugEnabled() and "ON" or "OFF"), 0.85, 0.85, 0.85, true)
+    tip:AddLine("Also: /fqt debug autobuy", 0.70, 0.70, 0.70, true)
+    tip:Show()
+  end)
+
+  debugBtn:SetScript("OnLeave", function()
+    local tip = rawget(_G, "GameTooltip")
+    if tip and tip.Hide then tip:Hide() end
+  end)
+
+  if pItems and pItems.HookScript then
+    pcall(pItems.HookScript, pItems, "OnShow", SyncDebugButton)
+  end
+  SyncDebugButton()
+
   if UDDM_Initialize and UDDM_CreateInfo and UDDM_AddButton then
     -- Expansion dropdown
     local modernExpansion = UseModernMenuDropDown and UseModernMenuDropDown(expDrop, function(root)
@@ -975,6 +1061,7 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
   pItems._locBox = itemsLocBox
   pItems._buyEnabled = buyEnabled
   pItems._buyMaxBox = buyMaxBox
+  pItems._debugAutoBuyBtn = debugBtn
   pItems._itemsFrameDrop = itemsFrameDrop
   pItems._itemsFactionDrop = itemsFactionDrop
   pItems._itemsColorDrop = itemsColorDrop
