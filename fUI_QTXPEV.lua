@@ -77,11 +77,11 @@ local bakedRules = {
 
   {["group"] = "event:darkmoon-faire", ["order"] = 03, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Pet Battle: Jeremy", ["frameID"] = "list2", key = "custom:seq:q:32175:list2:evdmPB01",
-  questInfo = "Pet Battle: Jeremy", questID = 32175, hideWhenCompleted = false, },
+  questInfo = "Pet Battle: Jeremy", questID = 32175, hideWhenCompleted = true, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 04, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Pet Battle: Christoph", ["frameID"] = "list2", key = "custom:seq:q:36471:list2:evdmPB02",
-  questInfo = "Pet Battle: Christoph", questID = 36471, hideWhenCompleted = false, },
+  questInfo = "Pet Battle: Christoph", questID = 36471, hideWhenCompleted = true, },
 
 -- Darkmoon Faire weekly profession quests
   -- Display gate: uses profession spellIDs (spellKnown) so these only show if you
@@ -90,98 +90,97 @@ local bakedRules = {
   {["faction"] = "Alliance",
   ["group"] = "event:darkmoon-faire", ["order"] = 05, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Alchemy", ["frameID"] = "list2", key = "custom:seq:q:29506:list2:evdmwk01A",
-  questInfo = "Darkmoon: Alchemy\n%sl\n - Vendor Outside Portal", questID = 29506, spellKnownAny = { 264243, 265751, 265792, 265793, 265794, 265795, 265796, 265797, 265798, 265799, 309307, 374620, 433314, 471006, },
+  questInfo = "Darkmoon: Alchemy\n%sl\n - Vendor Outside Portal", questID = 29506, spellKnownAny = { 2259, 105240, 105241, 105242, 110408, 158739, 194734, 252331, 309780, 366219, 433309, 471020, },
   autoBuyShopping = true, shopping = { { itemID = 1645, required = 5, buy = true }, }, },
 
   {["faction"] = "Horde",
   ["group"] = "event:darkmoon-faire", ["order"] = 06, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Alchemy", ["frameID"] = "list2", key = "custom:seq:q:29506:list2:evdmwk01H",
-  questInfo = "Darkmoon: Alchemy\n%sl\n - Vendor Thunder Bluff", questID = 29506, spellKnownAny = { 264243, 265751, 265792, 265793, 265794, 265795, 265796, 265797, 265798, 265799, 309307, 374620, 433314, 471006, },
+  questInfo = "Darkmoon: Alchemy\n%sl\n - Vendor Thunder Bluff", questID = 29506, spellKnownAny = { 2259, 105240, 105241, 105242, 110408, 158739, 194734, 252331, 309780, 366219, 433309, 471020, },
   autoBuyShopping = true, shopping = { { itemID = 1645, required = 5, buy = true }, }, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 07, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Archaeology", ["frameID"] = "list2", key = "custom:seq:q:29507:list2:evdmwk02",
-  questInfo = "DMF: Archaeology\n - Fossil Fragments $hv/$rq\n  (or Quest is in Log)", questID = 29507, spellKnownAny = { 78670, 265752, 265800, 265801, 265802, 265803, 265804, 265805, 309308, 374621, 433315, 471007 },
+  questInfo = "DMF: Archaeology\n - Fossil Fragments $hv/$rq\n  (or Quest is in Log)", questID = 29507, spellKnownAny = { 7867, 105234, 105235, 105236, 110392, 158744, 194742, 252397, 309825, 366256, 433317, 471006, }, item = { itemID = 111245, currencyID = { 393, 15 }, required = { 20, N, Y, 200 }, },
   showIf = { any = { { questInLog = 29507 }, { currencyID = { 393, 15 } }, }, }, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 08, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Blacksmithing", ["frameID"] = "list2", key = "custom:seq:q:29508:list2:evdmwk03",
-  questInfo = "DMF: Blacksmithing", questID = 29508, spellKnownAny = { 264440, 265753, 265806, 265807, 265808, 265809, 265810, 265811, 265812, 265813, 309309, 374622, 433316, 471008, }, },
+  questInfo = "DMF: Blacksmithing", questID = 29508, spellKnownAny = { 2018, 105247, 105248, 105249, 110404, 158741, 194735, 252349, 309781, 366221, 433310, 471021, }, },
 
   {["faction"] = "Alliance",
   ["group"] = "event:darkmoon-faire", ["order"] = 09, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Cooking", ["frameID"] = "list2", key = "custom:seq:q:29509:list2:evdmwk04A",
-  questInfo = "DMF: Cooking\n%sl\n - Old Town Inn Cooking Vendor", questID = 29509, spellKnownAny = { 264638, 265754, 265814, 265815, 265816, 265817, 265818, 282400, 265819, 265820, 309310, 374623, 433317, 471009,},
+  questInfo = "DMF: Cooking\n%sl\n - Old Town Inn Cooking Vendor", questID = 29509, spellKnownAny = { 2550, 105244, 105245, 105246, 110412, 158742, 194740, 252402, 309784, 366257, 433318, 471007, },
   autoBuyShopping = true, shopping = {{ itemID = 30817, required = 20, buy = true }, }, },
 
   {["faction"] = "Horde",
   ["group"] = "event:darkmoon-faire", ["order"] = 10, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Cooking", ["frameID"] = "list2", key = "custom:seq:q:29509:list2:evdmwk04H",
-  questInfo = "DMF: Cooking\n%sl\n - Drag Cooking Vendor", questID = 29509, spellKnownAny = { 264638, 265754, 265814, 265815, 265816, 265817, 265818, 282400, 265819, 265820, 309310, 374623, 433317, 471009,},
+  questInfo = "DMF: Cooking\n%sl\n - Drag Cooking Vendor", questID = 29509, spellKnownAny = { 2550, 105244, 105245, 105246, 110412, 158742, 194740, 252402, 309784, 366257, 433318, 471007, },
   autoBuyShopping = true, shopping = {{ itemID = 30817, required = 20, buy = true }, }, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 11, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Enchanting", ["frameID"] = "list2", key = "custom:seq:q:29510:list2:evdmwk05",
-  questInfo = "DMF: Enchanting", questID = 29510, spellKnownAny = { 264464, 265755, 265821, 265822, 265823, 265824, 265825, 265826, 265827, 265828, 309311, 374625, 433319, 471011, }, },
+  questInfo = "DMF: Enchanting", questID = 29510, spellKnownAny = { 7411, 105256, 105257, 105258, 110405, 158746, 194736, 252358, 309782, 366223, 433311, 471016, }, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 12, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Engineering", ["frameID"] = "list2", key = "custom:seq:q:29511:list2:evdmwk06",
-  questInfo = "DMF: Engineering", questID = 29511, spellKnownAny = { 264483, 265756, 265829, 265830, 265831, 265832, 265833, 265834, 265835, 265836, 309313, 374628, 433322, 471014 }, },
-  
+  questInfo = "DMF: Engineering", questID = 29511, spellKnownAny = { 4036, 105260, 105261, 105259, 110406, 158748, 194737, 252367, 309783, 366224, 433312, 471024, }, },
+
   {["group"] = "event:darkmoon-faire", ["order"] = 13, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Fishing", ["frameID"] = "list2", key = "custom:seq:q:29513:list2:evdmwk07",
-  questInfo = "DMF: Fishing", questID = 29513, spellKnownAny = { 271660, 265757, 265837, 265838, 265839, 265840, 265841, 265842, 265843, 265844, 309314, 374629, 433323, 471015, }, },
+  questInfo = "DMF: Fishing", questID = 29513, spellKnownAny = { 7620, 271656, 271658, 271660, 271662, 271664, 271672, 271675, 310675, 374633, 433332, 471023, }, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 14, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Herbalism", ["frameID"] = "list2", key = "custom:seq:q:29514:list2:evdmwk08",
-  questInfo = "DMF: Herbalism", questID = 29514, spellKnownAny = { 265825, 265756, 265819, 265820, 265821, 265822, 265823, 265824, 265826, 309312, 374626, 433320, 471012, }, },
+  questInfo = "DMF: Herbalism", questID = 29514, spellKnownAny = { 2366, 105262, 105263, 105252, 110413, 158745, 194739, 252399, 309787, 366242, 433319, 471022, }, },
 
   {["faction"] = "Alliance",
   ["group"] = "event:darkmoon-faire", ["order"] = 15, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Inscription", ["frameID"] = "list2", key = "custom:seq:q:29515:list2:evdmwk09A",
-  questInfo = "DMF: Inscription\n%sl\n - Vendor Outside Portal", questID = 29515, spellKnownAny = { 264500, 265758, 265845, 265846, 265847, 265848, 265849, 265850, 265851, 265852, 309315, 374630, 433324, 471016,},
+  questInfo = "DMF: Inscription\n%sl\n - Vendor Outside Portal", questID = 29515, spellKnownAny = { 45357, 105271, 105272, 105270, 110409, 158750, 194738, 252377, 309788, 366236, 433315, 471018, 433327, 471026 },
   autoBuyShopping = true, shopping = { { itemID = 39354, required = 10, buy = true }, }, },
 
   {["faction"] = "Horde",
   ["group"] = "event:darkmoon-faire", ["order"] = 16, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Inscription", ["frameID"] = "list2", key = "custom:seq:q:29515:list2:evdmwk09H",
-  questInfo = "DMF: Inscription\n%sl\n - Vendor Thunder Bluff", questID = 29515, spellKnownAny = { 264500, 265758, 265845, 265846, 265847, 265848, 265849, 265850, 265851, 265852, 309315, 374630, 433324, 471016, },
+  questInfo = "DMF: Inscription\n%sl\n - Vendor Thunder Bluff", questID = 29515, spellKnownAny = { 45357, 105271, 105272, 105270, 110409, 158750, 194738, 252377, 309788, 366236, 433315, 471018, 433327, 471026 },
   autoBuyShopping = true, shopping = { { itemID = 39354, required = 10, buy = true }, }, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 17, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Jewelcrafting", ["frameID"] = "list2", key = "custom:seq:q:29516:list2:evdmwk10",
-  questInfo = "DMF: Jewelcrafting", questID = 29516, spellKnownAny = { 264539, 265759, 265853, 265854, 265855, 265856, 265857, 265858, 265859, 265860, 309316, 374631, 433325, 471017, }, },
+  questInfo = "DMF: Jewelcrafting", questID = 29516, spellKnownAny = { 25229, 105265, 105266, 105264, 110407, 158749, 194744, 252386, 309789, 366244, 433316, 471019, }, },
 
   {["faction"] = "Alliance",
   ["group"] = "event:darkmoon-faire", ["order"] = 18, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Leatherworking", ["frameID"] = "list2", key = "custom:seq:q:29517:list2:evdmwk11A",
-  questInfo = "DMF: Leatherworking\n%sl\n - Vendor Outside Portal", questID = 29517, spellKnownAny = { 264583, 265760, 265861, 265862, 265863, 265864, 265865, 265866, 265867, 265868, 309317, 374632, 433326, 471018, },
+  questInfo = "DMF: Leatherworking\n%sl\n - Vendor Outside Portal", questID = 29517, spellKnownAny = { 2108, 105277, 105278, 105279, 110414, 158751, 194745, 252395, 309790, 366248, 433313, 471020, },
   autoBuyShopping = true, shopping = { { itemID = 6529, required = 10, buy = true }, { itemID = 2320, required = 5, buy = true }, { itemID = 6260, required = 10, buy = true }, }, },
-
   {["faction"] = "Horde",
   ["group"] = "event:darkmoon-faire", ["order"] = 19, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Leatherworking", ["frameID"] = "list2", key = "custom:seq:q:29517:list2:evdmwk11H",
-  questInfo = "DMF: Leatherworking\n%sl\n - Vendor Thunder Bluff", questID = 29517, spellKnownAny = { 264583, 265760, 265861, 265862, 265863, 265864, 265865, 265866, 265867, 265868, 309317, 374632, 433326, 471018, },
+  questInfo = "DMF: Leatherworking\n%sl\n - Vendor Thunder Bluff", questID = 29517, spellKnownAny = { 2108, 105277, 105278, 105279, 110414, 158751, 194745, 252395, 309790, 366248, 433313, 471020, },
   autoBuyShopping = true, shopping = { { itemID = 6529, required = 10, buy = true }, { itemID = 2320, required = 5, buy = true }, { itemID = 6260, required = 10, buy = true }, }, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 20, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Mining", ["frameID"] = "list2", key = "custom:seq:q:29518:list2:evdmwk12",
-    questInfo = "DMF: Mining", questID = 29518, spellKnownAny = { 2575, 265757, 265840, 265841, 265843, 265844, 265845, 265846, 265847, 265848, 265849, 309325, 374627, 433321, 471013, }, },
+    questInfo = "DMF: Mining", questID = 29518, spellKnownAny = { 2575, 105268, 105269, 105267, 110393, 158754, 201823, 252398, 309813, 366252, 433320, 471015, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 21, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+    {["group"] = "event:darkmoon-faire", ["order"] = 21, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Skinning", ["frameID"] = "list2", key = "custom:seq:q:29519:list2:evdmwk13",
-  questInfo = "DMF: Skinning", questID = 29519, spellKnownAny = { 265861, 265761, 265869, 265870, 265871, 265872, 265873, 265874, 265875, 265876, 309318, 374633, 433327, 471019, }, },
+  questInfo = "DMF: Skinning", questID = 29519, spellKnownAny = { 8613, 105273, 105274, 105276, 110410, 158752, 194741, 252400, 309786, 366258, 433321, 471022, }, },
 
   {["faction"] = "Alliance",
   ["group"] = "event:darkmoon-faire", ["order"] = 22, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Tailoring", ["frameID"] = "list2", key = "custom:seq:q:29520:list2:evdmwk14A",
-  questInfo = "DMF: Tailoring\n%sl\n - Vendor Outside Portal", questID = 29520, spellKnownAny = { 264622, 265762, 265877, 265878, 265879, 265880, 265881, 265882, 265883, 265884, 309319, 374634, 433328, 471020, },
+  questInfo = "DMF: Tailoring\n%sl\n - Vendor Outside Portal", questID = 29520, spellKnownAny = { 3908, 105286, 105287, 105288, 110415, 158753, 194746, 252403, 309791, 366254, 433314, 471021, },
   autoBuyShopping = true, shopping = { { itemID = 2320, required = 6, buy = true }, { itemID = 2604, required = 6, buy = true }, { itemID = 6260, required = 6, buy = true }, }, },
 
   {["faction"] = "Horde",
   ["group"] = "event:darkmoon-faire", ["order"] = 23, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon: Tailoring", ["frameID"] = "list2", key = "custom:seq:q:29520:list2:evdmwk14H",
-  questInfo = "DMF: Tailoring\n%sl\n - Vendor Thunder Bluff", questID = 29520, spellKnownAny = { 264622, 265762, 265877, 265878, 265879, 265880, 265881, 265882, 265883, 265884, 309319, 374634, 433328, 471020, },
+  questInfo = "DMF: Tailoring\n%sl\n - Vendor Thunder Bluff", questID = 29520, spellKnownAny = { 3908, 105286, 105287, 105288, 110415, 158753, 194746, 252403, 309791, 366254, 433314, 471021, },
   autoBuyShopping = true, shopping = { { itemID = 2320, required = 6, buy = true }, { itemID = 2604, required = 6, buy = true }, { itemID = 6260, required = 6, buy = true }, }, },
 
   {["group"] = "event:darkmoon-faire", ["order"] = 24, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },

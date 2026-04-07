@@ -2,6 +2,18 @@
 
 Format: `YYMMDD-###` (sanity stamp) — short summary.
 
+## 260407-002
+- Files: `fUI_QTXPEV.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Fix Lua syntax error in the Darkmoon Faire weekly profession rules (missing closing `}` in the Jewelcrafting rule) that could prevent the addon from loading.
+- Bumped TOC `## Version` to `2026.04.07.03`.
+
+## 260407-001
+- Files: `fUI_QTXPEV.lua`, `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Darkmoon Faire: pet battle dailies now hide when completed (Jeremy `32175`, Christoph `36471`).
+- Darkmoon Faire: weekly profession quests gating restored to `spellKnownAny` spell lists.
+- Darkmoon Faire: removed engine special-case that forced all DMF entries to never hide when completed.
+- Bumped TOC `## Version` to `2026.04.07.02`.
+
 ## 260405-001
 - Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTItems.lua`, `fr0z3nUI_QuestTracker.toc`.
 - AutoBuy debug: no longer triggers just by holding SHIFT when opening a vendor.

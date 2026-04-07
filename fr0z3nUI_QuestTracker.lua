@@ -3194,10 +3194,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     hideWhenCompleted = true
   end
 
-  -- Events: Darkmoon Faire behaves like a checklist; keep entries visible even when completed.
-  if type(rule) == "table" and tostring(rule.group or "") == "event:darkmoon-faire" then
-    hideWhenCompleted = false
-  end
+
 
   local completed = false
   if questID and IsQuestCompleted(questID) then
