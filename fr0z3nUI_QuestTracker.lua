@@ -38,6 +38,15 @@ local function HasProfessionSkillLineID(skillLineID)
   skillLineID = tonumber(skillLineID)
   if not skillLineID or skillLineID <= 0 then return false end
 
+  if ns and ns.Profs and type(ns.Profs.HasSkillLineID) == "function" then
+    local ok, v = pcall(ns.Profs.HasSkillLineID, skillLineID)
+    -- IMPORTANT: Only short-circuit on a positive.
+    -- A false here can mean "not cached yet" / "API not ready" depending on timing.
+    if ok and v == true then
+      return true
+    end
+  end
+
   local GP = _G and rawget(_G, "GetProfessions")
   local GPI = _G and rawget(_G, "GetProfessionInfo")
   if type(GP) ~= "function" or type(GPI) ~= "function" then
@@ -48,10 +57,11 @@ local function HasProfessionSkillLineID(skillLineID)
   if not ok then return false end
 
   local indices = { prof1, prof2, archaeology, fishing, cooking }
-  for i = 1, #indices do
+  for i = 1, 5 do
     local idx = indices[i]
     if idx then
-      local ok2, _, _, _, _, _, line = pcall(GPI, idx)
+      -- NOTE: pcall prepends a boolean success flag; skillLine is the 7th return from GetProfessionInfo.
+      local ok2, _, _, _, _, _, _, line = pcall(GPI, idx)
       line = ok2 and tonumber(line) or nil
       if line and line == skillLineID then
         return true
@@ -1967,6 +1977,11 @@ end
 
 local _anyTWCache = { at = 0, active = false }
 local function IsAnyTimewalkingEventActive()
+  local isWednesday = false
+  if type(date) == "function" then
+    isWednesday = (tonumber(date("%w")) == 3)
+  end
+
   local now = 0
   if GetServerTime then now = tonumber(GetServerTime()) or 0 end
   if _anyTWCache.at and (now - (_anyTWCache.at or 0)) < 60 then
@@ -1999,11 +2014,14 @@ local function IsAnyTimewalkingEventActive()
     n = okNum and tonumber(n) or 0
     for i = 1, n do
       local title = GetCalendarEventText(0, day, i) or ""
-      local holidayText = GetCalendarHolidayText(0, day, i) or ""
-      local hay = string.lower(title .. "\n" .. holidayText)
-      if string.find(hay, "timewalking", 1, true) or string.find(hay, "turbulent timeways", 1, true) then
-        found = true
-        break
+      local titleLower = string.lower(title)
+      if not (isWednesday and string.match(titleLower, "[%s]ends%s*$")) then
+        local holidayText = GetCalendarHolidayText(0, day, i) or ""
+        local hay = titleLower .. "\n" .. string.lower(holidayText)
+        if string.find(hay, "timewalking", 1, true) or string.find(hay, "turbulent timeways", 1, true) then
+          found = true
+          break
+        end
       end
     end
     if found then break end
@@ -2047,6 +2065,11 @@ local function CalendarKeywordCacheKey(keywords)
 end
 
 local function IsCalendarEventActiveByKeywords(keywords, includeHolidayText)
+  local isWednesday = false
+  if type(date) == "function" then
+    isWednesday = (tonumber(date("%w")) == 3)
+  end
+
   local kwList = NormalizeCalendarKeywords(keywords)
   if not kwList then return false, false end
 
@@ -2093,11 +2116,18 @@ local function IsCalendarEventActiveByKeywords(keywords, includeHolidayText)
     n = okNum and tonumber(n) or 0
     for i = 1, n do
       local title = GetCalendarEventText(0, day, i) or ""
+      local titleLower = string.lower(title)
+      if isWednesday and string.match(titleLower, "[%s]ends%s*$") then
+        -- Ignore stale "... Event Ends" carryover entries that can linger into Wednesday
+        -- due to time-zone drift from the Tuesday reset.
+        title = ""
+        titleLower = ""
+      end
       local holidayText = ""
       if includeHolidayText == true then
         holidayText = GetCalendarHolidayText(0, day, i) or ""
       end
-      local hay = string.lower(title)
+      local hay = titleLower
       if string.len(holidayText) > 0 then
         hay = (hay .. "\n" .. string.lower(holidayText))
       end
@@ -3370,6 +3400,14 @@ local function BuildRuleStatus(rule, ctx, opts)
   -- Useful for cases where spellKnown is unreliable (e.g. Mining across expansion variants).
   if applyGates and type(rule) == "table" and rule.professionSkillLineID ~= nil then
     if not HasProfessionSkillLineID(rule.professionSkillLineID) then
+      return nil
+    end
+  end
+
+  -- Missing profession skillLine gate (optional): show only if the player does NOT have this skillLineID.
+  -- Intended for "you are missing this profession" reminders where spell-based gates are unreliable.
+  if applyGates and type(rule) == "table" and rule.missingProfessionSkillLineID ~= nil then
+    if HasProfessionSkillLineID(rule.missingProfessionSkillLineID) then
       return nil
     end
   end
@@ -8107,6 +8145,324 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     return
   end
 
+  if cmd == "status" then
+    local version
+    do
+      local api = _G and rawget(_G, "C_AddOns")
+      if type(api) == "table" and type(api.GetAddOnMetadata) == "function" then
+        local ok, r = pcall(api.GetAddOnMetadata, addonName, "Version")
+        if ok and type(r) == "string" and r ~= "" then version = r end
+      end
+      if not version and type(GetAddOnMetadata) == "function" then
+        local ok, r = pcall(GetAddOnMetadata, addonName, "Version")
+        if ok and type(r) == "string" and r ~= "" then version = r end
+      end
+    end
+
+    Print(string.format(
+      "version=%s, enabled=%s, editMode=%s",
+      tostring(version or "?"),
+      (framesEnabled and "on" or "off"),
+      (editMode and "on" or "off")
+    ))
+
+    do
+      local canTS = (C_TradeSkillUI and C_TradeSkillUI.GetAllProfessionTradeSkillLines) and true or false
+      Print("tradeSkillUI=" .. (canTS and "ready" or "unavailable"))
+    end
+
+    do
+      NormalizeSV()
+      local c = fr0z3nUI_QuestTracker_Char and fr0z3nUI_QuestTracker_Char.cache or nil
+      c = (type(c) == "table") and c or {}
+
+      local function CountKeys(t)
+        local n = 0
+        if type(t) == "table" then
+          for _, v in pairs(t) do
+            if v == true then n = n + 1 end
+          end
+        end
+        return n
+      end
+
+      local keysN = CountKeys(c.knownProfessionKeys)
+      local linesN = CountKeys(c.knownProfessionSkillLines)
+      Print(string.format(
+        "profsCache: keys=%d at=%s; lines=%d at=%s",
+        tonumber(keysN) or 0,
+        tostring(c.knownProfessionKeysAt or 0),
+        tonumber(linesN) or 0,
+        tostring(c.knownProfessionSkillLinesAt or 0)
+      ))
+
+      if type(ns) == "table" and type(ns.Profs) == "table" and type(ns.Profs.HasSkillLineID) == "function" then
+        -- Quick sanity IDs (Cooking/Fishing base + modern specialization ids).
+        local has185 = ns.Profs.HasSkillLineID(185) and true or false
+        local has356 = ns.Profs.HasSkillLineID(356) and true or false
+        local has2908 = ns.Profs.HasSkillLineID(2908) and true or false
+        local has2911 = ns.Profs.HasSkillLineID(2911) and true or false
+        Print(string.format(
+          "profsHas: Cooking(185)=%s, Fishing(356)=%s, 2908=%s, 2911=%s",
+          tostring(has185), tostring(has356), tostring(has2908), tostring(has2911)
+        ))
+      end
+    end
+
+    return
+  end
+
+  if cmd == "prof" or cmd == "profs" or cmd == "profession" or cmd == "professions" then
+    NormalizeSV()
+
+    local sub, rest2 = rest:match("^(%S+)%s*(.-)$")
+    sub = tostring(sub or "status"):lower()
+    rest2 = tostring(rest2 or "")
+
+    local function CountTrueKeys(t)
+      local n = 0
+      if type(t) == "table" then
+        for _, v in pairs(t) do
+          if v == true then n = n + 1 end
+        end
+      end
+      return n
+    end
+
+    local function CanonicalProfKeyFromToken(token)
+      token = tostring(token or "")
+      token = token:gsub("%s+", "")
+      if token == "" then return nil end
+
+      local want = token:lower()
+      if type(ns) == "table" and type(ns.Profs) == "table" and type(ns.Profs.SKILLLINE_TO_PROFKEY) == "table" then
+        for _, k in pairs(ns.Profs.SKILLLINE_TO_PROFKEY) do
+          if type(k) == "string" and k:lower() == want then
+            return k
+          end
+        end
+      end
+
+      return nil
+    end
+
+    local function PrintProfessionStatus(profToken, xp)
+      if not (type(ns) == "table" and type(ns.Profs) == "table" and type(ns.Profs.HasSkillLineID) == "function") then
+        Print("prof: profession module unavailable")
+        return
+      end
+
+      local key = CanonicalProfKeyFromToken(profToken)
+      if not key then
+        Print("prof: unknown profession (try full name like mining, tailoring, enchanting)")
+        return
+      end
+
+      local baseID = (type(ns.Profs.BASE_SKILLLINE_BY_PROFKEY) == "table") and ns.Profs.BASE_SKILLLINE_BY_PROFKEY[key] or nil
+      baseID = tonumber(baseID)
+      if not baseID or baseID <= 0 then
+        Print("prof: base id missing for " .. tostring(key))
+        return
+      end
+
+      local base = ns.Profs.HasSkillLineID(baseID) and true or false
+      local label = tostring(profToken or key):lower()
+      if not xp then
+        Print(string.format("%s: base(%d)=%s", label, baseID, tostring(base)))
+        return
+      end
+
+      local tier
+      if type(ns.Profs.TIERS_BY_PROFKEY) == "table" and type(ns.Profs.TIERS_BY_PROFKEY[key]) == "table" then
+        tier = ns.Profs.TIERS_BY_PROFKEY[key][tonumber(xp) or -1]
+      end
+      if not tier then
+        Print(string.format("%s%02d: no tier mapping (known: 01-12 where defined)", label, tonumber(xp) or 0))
+        return
+      end
+
+      local hasTier = ns.Profs.HasSkillLineID(tier) and true or false
+      Print(string.format("%s%02d: base(%d)=%s, tier(%d)=%s", label, tonumber(xp) or 0, baseID, tostring(base), tonumber(tier) or 0, tostring(hasTier)))
+    end
+    local function PrintMiningStatus(xp)
+      if not (type(ns) == "table" and type(ns.Profs) == "table" and type(ns.Profs.HasSkillLineID) == "function") then
+        Print("profs: module unavailable")
+        return
+      end
+
+      local base = ns.Profs.HasSkillLineID(186) and true or false
+      if not xp then
+        Print("mining: base(186)=" .. tostring(base))
+        return
+      end
+
+      local tier
+      if type(ns.Profs.TIERS_BY_PROFKEY) == "table" and type(ns.Profs.TIERS_BY_PROFKEY.Mining) == "table" then
+        tier = ns.Profs.TIERS_BY_PROFKEY.Mining[tonumber(xp) or -1]
+      end
+      if not tier then
+        Print("mining" .. tostring(xp) .. ": unknown XP (known: 05-08)")
+        return
+      end
+
+      local hasTier = ns.Profs.HasSkillLineID(tier) and true or false
+      Print(string.format("mining%02d: base(186)=%s, tier(%d)=%s", tonumber(xp) or 0, tostring(base), tonumber(tier) or 0, tostring(hasTier)))
+    end
+
+    if sub == "?" or sub == "help" then
+      Print("Usage: /fqt prof status | refresh | has <skillLineID...> | dump | api | dmf | <profession> | <profession>##")
+      return
+    end
+
+    if sub == "status" then
+      PrintProfStatus()
+      return
+    end
+
+    if sub == "refresh" or sub == "force" or sub == "update" or sub == "forceupdate" then
+      if type(ns) == "table" and type(ns.Profs) == "table" and type(ns.Profs.RefreshKnownProfessionSkillLines) == "function" then
+        local ok, refreshed = pcall(ns.Profs.RefreshKnownProfessionSkillLines, true)
+        Print("profsRefresh: ok=" .. tostring(ok and true or false) .. "; updated=" .. tostring(refreshed and true or false))
+      else
+        Print("profsRefresh: profession module unavailable")
+      end
+      PrintProfStatus()
+      return
+    end
+
+    if sub == "has" or sub == "check" then
+      if not (type(ns) == "table" and type(ns.Profs) == "table" and type(ns.Profs.HasSkillLineID) == "function") then
+        Print("profsHas: profession module unavailable")
+        return
+      end
+
+      local any = false
+      for token in rest2:gmatch("%S+") do
+        local id = tonumber(token)
+        if id and id > 0 then
+          any = true
+          Print(string.format("%d => %s", id, tostring(ns.Profs.HasSkillLineID(id) and true or false)))
+        end
+      end
+
+      if not any then
+        Print("Usage: /fqt prof has <skillLineID...>")
+      end
+      return
+    end
+
+    if sub == "dmf" then
+      local rows = {
+        { label = "Mining", questID = 29518, profID = 186 },
+        { label = "Tailoring", questID = 29520, profID = 197 },
+        { label = "Cooking", questID = 29506, profID = 185 },
+        { label = "Fishing", questID = 29513, profID = 356 },
+      }
+
+      Print("DMF profession debug (note: DMF rules hide when completed):")
+      for _, r in ipairs(rows) do
+        local qid = tonumber(r.questID)
+        local pid = tonumber(r.profID)
+        local completed = (qid and IsQuestCompleted and IsQuestCompleted(qid)) and true or false
+        local inLog = (qid and IsQuestInLog and IsQuestInLog(qid)) and true or false
+        local has = (pid and HasProfessionSkillLineID and HasProfessionSkillLineID(pid)) and true or false
+        Print(string.format("%s: prof(%d)=%s, quest(%d) completed=%s inLog=%s", tostring(r.label), pid or 0, tostring(has), qid or 0, tostring(completed), tostring(inLog)))
+      end
+      return
+    end
+
+    if sub == "dump" or sub == "list" then
+      local c = fr0z3nUI_QuestTracker_Char and fr0z3nUI_QuestTracker_Char.cache or nil
+      c = (type(c) == "table") and c or {}
+
+      local keys = {}
+      if type(c.knownProfessionKeys) == "table" then
+        for k, v in pairs(c.knownProfessionKeys) do
+          if v == true then keys[#keys + 1] = tostring(k) end
+        end
+      end
+      table.sort(keys, function(a, b) return tostring(a):lower() < tostring(b):lower() end)
+      Print("profsKeys: " .. (#keys > 0 and table.concat(keys, ", ") or "(none cached)"))
+      PrintProfStatus()
+      return
+    end
+
+    if sub == "api" or sub == "live" then
+      local GP = _G and rawget(_G, "GetProfessions")
+      local GPI = _G and rawget(_G, "GetProfessionInfo")
+      if type(GP) ~= "function" or type(GPI) ~= "function" then
+        Print("profsApi: GetProfessions/GetProfessionInfo unavailable")
+        return
+      end
+
+      local ok, p1, p2, a, f, c2 = pcall(GP)
+      if not ok then
+        Print("profsApi: GetProfessions errored")
+        return
+      end
+
+      Print(string.format("GetProfessions: p1=%s p2=%s arch=%s fish=%s cook=%s", tostring(p1), tostring(p2), tostring(a), tostring(f), tostring(c2)))
+      local indices = { p1, p2, a, f, c2 }
+      local labels = { "p1", "p2", "arch", "fish", "cook" }
+      for i = 1, 5 do
+        local idx = indices[i]
+        if idx ~= nil then
+          local ok2,
+            name, icon, rank, maxRank, numSpells, spelloffset,
+            skillLine, rankModifier, specializationIndex, specializationOffset,
+            skillLineName, skillLineDescription, _, _, _ = pcall(GPI, idx)
+
+          if ok2 then
+            Print(string.format(
+              "%s idx=%s name=%s skillLine=%s rank=%s/%s",
+              tostring(labels[i]),
+              tostring(idx),
+              tostring(name),
+              tostring(skillLine),
+              tostring(rank),
+              tostring(maxRank)
+            ))
+          else
+            Print(string.format("%s idx=%s GetProfessionInfo errored", tostring(labels[i]), tostring(idx)))
+          end
+        else
+          Print(string.format("%s idx=nil", tostring(labels[i])))
+        end
+      end
+
+      if C_TradeSkillUI and type(C_TradeSkillUI.GetProfessionInfoBySkillLineID) == "function" then
+        local quick = { 186, 197, 185, 356, 2908, 2911 }
+        for _, id in ipairs(quick) do
+          local ok3, info = pcall(C_TradeSkillUI.GetProfessionInfoBySkillLineID, id)
+          if ok3 and type(info) == "table" then
+            Print(string.format("TS id=%d max=%s lvl=%s name=%s", id, tostring(info.maxSkillLevel), tostring(info.skillLevel), tostring(info.professionName or info.name)))
+          else
+            Print(string.format("TS id=%d info=nil", id))
+          end
+        end
+      else
+        Print("TS: GetProfessionInfoBySkillLineID unavailable")
+      end
+
+      return
+    end
+
+    do
+      local token, xp = sub:match("^([%a]+)(%d%d)$")
+      if token and xp then
+        PrintProfessionStatus(token, tonumber(xp))
+        return
+      end
+      if sub:match("^[%a]+$") then
+        PrintProfessionStatus(sub, nil)
+        return
+      end
+    end
+
+    Print("Usage: /fqt prof status | refresh | has <skillLineID...> | dump | api | dmf | <profession> | <profession>##")
+    return
+  end
+
   if cmd == "reset" then
     ResetFramePositionsToDefaults()
     RefreshAll()
@@ -8456,6 +8812,6 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     return
   end
 
-  Print("Commands: /fqt (options), /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug autobuy [on|off], /fqt debug hitboxes [on|off], /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
+  Print("Commands: /fqt (options), /fqt status, /fqt prof ..., /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug autobuy [on|off], /fqt debug hitboxes [on|off], /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
   end)
 end

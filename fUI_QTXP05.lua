@@ -63,28 +63,47 @@ local bakedRules = {
 
 
 
-{["label"] = "Pandaria Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:94",
-["hideWhenCompleted"] = false,
-["spellKnown"] = 265825,
-["notSpellKnown"] = 265827,
-["locationID"] = 6666666,
-["notInGroup"] = false, },
+{["label"] = "Pandaria Alchemy", ["frameID"] = "list1", ["key"] = "custom:spell:list1:97", ["notInGroup"] = false, 
+["professionSkillLineID"] = 171, ["missingProfessionSkillLineID"] = 2481, ["locationID"] = 6666666, },
 
-{["label"] = "Pandaria Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:95",
-["hideWhenCompleted"] = false,
-["spellKnown"] = 265843,
-["notSpellKnown"] = 265845,
-["locationID"] = 6666666,
-["notInGroup"] = false, },
+{["label"] = "Pandaria Blacksmithing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:98", ["notInGroup"] = false,
+["professionSkillLineID"] = 164, ["missingProfessionSkillLineID"] = 2473, ["locationID"] = 6666666, },
 
-{["label"] = "Pandaria Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:96",
-["hideWhenCompleted"] = false,
-["spellKnown"] = 265861,
-["notSpellKnown"] = 265863,
-["locationID"] = 6666666,
-["notInGroup"] = false, },
+{["label"] = "Pandaria Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:105", ["notInGroup"] = false,
+["professionSkillLineID"] = 185, ["missingProfessionSkillLineID"] = 2544, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Enchanting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:99", ["notInGroup"] = false,
+["professionSkillLineID"] = 333, ["missingProfessionSkillLineID"] = 2489, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:100", ["notInGroup"] = false,
+["professionSkillLineID"] = 202, ["missingProfessionSkillLineID"] = 2502, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:106", ["notInGroup"] = false,
+["professionSkillLineID"] = 356, ["missingProfessionSkillLineID"] = 2588, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:94", ["notInGroup"] = false,
+["professionSkillLineID"] = 182, ["missingProfessionSkillLineID"] = 2552, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Inscription", ["frameID"] = "list1", ["key"] = "custom:spell:list1:101", ["notInGroup"] = false,
+["professionSkillLineID"] = 773, ["missingProfessionSkillLineID"] = 2510, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Jewelcrafting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:102", ["notInGroup"] = false,
+["professionSkillLineID"] = 755, ["missingProfessionSkillLineID"] = 2520, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Leatherworking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:103", ["notInGroup"] = false,
+["professionSkillLineID"] = 165, ["missingProfessionSkillLineID"] = 2528, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:95", ["notInGroup"] = false,
+["professionSkillLineID"] = 186, ["missingProfessionSkillLineID"] = 2568, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:96", ["notInGroup"] = false,
+["professionSkillLineID"] = 393, ["missingProfessionSkillLineID"] = 2560, ["locationID"] = 6666666, },
+
+{["label"] = "Pandaria Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:104", ["notInGroup"] = false,
+["professionSkillLineID"] = 197, ["missingProfessionSkillLineID"] = 2536, ["locationID"] = 6666666, },
 
 }
+
 
 for i = 1, #bakedRules do
   local r = bakedRules[i]

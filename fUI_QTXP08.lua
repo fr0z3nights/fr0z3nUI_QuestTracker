@@ -98,49 +98,39 @@ local bakedRules = {
 ["questID"] = 58506, ["prereq"] = { 56156, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Battle For Azeroth\nMagnis Plan (Zygor)\\n  + PickUp Missive\\n     A  Dockmasters Office\\n  + Follow Guide\\n    - Consoles Unnamed?, Relog", },
 
-{["label"] = "Kul Tiran Archaeology", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:97",
-["spellInfo"] = "Archaeology", ["notSpellKnown"] = 278910,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+-- PROFESSIONS
+  {["label"] = "Battle Archaeology", ["frameID"] = "list1", ["key"] = "custom:spell:list1:97", ["notInGroup"] = false,
+  ["missingProfessionSkillLineID"] = 794, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Blacksmithing", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:98",
-["spellInfo"] = "Blacksmithing", ["notSpellKnown"] = 264448, ["spellKnown"] = 2018,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Blacksmithing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:98", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 164, ["missingProfessionSkillLineID"] = 2437, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Cooking", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:99",
-["spellInfo"] = "Cooking", ["notSpellKnown"] = 264646, ["spellKnown"] = 264638,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:99", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 185, ["missingProfessionSkillLineID"] = 2541, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Enchanting", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:100",
-["spellInfo"] = "Enchanting", ["notSpellKnown"] = 264473, ["spellKnown"] = 7411,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Enchanting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:100", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 333, ["missingProfessionSkillLineID"] = 2486, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Engineering", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:101",
-["spellInfo"] = "Engineering", ["notSpellKnown"] = 264492, ["spellKnown"] = 264483,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:101", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 202, ["missingProfessionSkillLineID"] = 2499, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Fishing", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:102",
-["spellInfo"] = "Fishing", ["notSpellKnown"] = 271675, ["spellKnown"] = 271660,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:102", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 356, ["missingProfessionSkillLineID"] = 2585, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Herbalism", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:103",
-["spellInfo"] = "Herbalism", ["notSpellKnown"] = 265831, ["spellKnown"] = 265825,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:103", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 182, ["missingProfessionSkillLineID"] = 2549, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Leatherworking", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:104",
-["spellInfo"] = "Leatherworking", ["notSpellKnown"] = 264592, ["spellKnown"] = 264583,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Leatherworking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:104", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 165, ["missingProfessionSkillLineID"] = 2525, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Mining", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:105",
-["spellInfo"] = "Mining", ["notSpellKnown"] = 265851, ["spellKnown"] = 265843,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:105", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 186, ["missingProfessionSkillLineID"] = 2565, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Skinning", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:106",
-["spellInfo"] = "Skinning", ["notSpellKnown"] = 265869, ["spellKnown"] = 265861,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:106", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 393, ["missingProfessionSkillLineID"] = 2557, ["locationID"] = 6666666, },
 
-{["label"] = "Kul Tiran Tailoring", ["faction"] = "Alliance", ["frameID"] = "list1", ["key"] = "custom:spell:list1:107",
-["spellInfo"] = "Tailoring", ["notSpellKnown"] = 264630, ["spellKnown"] = 264622,
-["locationID"] = 6666666, ["notInGroup"] = false, },
+  {["label"] = "Battle Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:107", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 197, ["missingProfessionSkillLineID"] = 2533, ["locationID"] = 6666666, },
 
 -- Horde
 {["label"] = "SU  Zuldazar", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:47514:list1:26",
@@ -218,50 +208,6 @@ local bakedRules = {
 {["label"] = "SU  N'Zoth Invasions 01", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:q:58506:list1:61H",
 ["questID"] = 58506, ["prereq"] = { 55500, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Battle For Azeroth\nMagnis Plan (Zygor)\n  + PickUp Missive\n     On Ship at Dock\n  + Follow Guide\n    - Consoles Unnamed?, Relog", },
-
-{["label"] = "Zandalari Archaeology", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:108",
-["spellInfo"] = "Archaeology", ["notSpellKnown"] = 278910,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Blacksmithing", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:109",
-["spellInfo"] = "Blacksmithing", ["notSpellKnown"] = 265803, ["spellKnown"] = 2018,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Cooking", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:110",
-["spellInfo"] = "Cooking", ["notSpellKnown"] = 265817, ["spellKnown"] = 264638,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Enchanting", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:111",
-["spellInfo"] = "Enchanting", ["notSpellKnown"] = 265817, ["spellKnown"] = 264638,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Engineering", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:111",
-["spellInfo"] = "Engineering", ["notSpellKnown"] = 265807, ["spellKnown"] = 264483,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Fishing", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:112",
-["spellInfo"] = "Fishing", ["notSpellKnown"] = 271677, ["spellKnown"] = 271660,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Herbalism", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:113",
-["spellInfo"] = "Herbalism", ["notSpellKnown"] = 265835, ["spellKnown"] = 265825,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Leatherworking", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:114",
-["spellInfo"] = "Leatherworking", ["notSpellKnown"] = 265813, ["spellKnown"] = 264583,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Mining", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:115",
-["spellInfo"] = "Mining", ["notSpellKnown"] = 265853, ["spellKnown"] = 265843,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Skinning", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:116",
-["spellInfo"] = "Skinning", ["notSpellKnown"] = 265871, ["spellKnown"] = 265861,
-["locationID"] = 6666666, ["notInGroup"] = false, },
-
-{["label"] = "Zandalari Tailoring", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:spell:list1:117",
-["spellInfo"] = "Tailoring", ["notSpellKnown"] = 265815, ["spellKnown"] = 264622,
-["locationID"] = 6666666, ["notInGroup"] = false, },
 
 {["label"] = "Commander's Signet of Battle", ["faction"] = "Horde", ["frameID"] = "list1", ["key"] = "custom:item:166559:list1:46",
 ["playerLevel"] = { ">", 80 }, ["locationID"] = "999999", ["restedOnly"] = Y, 
