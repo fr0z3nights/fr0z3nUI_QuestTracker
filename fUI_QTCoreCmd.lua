@@ -977,6 +977,6 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
       end
     end
 
-    Say("Commands: /fqt (options), /fqt status, /fqt prof ..., /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug ..., /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
+    Say("CoreCmd: /fqt (options), /fqt status, /fqt prof ..., /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug ..., /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
   end)
 end

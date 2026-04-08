@@ -4,6 +4,10 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.04.09.32
+- Files: `fUI_QTCoreCmd.lua`, `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Rename: `fUI_QTCommands.lua` → `fUI_QTCoreCmd.lua`.
+
 ## 2026.04.09.31
 - Files: `fUI_QTCore.lua`, `fr0z3nUI_QuestTracker.toc`.
 - UI: move the XQuest tab before the XRules tab.
@@ -25,7 +29,7 @@ Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stay
 - Fix: edit mode list rows are now explicitly shown when populated (regression after renderer split where rows 4+ could stay hidden even with text).
 
 ## 2026.04.09.26
-- Files: `fUI_QTRenderUI.lua`, `fUI_QTCommands.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Files: `fUI_QTRenderUI.lua`, `fUI_QTCoreCmd.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Debug: extend `/fqt framedebug` with list layout diagnostics (count/visibleRows/offset/maxOffset/range + frame size/wheel state) to pinpoint edit-mode list clipping/scroll issues.
 
 ## 2026.04.09.25

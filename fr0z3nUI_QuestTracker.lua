@@ -714,7 +714,7 @@ local function SetCheckButtonLabel(btn, text)
   end
 end
 
--- Deps shim for split slash-command module (fUI_QTCommands.lua)
+-- Deps shim for split slash-command module (fUI_QTCoreCmd.lua)
 ns._FQTSlash = ns._FQTSlash or {}
 ns._FQTSlash.deps = {
   Print = Print,
@@ -4302,7 +4302,7 @@ end
 
 frame:SetScript("OnEvent", FQT_OnEvent)
 
--- Extra deps for debug commands (implemented in fUI_QTCommands.lua)
+-- Extra deps for debug commands (implemented in fUI_QTCoreCmd.lua)
 if type(ns) == "table" and type(ns._FQTSlash) == "table" and type(ns._FQTSlash.deps) == "table" then
   local deps = ns._FQTSlash.deps
   deps.GetEffectiveFrames = GetEffectiveFrames
