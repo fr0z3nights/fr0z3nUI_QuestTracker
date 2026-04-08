@@ -4,6 +4,10 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.04.09.30
+- Files: `fUI_QTUsageUIR.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Rename: `fUI_QTRenderUI.lua` → `fUI_QTUsageUIR.lua` (load order updated; behavior unchanged).
+
 ## 2026.04.09.29
 - Files: `fUI_QTItem.lua`, `fUI_QTItemUI.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Rename: module filenames `...Items...` → `...Item...` (load order updated; behavior unchanged).

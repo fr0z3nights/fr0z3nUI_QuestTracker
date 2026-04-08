@@ -749,7 +749,7 @@ ns._FQTSlash.deps = {
 
 -- NOTE: deps.DispatchDebugCommand is attached later once the debug handler is defined.
 
--- Deps shim for split render module (fUI_QTRenderUI.lua)
+-- Deps shim for split render module (fUI_QTUsageUIR.lua)
 ns._FQTRender = ns._FQTRender or {}
 ns._FQTRender.deps = ns._FQTRender.deps or {}
 
@@ -3442,7 +3442,7 @@ local function RenderList(frameDef, frame, entries)
   end
 end
 
--- NOTE: bar inspector and heavy rendering moved to fUI_QTRenderUI.lua
+-- NOTE: bar inspector and heavy rendering moved to fUI_QTUsageUIR.lua
 
 RefreshAll = function()
   NormalizeSV()
@@ -3782,7 +3782,7 @@ RefreshAll = function()
   end
 end
 
--- Attach render deps for fUI_QTRenderUI.lua (loaded after this file)
+-- Attach render deps for fUI_QTUsageUIR.lua (loaded after this file)
 if type(ns) == "table" and type(ns._FQTRender) == "table" and type(ns._FQTRender.deps) == "table" then
   local deps = ns._FQTRender.deps
   deps.Print = Print
