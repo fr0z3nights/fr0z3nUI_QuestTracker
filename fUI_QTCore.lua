@@ -490,7 +490,7 @@ local function EnsureOptionsFrame()
     end
   end
 
-  local tabOrder = { "rules", "items", "quest", "spells", "text", "frames", "xrules", "questx" }
+  local tabOrder = { "rules", "items", "quest", "spells", "text", "frames", "questx", "xrules" }
   local tabText = {
     frames = "Usage",
     rules = "Guide",
