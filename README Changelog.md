@@ -4,12 +4,16 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.04.09.33
+- Files: `fUI_QTCoreUI.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Rename: `fUI_QTCore.lua` → `fUI_QTCoreUI.lua`.
+
 ## 2026.04.09.32
 - Files: `fUI_QTCoreCmd.lua`, `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Rename: `fUI_QTCommands.lua` → `fUI_QTCoreCmd.lua`.
 
 ## 2026.04.09.31
-- Files: `fUI_QTCore.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Files: `fUI_QTCoreUI.lua`, `fr0z3nUI_QuestTracker.toc`.
 - UI: move the XQuest tab before the XRules tab.
 
 ## 2026.04.09.30
