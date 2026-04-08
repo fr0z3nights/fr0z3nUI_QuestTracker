@@ -3,45 +3,59 @@
 ## Title: |cff00ccfffr0z3nUI|r QuestTracker
 ## Notes: Tracks quest completion with bar and list frames.
 ## Author: fr0z3n
-## Version: 2026.04.08.23
+## Version: 2026.04.09.28
 ## SavedVariables: fr0z3nUI_QuestTracker_Acc
 ## SavedVariablesPerCharacter: fr0z3nUI_QuestTracker_Char
 
 # You can disable optional rule packs by commenting out file lines with '#'.
-# Example: '# fUI_QTXP04.lua'
+# Example: '# fUI_QTGuideXP04.lua'
 
-# Layout (UI defaults) - always load
-fUI_QTLayout.lua
+# Layout defaults - always load (kept with Usage feature)
+fUI_QTUsage.lua
 
 # Built-in rule packs (optional)
-fUI_QTXPWK.lua
-fUI_QTXPEV.lua
+fUI_QTGuideXPWK.lua
+fUI_QTGuideXPEV.lua
 
 # Expansion rule packs (optional)
-fUI_QTXP00.lua
-fUI_QTXP01.lua
-fUI_QTXP02.lua
-fUI_QTXP03.lua
-fUI_QTXP04.lua
-fUI_QTXP05.lua
-fUI_QTXP06.lua
-fUI_QTXP07.lua
-fUI_QTXP08.lua
-fUI_QTXP09.lua
-fUI_QTXP10.lua
-fUI_QTXP11.lua
-fUI_QTXP12.lua
+fUI_QTGuideXP00.lua
+fUI_QTGuideXP01.lua
+fUI_QTGuideXP02.lua
+fUI_QTGuideXP03.lua
+fUI_QTGuideXP04.lua
+fUI_QTGuideXP05.lua
+fUI_QTGuideXP06.lua
+fUI_QTGuideXP07.lua
+fUI_QTGuideXP08.lua
+fUI_QTGuideXP09.lua
+fUI_QTGuideXP10.lua
+fUI_QTGuideXP11.lua
+fUI_QTGuideXP12.lua
 
 # Engine
 fUI_QTXRulesDB.lua
-fUI_QTProfessions.lua
-fr0z3nUI_QuestTracker.lua
+fUI_QTGuideProfs.lua
+fUI_QTGuideEvent.lua
 fUI_QTQuest.lua
-fUI_QTQuestX.lua
+fUI_QTUsageUX.lua
+fr0z3nUI_QuestTracker.lua
+fUI_QTRenderUI.lua
+fUI_QTCommands.lua
+fUI_QTGuideGold.lua
+fUI_QTItemBuy.lua
+fUI_QTQuestUI.lua
+fUI_QTXQuest.lua
+fUI_QTXQuestUI.lua
 fUI_QTItems.lua
+fUI_QTItemsUI.lua
 fUI_QTText.lua
+fUI_QTTextUI.lua
 fUI_QTSpells.lua
-fUI_QTRules.lua
+fUI_QTSpellsUI.lua
+fUI_QTGuide.lua
+fUI_QTGuideUI.lua
 fUI_QTXRules.lua
-fUI_QTFrames.lua
-fUI_QTOptions.lua
+fUI_QTXRulesUI.lua
+fUI_QTUsageUI.lua
+fUI_QTTextColor.lua
+fUI_QTCore.lua

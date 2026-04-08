@@ -2,6 +2,8 @@ local addonName, ns = ...
 
 ns.FQTOptionsPanels = ns.FQTOptionsPanels or {}
 
+local G = (type(ns) == "table" and ns.Guide) or {}
+
 function ns.FQTOptionsPanels.BuildRules(ctx)
   if type(ctx) ~= "table" then return end
 
@@ -47,19 +49,9 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
   local rowH = 18
 
-  local DMF_GROUP = "event:darkmoon-faire"
-
-  local function IsDarkmoonRule(rule)
-    if type(rule) ~= "table" then return false end
-    return tostring(rule.group or "") == DMF_GROUP or tostring(rule.key or "") == DMF_GROUP
-  end
-
-  local function CategoryFilterLabel(v)
-    v = tostring(v or "all")
-    if v == "all" then return "Any Category" end
-    if v == DMF_GROUP then return "Darkmoon Faire" end
-    return v
-  end
+  local DMF_GROUP = G.DMF_GROUP or "event:darkmoon-faire"
+  local IsDarkmoonRule = G.IsDarkmoonRule or function(_) return false end
+  local CategoryFilterLabel = G.CategoryFilterLabel or function(v) return tostring(v or "all") end
 
   local rulesTitle = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   rulesTitle:SetPoint("TOPLEFT", 12, -40)
@@ -121,7 +113,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
   local hint = panels.rules:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   hint:SetPoint("TOPLEFT", 12, -60)
-  hint:SetText("Create Tracking rules using the Quest / Items / Spell / Text tabs. XQuest rules are listed separately under XRules.")
+  hint:SetText("Create Guide rules using the Quest / Items / Spell / Text tabs. XQuest rules are listed separately under XRules.")
 
   local rulesScroll = CreateFrame("ScrollFrame", nil, panels.rules, "UIPanelScrollFrameTemplate")
   rulesScroll:SetPoint("TOPLEFT", 12, -74)
@@ -494,7 +486,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     return zebraA
   end
 
-  local function RuleKey(rule)
+  local RuleKey = G.RuleKey or function(rule)
     if ns and ns.RuleKey then
       return ns.RuleKey(rule)
     end
@@ -513,22 +505,29 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     return nil
   end
 
-  local function GetEffectiveDefaultRule(baseRule)
-    local edits = (type(GetDefaultRuleEdits) == "function") and (GetDefaultRuleEdits() or {}) or {}
+  local GetEffectiveDefaultRule = G.GetEffectiveDefaultRule or function(baseRule, opts)
+    opts = (type(opts) == "table") and opts or {}
+    local GetDefaultRuleEdits_ = opts.GetDefaultRuleEdits
+    local edits = (type(GetDefaultRuleEdits_) == "function") and (GetDefaultRuleEdits_() or {}) or {}
     local key = RuleKey(baseRule)
     local r2 = key and edits[key] or nil
     return (type(r2) == "table") and r2 or baseRule
   end
 
-  local function IsDefaultRuleEdited(baseRule)
-    local edits = (type(GetDefaultRuleEdits) == "function") and (GetDefaultRuleEdits() or {}) or {}
+  local IsDefaultRuleEdited = G.IsDefaultRuleEdited or function(baseRule, opts)
+    opts = (type(opts) == "table") and opts or {}
+    local GetDefaultRuleEdits_ = opts.GetDefaultRuleEdits
+    local edits = (type(GetDefaultRuleEdits_) == "function") and (GetDefaultRuleEdits_() or {}) or {}
     local key = RuleKey(baseRule)
     return (key and type(edits[key]) == "table") and true or false
   end
 
-  local function GetSortedFrameIDs(displayByID)
+  local GetSortedFrameIDs = G.GetSortedFrameIDs or function(displayByID, opts)
+    opts = (type(opts) == "table") and opts or {}
+    local GetEffectiveFrames_ = opts.GetEffectiveFrames
+
     local ids = {}
-    for _, def in ipairs((type(GetEffectiveFrames) == "function" and GetEffectiveFrames()) or {}) do
+    for _, def in ipairs((type(GetEffectiveFrames_) == "function" and GetEffectiveFrames_()) or {}) do
       if type(def) == "table" and def.id then
         local id = tostring(def.id)
         if id ~= "" then
@@ -537,14 +536,14 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       end
     end
     table.sort(ids, function(a, b)
-      local da = displayByID[a] or a
-      local db = displayByID[b] or b
+      local da = (type(displayByID) == "table" and displayByID[a]) or a
+      local db = (type(displayByID) == "table" and displayByID[b]) or b
       return tostring(da) < tostring(db)
     end)
     return ids
   end
 
-  local function GetPrimaryFrameID(rule)
+  local GetPrimaryFrameID = G.GetPrimaryFrameID or function(rule)
     if type(rule) ~= "table" then return nil end
     if rule.frameID ~= nil then return tostring(rule.frameID) end
     if type(rule.targets) == "table" and rule.targets[1] ~= nil then
@@ -553,17 +552,21 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     return nil
   end
 
-  local function SetRulePrimaryFrame(baseRule, displayRule, newID, src)
+  local SetRulePrimaryFrame = G.SetRulePrimaryFrame or function(baseRule, displayRule, newID, src, opts)
     newID = tostring(newID or "")
     if newID == "" then return end
 
-    -- QuestX/QuestY entries are list-only (cannot target bar frames).
+    opts = (type(opts) == "table") and opts or {}
+    local GetEffectiveFrames_ = opts.GetEffectiveFrames
+    local GetDefaultRuleEdits_ = opts.GetDefaultRuleEdits
+    local DeepCopyValue_ = opts.DeepCopyValue
+
     do
       local xy = (type(displayRule) == "table") and displayRule.questXY or nil
       if xy ~= nil then
         xy = tostring(xy):upper()
         if xy == "X" or xy == "Y" then
-          for _, def in ipairs((type(GetEffectiveFrames) == "function" and GetEffectiveFrames()) or {}) do
+          for _, def in ipairs((type(GetEffectiveFrames_) == "function" and GetEffectiveFrames_()) or {}) do
             if type(def) == "table" and tostring(def.id or "") == newID then
               local t = tostring(def.type or "list"):lower()
               if t == "bar" then
@@ -579,8 +582,8 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     if src == "default" then
       local key = RuleKey(baseRule)
       if not key or key == "" then return end
-      local edits = (type(GetDefaultRuleEdits) == "function") and (GetDefaultRuleEdits() or {}) or {}
-      local edited = DeepCopyValue and DeepCopyValue(displayRule) or displayRule
+      local edits = (type(GetDefaultRuleEdits_) == "function") and (GetDefaultRuleEdits_() or {}) or {}
+      local edited = DeepCopyValue_ and DeepCopyValue_(displayRule) or displayRule
       if type(edited) == "table" then
         edited.frameID = newID
         edited.targets = nil
@@ -594,7 +597,11 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     baseRule.targets = nil
   end
 
-  local function FormatRuleText(r)
+  local FormatRuleText = G.FormatRuleText or function(r, opts)
+    opts = (type(opts) == "table") and opts or {}
+    local GetItemNameSafe_ = opts.GetItemNameSafe
+    local GetQuestTitle_ = opts.GetQuestTitle
+
     local label = (type(r) == "table" and r.label ~= nil) and tostring(r.label) or ""
     label = label:gsub("\n", " "):gsub("^%s+", ""):gsub("%s+$", "")
 
@@ -623,11 +630,11 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
     if type(r) == "table" and type(r.item) == "table" and r.item.itemID then
       local itemID = tonumber(r.item.itemID) or 0
-      local base = (label ~= "") and label or ((type(GetItemNameSafe) == "function" and GetItemNameSafe(itemID)) or ("Item " .. tostring(itemID)))
+      local base = (label ~= "") and label or ((type(GetItemNameSafe_) == "function" and GetItemNameSafe_(itemID)) or ("Item " .. tostring(itemID)))
       return string.format("I: %s%s", base, LevelSuffix(r))
     elseif tonumber(r and r.questID) and tonumber(r.questID) > 0 then
       local q = tonumber(r.questID) or 0
-      local base = (label ~= "") and label or ((type(GetQuestTitle) == "function" and GetQuestTitle(q)) or ("Quest " .. tostring(q)))
+      local base = (label ~= "") and label or ((type(GetQuestTitle_) == "function" and GetQuestTitle_(q)) or ("Quest " .. tostring(q)))
       local xy = (type(r) == "table" and r.questXY ~= nil) and tostring(r.questXY):upper() or nil
       if xy == "X" or xy == "Y" then
         return string.format("%s: %s%s", xy, tostring(base), LevelSuffix(r))

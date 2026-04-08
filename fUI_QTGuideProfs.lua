@@ -8,6 +8,147 @@ ns = ns or {}
 ns.Profs = ns.Profs or {}
 local Profs = ns.Profs
 
+-- Legacy/simple profession helpers used by the main engine rules.
+-- These live here so the main file doesn't carry profession API wiring.
+
+function Profs.HasProfessionSkillLineID(skillLineID)
+  skillLineID = tonumber(skillLineID)
+  if not skillLineID or skillLineID <= 0 then return false end
+  return (type(Profs.HasSkillLineID) == "function" and Profs.HasSkillLineID(skillLineID) == true) and true or false
+end
+
+function Profs.GetProfessionIndices()
+  local GP = _G and rawget(_G, "GetProfessions")
+  if type(GP) ~= "function" then return nil end
+  local ok, p1, p2, arch, fish, cook = pcall(GP)
+  if not ok then return nil end
+  return p1, p2, arch, fish, cook
+end
+
+function Profs.IsPrimaryProfessionSlotMissing(slot)
+  local p1, p2 = Profs.GetProfessionIndices()
+  slot = tonumber(slot) or 1
+  if slot == 2 then
+    return p2 == nil
+  end
+  return p1 == nil
+end
+
+function Profs.IsSecondaryProfessionMissing(which)
+  local _, _, _, fish, cook = Profs.GetProfessionIndices()
+  which = tostring(which or ""):lower()
+  if which == "fishing" then
+    return fish == nil
+  end
+  if which == "cooking" then
+    return cook == nil
+  end
+  return false
+end
+
+function Profs.GetPrimaryProfessionNames()
+  local GP = _G and rawget(_G, "GetProfessions")
+  local GPI = _G and rawget(_G, "GetProfessionInfo")
+  if type(GP) ~= "function" or type(GPI) ~= "function" then return nil end
+
+  local ok, p1, p2 = pcall(GP)
+  if not ok then return nil end
+
+  local out = {}
+  local function Add(p)
+    if not p then return end
+    local ok2, name = pcall(GPI, p)
+    if ok2 and name then
+      out[#out + 1] = tostring(name)
+    end
+  end
+  Add(p1)
+  Add(p2)
+  return out
+end
+
+function Profs.CanQueryTradeSkillLines()
+  return (C_TradeSkillUI and type(C_TradeSkillUI.GetAllProfessionTradeSkillLines) == "function") and true or false
+end
+
+local function GetTradeSkillLineNameByID(skillLineID)
+  skillLineID = tonumber(skillLineID)
+  if not (C_TradeSkillUI and skillLineID and skillLineID > 0) then return nil end
+  if C_TradeSkillUI.GetTradeSkillLineInfoByID then
+    local ok, info = pcall(C_TradeSkillUI.GetTradeSkillLineInfoByID, skillLineID)
+    if ok and type(info) == "table" then
+      local n = info["name"]
+      if n then return tostring(n) end
+    end
+  end
+  if C_TradeSkillUI.GetProfessionInfoBySkillLineID then
+    local ok, info = pcall(C_TradeSkillUI.GetProfessionInfoBySkillLineID, skillLineID)
+    if ok and type(info) == "table" then
+      local pn = info["professionName"]
+      if pn then return tostring(pn) end
+      local n = info["name"]
+      if n then return tostring(n) end
+    end
+  end
+  return nil
+end
+
+function Profs.HasTradeSkillLine(nameOrID)
+  if not Profs.CanQueryTradeSkillLines() then return false end
+  local wantID = tonumber(nameOrID)
+  local wantName = wantID and nil or tostring(nameOrID or ""):lower()
+  if wantName == "" and not wantID then return false end
+
+  local ok, lines = pcall(C_TradeSkillUI.GetAllProfessionTradeSkillLines)
+  if not ok or type(lines) ~= "table" then return false end
+
+  for _, id in ipairs(lines) do
+    if wantID and tonumber(id) == wantID then
+      return true
+    end
+    if wantName then
+      local n = GetTradeSkillLineNameByID(id)
+      if n and tostring(n):lower() == wantName then
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
+function Profs.HasProfession(prof)
+  if prof == nil then return false end
+
+  -- Preserve legacy behavior: only checks PRIMARY professions (p1/p2).
+  local GP = _G and rawget(_G, "GetProfessions")
+  local GPI = _G and rawget(_G, "GetProfessionInfo")
+  if type(GP) ~= "function" or type(GPI) ~= "function" then return false end
+
+  local wantID = tonumber(prof)
+  local wantName = wantID and nil or tostring(prof):lower()
+
+  local ok, p1, p2 = pcall(GP)
+  if not ok then return false end
+
+  local function Check(p)
+    if not p then return false end
+    -- NOTE: pcall prepends a boolean success flag; skillLine is the 7th return from GetProfessionInfo.
+    local ok2, name, _, _, _, _, _, skillLineID = pcall(GPI, p)
+    if not ok2 then return false end
+    if wantID then
+      return tonumber(skillLineID) == wantID
+    end
+    return name and tostring(name):lower() == wantName
+  end
+
+  return Check(p1) or Check(p2)
+end
+
+if _G then
+  _G.HasProfession = Profs.HasProfession
+end
+
 Profs._lastRefreshAt = Profs._lastRefreshAt or 0
 Profs.CACHE_VERSION = Profs.CACHE_VERSION or 4
 

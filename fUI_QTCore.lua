@@ -492,8 +492,8 @@ local function EnsureOptionsFrame()
 
   local tabOrder = { "rules", "items", "quest", "spells", "text", "frames", "xrules", "questx" }
   local tabText = {
-    frames = "UI",
-    rules = "Tracking",
+    frames = "Usage",
+    rules = "Guide",
     items = "Items",
     quest = "Quest",
     xrules = "XRules",
@@ -1170,7 +1170,7 @@ local function EnsureOptionsFrame()
 
   end
 
-  -- QUESTX tab (QuestX module)
+  -- XQUEST tab (XQuest module)
   local useQuestXModule = type(ns) == "table" and type(ns.FQTOptionsPanels) == "table" and type(ns.FQTOptionsPanels.BuildQuestX) == "function"
   if useQuestXModule then
     ns.FQTOptionsPanels.BuildQuestX(GetOptionsCtx())

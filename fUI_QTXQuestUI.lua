@@ -2,37 +2,7 @@ local addonName, ns = ...
 
 ns.FQTOptionsPanels = ns.FQTOptionsPanels or {}
 
--- NOTE: QuestX/Y/K helper utilities live here with the QuestX UI.
-local function NormalizeQuestXY(v)
-  v = tostring(v or ""):upper():gsub("%s+", "")
-  if v == "QUESTX" then v = "X" end
-  if v == "QUESTY" then v = "Y" end
-  if v == "X" or v == "Y" or v == "K" then
-    return v
-  end
-  return nil
-end
-
-local function BuildQuestIDSet(rules, xy)
-  xy = NormalizeQuestXY(xy)
-  if not xy then return {} end
-  if type(rules) ~= "table" then return {} end
-
-  local out = {}
-  for _, rule in ipairs(rules) do
-    if type(rule) == "table" and NormalizeQuestXY(rule.questXY) == xy then
-      local qid = tonumber(rule.questID)
-      if qid and qid > 0 then
-        out[qid] = true
-      end
-    end
-  end
-  return out
-end
-
-local function BuildKeepSet(rules)
-  return BuildQuestIDSet(rules, "K")
-end
+local XQ = (type(ns) == "table" and ns.XQuest) or {}
 
 function ns.FQTOptionsPanels.BuildQuestX(ctx)
   if type(ctx) ~= "table" then return end
@@ -80,33 +50,11 @@ function ns.FQTOptionsPanels.BuildQuestX(ctx)
     return (type(GetCustomRules) == "function") and GetCustomRules() or {}
   end
 
-  local function GetQuestTitleSafe(qid)
-    qid = tonumber(qid)
-    if not qid or qid <= 0 then return nil end
-    if C_QuestLog and C_QuestLog.GetTitleForQuestID then
-      local ok, title = pcall(C_QuestLog.GetTitleForQuestID, qid)
-      if ok and type(title) == "string" and title ~= "" then
-        return title
-      end
-    end
-    return nil
-  end
-
-  local function GetCurrentMapIDSafe()
-    if C_Map and C_Map.GetBestMapForUnit then
-      local ok, id = pcall(C_Map.GetBestMapForUnit, "player")
-      if ok and type(id) == "number" and id > 0 then
-        return id
-      end
-    end
-    return nil
-  end
-
-  local function NormalizeScopeMode(v)
+  local GetQuestTitleSafe = (type(XQ) == "table" and XQ.GetQuestTitleSafe) or function(_) return nil end
+  local GetCurrentMapIDSafe = (type(XQ) == "table" and XQ.GetCurrentMapIDSafe) or function() return nil end
+  local NormalizeScopeMode = (type(XQ) == "table" and XQ.NormalizeScopeMode) or function(v)
     v = tostring(v or ""):upper():gsub("%s+", "")
-    if v ~= "MAP" and v ~= "RESTING" then
-      v = "RESTING"
-    end
+    if v ~= "MAP" and v ~= "RESTING" then v = "RESTING" end
     return v
   end
 

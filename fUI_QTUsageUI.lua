@@ -41,6 +41,8 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
   local UDDM_Enable = _G and rawget(_G, "UIDropDownMenu_EnableDropDown")
   local UDDM_Disable = _G and rawget(_G, "UIDropDownMenu_DisableDropDown")
 
+  local Usage = ns.Usage or {}
+
   local function SafeCall(fn, ...)
     if type(fn) == "function" then
       return fn(...)
@@ -675,15 +677,24 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
   optionsFrame._frameVisLinkStatus = linkStatus
 
   local function NormalizeAnchorCornerLocal(v)
+    if type(Usage.NormalizeAnchorCorner) == "function" then
+      return Usage.NormalizeAnchorCorner(v)
+    end
     v = tostring(v or ""):lower():gsub("%s+", "")
+    v = v:gsub("_", ""):gsub("-", "")
     if v == "tl" or v == "topleft" then return "tl" end
     if v == "tr" or v == "topright" then return "tr" end
+    if v == "tc" or v == "topcenter" or v == "topcentre" then return "tc" end
     if v == "bl" or v == "bottomleft" then return "bl" end
     if v == "br" or v == "bottomright" then return "br" end
+    if v == "bc" or v == "bottomcenter" or v == "bottomcentre" then return "bc" end
     return nil
   end
 
   local function NormalizeGrowDirLocal(v)
+    if type(Usage.NormalizeGrowDir) == "function" then
+      return Usage.NormalizeGrowDir(v)
+    end
     v = tostring(v or ""):lower():gsub("%s+", "")
     v = v:gsub("_", "-")
     if v == "upleft" then v = "up-left" end
@@ -697,15 +708,23 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
   end
 
   local function DeriveGrowDirFromCorner(corner)
+    if type(Usage.DeriveGrowDirFromCorner) == "function" then
+      return Usage.DeriveGrowDirFromCorner(corner)
+    end
     corner = NormalizeAnchorCornerLocal(corner) or "tl"
     if corner == "tl" then return "down-right" end
     if corner == "tr" then return "down-left" end
+    if corner == "tc" then return "down-right" end
     if corner == "bl" then return "up-right" end
     if corner == "br" then return "up-left" end
+    if corner == "bc" then return "up-right" end
     return "down-right"
   end
 
   local function DeriveCornerFromGrowDir(dir)
+    if type(Usage.DeriveCornerFromGrowDir) == "function" then
+      return Usage.DeriveCornerFromGrowDir(dir)
+    end
     dir = NormalizeGrowDirLocal(dir) or "down-right"
     if dir == "down-right" then return "tl" end
     if dir == "down-left" then return "tr" end
@@ -715,15 +734,23 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
   end
 
   local function AnchorCornerLabel(corner)
+    if type(Usage.AnchorCornerLabel) == "function" then
+      return Usage.AnchorCornerLabel(corner)
+    end
     corner = NormalizeAnchorCornerLocal(corner) or "tl"
     if corner == "tl" then return "Top Left" end
     if corner == "tr" then return "Top Right" end
+    if corner == "tc" then return "Top Center" end
     if corner == "bl" then return "Bottom Left" end
     if corner == "br" then return "Bottom Right" end
+    if corner == "bc" then return "Bottom Center" end
     return "Top Left"
   end
 
   local function GrowDirLabel(dir)
+    if type(Usage.GrowDirLabel) == "function" then
+      return Usage.GrowDirLabel(dir)
+    end
     dir = NormalizeGrowDirLocal(dir) or "down-right"
     if dir == "up-left" then return "Up-Left" end
     if dir == "up-right" then return "Up-Right" end
@@ -733,6 +760,9 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
   end
 
   local function AnchorGrowLabel(corner)
+    if type(Usage.AnchorGrowLabel) == "function" then
+      return Usage.AnchorGrowLabel(corner)
+    end
     corner = NormalizeAnchorCornerLocal(corner) or "tl"
     local dir = DeriveGrowDirFromCorner(corner)
     return string.format("%s (%s)", AnchorCornerLabel(corner), GrowDirLabel(dir))
@@ -1213,6 +1243,9 @@ function ns.FQTOptionsPanels.BuildFrames(ctx)
     end
 
     local function NormalizeLinkMode(v)
+      if type(Usage.NormalizeLinkMode) == "function" then
+        return Usage.NormalizeLinkMode(v)
+      end
       v = tostring(v or ""):lower():gsub("%s+", "")
       if v == "hook" then return "hook" end
       if v == "parent" or v == "reparent" then return "hook" end
