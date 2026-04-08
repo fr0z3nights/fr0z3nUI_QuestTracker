@@ -3,7 +3,7 @@
 ## Title: |cff00ccfffr0z3nUI|r QuestTracker
 ## Notes: Tracks quest completion with bar and list frames.
 ## Author: fr0z3n
-## Version: 2026.04.09.28
+## Version: 2026.04.09.29
 ## SavedVariables: fr0z3nUI_QuestTracker_Acc
 ## SavedVariablesPerCharacter: fr0z3nUI_QuestTracker_Char
 
@@ -46,8 +46,8 @@ fUI_QTItemBuy.lua
 fUI_QTQuestUI.lua
 fUI_QTXQuest.lua
 fUI_QTXQuestUI.lua
-fUI_QTItems.lua
-fUI_QTItemsUI.lua
+fUI_QTItem.lua
+fUI_QTItemUI.lua
 fUI_QTText.lua
 fUI_QTTextUI.lua
 fUI_QTSpells.lua

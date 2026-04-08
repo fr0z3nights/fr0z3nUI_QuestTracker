@@ -4,6 +4,10 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.04.09.29
+- Files: `fUI_QTItem.lua`, `fUI_QTItemUI.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Rename: module filenames `...Items...` → `...Item...` (load order updated; behavior unchanged).
+
 ## 2026.04.09.28
 - Files: `fUI_QTUsageUX.lua`, `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Refactor: move the tracker frame system (frame create/position/vis-link/interactivity helpers) into `fUI_QTUsageUX.lua`; core now delegates via `ns.TrackerFrames.*`.
@@ -93,7 +97,7 @@ Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stay
 - Guide: move more non-UI helpers into the feature module (`ns.Guide`) and keep UI in `...UI.lua` (FGO-style).
 
 ## 2026.04.09.08
-- Files: `fUI_QTItems.lua`, `fUI_QTItemsUI.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Files: `fUI_QTItem.lua`, `fUI_QTItemUI.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Items: move non-UI helpers into the feature module (`ns.Items`) and keep UI in `...UI.lua` (FGO-style).
 
 ## 2026.04.08.45
@@ -352,7 +356,7 @@ Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stay
 - Darkmoon Faire: removed engine special-case that forced all DMF entries to never hide when completed.
 
 # 2026.04.05.01
-- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTItems.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTItem.lua`, `fr0z3nUI_QuestTracker.toc`.
 - AutoBuy debug: no longer triggers just by holding SHIFT when opening a vendor.
 - Items tab: added a bottom-left `Debug` toggle button with tooltip to control AutoBuy debug output.
 

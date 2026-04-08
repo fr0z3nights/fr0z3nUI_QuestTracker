@@ -1,7 +1,7 @@
 local _, ns = ...
 
 -- Items (feature)
--- UI is in fUI_QTItemsUI.lua
+-- UI is in fUI_QTItemUI.lua
 
 ns.Items = ns.Items or {}
 local I = ns.Items
