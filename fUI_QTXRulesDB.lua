@@ -131,7 +131,7 @@ local YQuest = ns.db.xquest.YQuest
 --   SetZone("Stormwind, 00 Event")
 --   XQuest(12345, "Some Quest To Auto-Abandon")			-- restedOnly: true to require resting (inn/city)
 --   LQuest(12345, "Some Quest To Auto-Abandon", 84)		-- locationID: mapID (number or string)
---
+--																/dump C_Map.GetBestMapForUnit("player")
 -- YQuest (Y): auto-accept candidate
 --   SetZone("Weekly, 00 Event")
 --   YQuest(99999, "Some Auto-Accept Quest")
@@ -191,6 +191,7 @@ SetZone("Darkmoon Faire, 00 Event")
 	KQuest(29518, "Mining Weekly")                           		--	Monthly		Player		Mining
 	KQuest(29520, "Tailoring Weekly")                    			--	Monthly		Player		Tailoring
 	KQuest(29433, "Test Your Strength")                             --	Monthly		Player		
+	LQuest(29438, "He Shoots, He Scores!", 407)						--  Monthly		Player		
 
 --  12	Midnight
 

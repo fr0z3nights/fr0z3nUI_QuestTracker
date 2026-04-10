@@ -37,53 +37,53 @@ local Y, N = true, false
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{["label"] = "SU  04  H1  Q-25929  Vashj'ir  Unlock Portal", ["frameID"] = "list1", ["key"] = "custom:q:25929:list1:82",
+{["label"] = "SU  04  H1  Q-25929  Vashj'ir  Unlock Portal", ["frameID"] = "list1", ["key"] = "custom:q:25929:list1:XP04001",
 ["questID"] = 25929, ["prereq"] = { 46931, 51341, 61874, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Cataclysm\n+ Vashj'ir (Zygor)\n+ Complete Quest\n      \"Sea Legs\"",
 ["faction"] = "Horde", },
 
-{["label"] = "SU  04  A1  Q-24432  Vashj'ir  Unlock Portal", ["frameID"] = "list1", ["key"] = "custom:q:24432:list1:83",
+{["label"] = "SU  04  A1  Q-24432  Vashj'ir  Unlock Portal", ["frameID"] = "list1", ["key"] = "custom:q:24432:list1:XP04002",
 ["questID"] = 24432, ["prereq"] = { 46931, 51341, 61874, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Cataclysm\n+ Vashj'ir (Zygor)\n+ Complete Quest\n      \"Sea Legs\"",
 ["faction"] = "Alliance", },
 
-{["label"] = "Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:87", ["notInGroup"] = false,
+{["label"] = "Capital Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04003", ["notInGroup"] = false,
 ["missingProfessionSkillLineID"] = 185, },
 
-{["label"] = "Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:89", ["notInGroup"] = false,
+{["label"] = "Capital Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04004", ["notInGroup"] = false,
 ["missingProfessionSkillLineID"] = 356, },
 
-{["label"] = "Alchemy", ["frameID"] = "list1", ["key"] = "custom:spell:list1:88", ["notInGroup"] = false,
+{["label"] = "Capital Alchemy", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04005", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 171, },
 
-{["label"] = "Blacksmithing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:88", ["notInGroup"] = false,
+{["label"] = "Capital Blacksmithing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04006", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 164, },
 
-{["label"] = "Enchanting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:88", ["notInGroup"] = false,
+{["label"] = "Capital Enchanting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04007", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 333, },
 
-{["label"] = "Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:88", ["notInGroup"] = false,
+{["label"] = "Capital Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04008", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 202, },
 
-{["label"] = "Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:90", ["notInGroup"] = false,
+{["label"] = "Capital Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04009", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 182, },
  
-{["label"] = "Inscription", ["frameID"] = "list1", ["key"] = "custom:spell:list1:90", ["notInGroup"] = false,
+{["label"] = "Capital Inscription", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04010", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 773, },
 
-{["label"] = "Jewelcrafting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:90", ["notInGroup"] = false,
+{["label"] = "Capital Jewelcrafting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04011", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 755, },
 
-{["label"] = "Leatherworking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:90", ["notInGroup"] = false,
+{["label"] = "Leatherworking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04012", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 165, },
 
-{["label"] = "Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:91:base", ["notInGroup"] = false,
+{["label"] = "Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04013", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 186, },
 
-{["label"] = "Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:92", ["notInGroup"] = false,
+{["label"] = "Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04014", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 393, },
 
-{["label"] = "Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:93", ["notInGroup"] = false,
+{["label"] = "Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP04015", ["notInGroup"] = false,
 ["missingPrimaryProfessions"] = true, ["missingProfessionSkillLineID"] = 197, },
 
 }

@@ -37,51 +37,59 @@ local Y, N = true, false
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{["label"] = "SU  10  Dragon Isles  34 Slot Bag", ["frameID"] = "list1", ["key"] = "custom:q:65646:list1:84",
+{["label"] = "SU  10  Dragon Isles  34 Slot Bag", ["frameID"] = "list1", ["key"] = "custom:q:65646:list1:XP10084",
 ["questID"] = 65646, ["prereq"] = { 67700, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "+ 34 Bag in Dragon Isles\n   WS 58,53 %c\n07N", },
 
-{["label"] = "SU  10  Dragon Isles  Q-67700  65445  Horde", ["frameID"] = "list1", ["key"] = "custom:q:67700:list1:85",
+{["label"] = "SU  10  Dragon Isles  Q-67700  65445  Horde", ["frameID"] = "list1", ["key"] = "custom:q:67700:list1:XP10085",
 ["questID"] = 67700, ["prereq"] = { 30515, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Dragon Isles  (H)\n + Use Dragon Scale\n    or Cata Portal Area\n + Do Initial Quests\n + Take Portal\nWiggling Egg",
 ["faction"] = "Horde", },
 
-{["label"] = "SU  10  Dragon Isles  Q-67700  65444  Alliance", ["frameID"] = "list1", ["key"] = "custom:q:67700:list1:86",
+{["label"] = "SU  10  Dragon Isles  Q-67700  65444  Alliance", ["frameID"] = "list1", ["key"] = "custom:q:67700:list1:XP10086",
 ["questID"] = 67700, ["prereq"] = { 30515, }, ["hideWhenCompleted"] = true,
 ["questInfo"] = "Dragon Isles\n + Use Dragon Scale\n    or Castle Balcony\n + Do Initial Quests\n + Take Portal\nWiggling Egg",
 ["faction"] = "Alliance", },
 
-{["label"] = "Dragon Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:153",
-["spellInfo"] = "Dragon Cooking", ["notSpellKnown"] = 366256, ["spellKnown"] = 264638,
-["locationID"] = "1978", ["hideWhenCompleted"] = false, ["notInGroup"] = false, },
+-- PROFESSIONS
+  {["label"] = "Dragon Alchemy", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10152", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 171, ["missingProfessionSkillLineID"] = 2823, ["locationID"] = "1978", },
 
-{["label"] = "Dragon Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:144",
-["spellInfo"] = "Dragon Cooking", ["notSpellKnown"] = 309830, ["spellKnown"] = 264638, 
-["locationID"] = "1978", ["hideWhenCompleted"] = false, ["notInGroup"] = false, },
+  {["label"] = "Dragon Blacksmithing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10154", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 164, ["missingProfessionSkillLineID"] = 2822, ["locationID"] = "1978", },
 
-{["label"] = "Dragon Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:151",
-["spellInfo"] = "Dragon Engineering", ["notSpellKnown"] = 310542, ["spellKnown"] = 264483,
-["locationID"] = "1978", ["notInGroup"] = false, },
+  {["label"] = "Dragon Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10144", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 185, ["missingProfessionSkillLineID"] = 2824, ["locationID"] = "1978", },
 
-{["label"] = "Dragon Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:146",
-["spellInfo"] = "Dragon Fishing", ["notSpellKnown"] = 310675, ["spellKnown"] = 271660,
-["locationID"] = "1978", ["notInGroup"] = false, },
+  {["label"] = "Dragon Enchanting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10155", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 333, ["missingProfessionSkillLineID"] = 2825, ["locationID"] = "1978", },
 
-{["label"] = "Dragon Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:150",
-["spellInfo"] = "Dragon Herbalism", ["notSpellKnown"] = 309780, ["spellKnown"] = 265825,
-["locationID"] = "1978", ["notInGroup"] = false, },
+  {["label"] = "Dragon Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10151", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 202, ["missingProfessionSkillLineID"] = 2827, ["locationID"] = "1978", },
 
-{["label"] = "Dragon Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:149",
-["spellInfo"] = "Dragon Mining", ["notSpellKnown"] = 309835, ["spellKnown"] = 265843,
-["locationID"] = "1978", ["notInGroup"] = false, },
+  {["label"] = "Dragon Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10146", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 356, ["missingProfessionSkillLineID"] = 2826, ["locationID"] = "1978", },
 
-{["label"] = "Dragon Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:148",
-["spellInfo"] = "Dragon Skinning", ["notSpellKnown"] = 308569, ["spellKnown"] = 265861,
-["locationID"] = "1978", ["notInGroup"] = false, },
+  {["label"] = "Dragon Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10150", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 182, ["missingProfessionSkillLineID"] = 2832, ["locationID"] = "1978", },
 
-{["label"] = "Dragon Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:147",
-["spellInfo"] = "Dragon Tailoring", ["notSpellKnown"] = 310949, ["spellKnown"] = 264622,
-["locationID"] = "1978", ["notInGroup"] = false, },
+  {["label"] = "Dragon Inscription", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10156", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 773, ["missingProfessionSkillLineID"] = 2828, ["locationID"] = "1978", },
+
+  {["label"] = "Dragon Jewelcrafting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10157", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 755, ["missingProfessionSkillLineID"] = 2829, ["locationID"] = "1978", },
+
+  {["label"] = "Dragon Leatherworking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10158", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 165, ["missingProfessionSkillLineID"] = 2830, ["locationID"] = "1978", },
+
+  {["label"] = "Dragon Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10149", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 186, ["missingProfessionSkillLineID"] = 2833, ["locationID"] = "1978", },
+
+  {["label"] = "Dragon Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10148", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 393, ["missingProfessionSkillLineID"] = 2834, ["locationID"] = "1978", },
+
+  {["label"] = "Dragon Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP10147", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 197, ["missingProfessionSkillLineID"] = 2831, ["locationID"] = "1978", },
 
 
 

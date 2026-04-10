@@ -4,6 +4,32 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.04.10.06
+- Files: `fUI_QTGuideXP10.lua`, `fUI_QTGuideXP11.lua`, `fUI_QTGuideXP12.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Guide DB: profession reminders now use profession skillLineID gates and include all primary professions + Cooking/Fishing (XP10/XP11 converted; XP12 added using XP11 placeholder `locationID`).
+
+## 2026.04.10.05
+- Files: `fUI_QTGuideXP09.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Guide DB (Shadowlands): remove `hideWhenCompleted` override from profession reminders (use default behavior).
+
+## 2026.04.10.03
+- Files: `fUI_QTGuideXP09.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Guide DB (Shadowlands): profession reminders now use profession skillLineID gates (`professionSkillLineID` + `missingProfessionSkillLineID`) instead of `spellKnown`/`notSpellKnown`.
+
+## 2026.04.10.04
+- Files: `fUI_QTGuideXP09.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Guide DB (Shadowlands): add missing primary profession reminders (Alchemy/Blacksmithing/Enchanting/Inscription/Jewelcrafting/Leatherworking); exclude Archaeology.
+
+## 2026.04.10.02
+- Files: `fUI_QTGuideXP05.lua`, `fUI_QTGuideXP06.lua`, `fUI_QTGuideXP07.lua`, `fUI_QTGuideXP08.lua`, `fUI_QTGuideXP09.lua`, `fUI_QTGuideXP10.lua`, `fUI_QTGuideXP11.lua`, `fUI_QTGuideXPEV.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Guide DB: normalize quest-rule keys to pack-identifying tails (XP04-style) to prevent cross-pack collisions.
+- Note: any per-rule settings keyed by the old quest-rule keys will reset for these entries.
+
+## 2026.04.10.01
+- Files: `fUI_QTGuideXP05.lua`, `fUI_QTGuideXP08.lua`, `fUI_QTGuideXP09.lua`, `fUI_QTGuideXP10.lua`, `fr0z3nUI_QuestTracker.toc`.
+- Guide DB: normalize profession spell-rule keys to expansion-unique tails (XP04-style) to prevent cross-pack key collisions.
+- Note: any per-rule settings keyed by the old spell-rule keys will reset for these entries.
+
 ## 2026.04.09.33
 - Files: `fUI_QTCoreUI.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Rename: `fUI_QTCore.lua` → `fUI_QTCoreUI.lua`.

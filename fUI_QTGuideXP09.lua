@@ -37,7 +37,7 @@ local Y, N = true, false
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{["label"] = "SU  09  Open", ["frameID"] = "list1", ["key"] = "custom:q:60151:list1:11",
+{["label"] = "SU  09  Open", ["frameID"] = "list1", ["key"] = "custom:q:60151:list1:XP09011",
 ["questID"] = 60150, ["hideWhenCompleted"] = true, ["hideIfAnyQuestCompleted"] = { 60151, 61874, 999999 },
 ["questInfo"] = "Warboard   (Accept if there)\n    - Chromie\n    - Legion\n    - Warlords\n    - Jade Forest\n\nShadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n    - Skip Quests at Broker NPC\n    - Learn Professions\nToDo", },
 
@@ -45,33 +45,51 @@ local bakedRules = {
 ["itemInfo"] = "The Brokers Angle'r",
 ["locationID"] = "1670", ["restedOnly"] = true, ["item"] = { ["itemID"] = 180136, ["required"] = { 1, true, N, 0 }, }, },
 
-{["label"] = "Shadowlands Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:144",
-["spellInfo"] = "Shadowlands Cooking", ["notSpellKnown"] = 309830, ["spellKnown"] = 264638, 
-["locationID"] = "1670", ["hideWhenCompleted"] = false, ["notInGroup"] = false, },
 
-{["label"] = "Shadowlands Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:151",
-["spellInfo"] = "Shadowlands Engineering", ["notSpellKnown"] = 310542, ["spellKnown"] = 264483,
-["locationID"] = "1670", ["notInGroup"] = false, ["hideWhenCompleted"] = false, },
 
-{["label"] = "Shadowlands Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:146",
-["spellInfo"] = "Shadowlands Fishing", ["notSpellKnown"] = 310675, ["spellKnown"] = 271660,
-["locationID"] = "1670", ["hideWhenCompleted"] = false, ["notInGroup"] = false, },
 
-{["label"] = "Shadowlands Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:150",
-["spellInfo"] = "Shadowlands Herbalism", ["notSpellKnown"] = 309780, ["spellKnown"] = 265825,
-["locationID"] = "1670", ["hideWhenCompleted"] = false, ["notInGroup"] = false, },
 
-{["label"] = "Shadowlands Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:149",
-["spellInfo"] = "Shadowlands Mining", ["notSpellKnown"] = 309835, ["spellKnown"] = 265843,
-["locationID"] = "1670", ["hideWhenCompleted"] = false, ["notInGroup"] = false, },
 
-{["label"] = "Shadowlands Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:148",
-["spellInfo"] = "Shadowlands Skinning", ["notSpellKnown"] = 308569, ["spellKnown"] = 265861,
-["locationID"] = "1670", ["hideWhenCompleted"] = false, ["notInGroup"] = false, },
 
-{["label"] = "Shadowlands Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:147",
-["spellInfo"] = "Shadowlands Tailoring", ["notSpellKnown"] = 310949, ["spellKnown"] = 264622,
-["locationID"] = "1670", ["hideWhenCompleted"] = false, ["notInGroup"] = false, },
+-- PROFESSIONS
+  {["label"] = "Shadowlands Alchemy", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09152", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 171, ["missingProfessionSkillLineID"] = 2750, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Blacksmithing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09153", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 164, ["missingProfessionSkillLineID"] = 2751, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09144", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 185, ["missingProfessionSkillLineID"] = 2752, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Enchanting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09154", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 333, ["missingProfessionSkillLineID"] = 2753, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09151", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 202, ["missingProfessionSkillLineID"] = 2755, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09146", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 356, ["missingProfessionSkillLineID"] = 2754, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09150", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 182, ["missingProfessionSkillLineID"] = 2760, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Inscription", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09155", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 773, ["missingProfessionSkillLineID"] = 2756, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Jewelcrafting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09156", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 755, ["missingProfessionSkillLineID"] = 2757, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Leatherworking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09157", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 165, ["missingProfessionSkillLineID"] = 2758, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09149", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 186, ["missingProfessionSkillLineID"] = 2761, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09148", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 393, ["missingProfessionSkillLineID"] = 2762, ["locationID"] = "1670", },
+
+  {["label"] = "Shadowlands Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP09147", ["notInGroup"] = false,
+  ["professionSkillLineID"] = 197, ["missingProfessionSkillLineID"] = 2759, ["locationID"] = "1670", },
 
 --{["label"] = "Warboard   (Accept if there)\n    - Chromie\n    - Legion\n    - Warlords\n    - Jade Forest\n\nShadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n    - Skip Quests at Broker NPC\n    - Learn Professions", ["frameID"] = "list1", ["key"] = "custom:spell:list1:152",
 --["hideWhenCompleted"] = false,

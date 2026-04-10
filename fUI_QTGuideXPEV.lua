@@ -234,7 +234,7 @@ local bakedRules = {
   label = "Love is in the Air", ["frameID"] = "list2", key = "event:love-is-in-the-air",
   questInfo = "Valentines", hideWhenCompleted = false, },
 
-  {["label"] = "Blingtron", ["frameID"] = "list2", ["key"] = "custom:q:44184:list2:BT",
+  {["label"] = "Blingtron", ["frameID"] = "list2", ["key"] = "custom:q:44184:list2:XPEVBT",
   ["questInfo"] = "BLINGTRON", ["questID"] = 44184, ["hideWhenCompleted"] = true, },
 
 
