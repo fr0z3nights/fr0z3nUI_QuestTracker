@@ -63,6 +63,7 @@ local bakedRules = {
 
 
 
+
 {["label"] = "Pandaria Alchemy", ["frameID"] = "list1", ["key"] = "custom:spell:list1:XP05097", ["notInGroup"] = false, 
 ["professionSkillLineID"] = 171, ["missingProfessionSkillLineID"] = 2481, ["locationID"] = 6666666, },
 

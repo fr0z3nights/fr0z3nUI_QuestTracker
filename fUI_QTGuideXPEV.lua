@@ -237,7 +237,11 @@ local bakedRules = {
   {["label"] = "Blingtron", ["frameID"] = "list2", ["key"] = "custom:q:44184:list2:XPEVBT",
   ["questInfo"] = "BLINGTRON", ["questID"] = 44184, ["hideWhenCompleted"] = true, },
 
-
+  -- Shows During MoP Timewalking or on Timeless Isle
+  {label = "Time-Lost Artifact", frameID = "list2", key = "event:timewalking:pandaria:time-lost-artifact",
+  aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
+  textInfo = "Time-Lost Artifact\n - Timeless Coins: $hv / $rq\n - Emperor Shaohao: {rep:have}", currencyID = { 777, 7500, Y }, repDisplay = { factionID = 1492, minStanding = 6 },
+  complete = { any = { { itemIDs = { 103678, 219222 }, includeBank = true }, }, }, },
 
 
 }

@@ -2333,7 +2333,17 @@ local function BuildRuleStatus(rule, ctx, opts)
         end
       end
       if rule.aura.mustHave and not has then
-        return nil
+        local overrideMapID = tonumber(rule.locationOverrideID or rule.locationOverrideMapID)
+        if overrideMapID and overrideMapID > 0 then
+          local haveMapID = (ctx and ctx.mapID) or (GetBestMapIDSafe and GetBestMapIDSafe()) or nil
+          if haveMapID and haveMapID == overrideMapID then
+            has = true
+          else
+            return nil
+          end
+        else
+          return nil
+        end
       end
       if (rule.aura.mustHave == false) and has then
         return nil
@@ -2345,6 +2355,7 @@ local function BuildRuleStatus(rule, ctx, opts)
   local extra = nil
   local shoppingListText = nil
   local currencyGate = nil
+  local repDisplayGate = nil
 
   -- Explicit extra override (used for helper tasks)
   if type(rule) == "table" and rule.extra ~= nil then
@@ -2356,39 +2367,39 @@ local function BuildRuleStatus(rule, ctx, opts)
   -- We extract the first currency gate we can find so $hv/$rq/{currency} placeholders render.
   if type(rule) == "table" and currencyGate == nil then
     local function ExtractCurrencyGate(node)
-      if type(node) ~= "table" then return nil, nil end
+      if type(node) ~= "table" then return nil, nil, nil end
 
       if type(node.any) == "table" then
         for _, child in ipairs(node.any) do
-          local cid, req = ExtractCurrencyGate(child)
-          if cid and cid > 0 then return cid, req end
+          local cid, req, clamp = ExtractCurrencyGate(child)
+          if cid and cid > 0 then return cid, req, clamp end
         end
       end
 
       if type(node.all) == "table" then
         for _, child in ipairs(node.all) do
-          local cid, req = ExtractCurrencyGate(child)
-          if cid and cid > 0 then return cid, req end
+          local cid, req, clamp = ExtractCurrencyGate(child)
+          if cid and cid > 0 then return cid, req, clamp end
         end
       end
 
       if node.currencyID ~= nil then
         if type(node.currencyID) == "table" then
-          return tonumber(node.currencyID[1]), tonumber(node.currencyID[2])
+          return tonumber(node.currencyID[1]), tonumber(node.currencyID[2]), node.currencyID[3]
         end
-        return tonumber(node.currencyID), tonumber(node.currencyRequired) or tonumber(node.required) or tonumber(node.count)
+        return tonumber(node.currencyID), tonumber(node.currencyRequired) or tonumber(node.required) or tonumber(node.count), nil
       end
       if type(node.currency) == "table" then
         local cid = tonumber(node.currency.currencyID or node.currency.id or node.currency[1])
         local req = tonumber(node.currency.required or node.currency[2] or node.required or node.count)
-        return cid, req
+        return cid, req, node.currency.clampToRequired or node.currency.clamp
       end
-      return nil, nil
+      return nil, nil, nil
     end
 
-    local cid, req = ExtractCurrencyGate(rule)
+    local cid, req, clamp = ExtractCurrencyGate(rule)
     if not (cid and cid > 0) and type(rule.showIf) == "table" then
-      cid, req = ExtractCurrencyGate(rule.showIf)
+      cid, req, clamp = ExtractCurrencyGate(rule.showIf)
     end
 
     if cid and cid > 0 then
@@ -2410,6 +2421,26 @@ local function BuildRuleStatus(rule, ctx, opts)
         gateQty = gateQty,
         isWarbandTransferable = isWB,
       }
+
+      local clampFlag = clamp
+      if clampFlag == nil and type(rule) == "table" then
+        clampFlag = rule.currencyClampToRequired
+        if clampFlag == nil then clampFlag = rule.currencyClamp end
+      end
+      currencyGate.clampToRequired = (clampFlag == true or clampFlag == "Y")
+    end
+  end
+
+  -- Reputation display placeholders for questInfo/spellInfo/textInfo.
+  -- Unlike rule.rep / showIf.rep, this is *display-only* and does not gate visibility.
+  if type(rule) == "table" and repDisplayGate == nil then
+    local rd = rule.repDisplay
+    if type(rd) == "table" then
+      local fid = tonumber(rd.factionID or rd.factionId or rd.id or rd[1])
+      local min = tonumber(rd.minStanding or rd.min or rd.required or rd.req or rd[2])
+      if fid and fid > 0 and min and min > 0 then
+        repDisplayGate = { factionID = fid, minStanding = min }
+      end
     end
   end
 
@@ -2753,23 +2784,57 @@ local function BuildRuleStatus(rule, ctx, opts)
       return s, false
     end
 
+    local GREEN = (_G and rawget(_G, "GREEN_FONT_COLOR_CODE")) or "|cff00ff00"
+    local CLOSE = (_G and rawget(_G, "FONT_COLOR_CODE_CLOSE")) or "|r"
+    local gateOk = (tonumber(g.required) or 0) > 0 and (tonumber(g.gateQty) or 0) >= (tonumber(g.required) or 0)
+
     local info = (ns and ns.GetCurrencyInfoSafe and ns.GetCurrencyInfoSafe(g.id))
     local name = (type(info) == "table" and info.name) or ""
-    local repHave = tostring(tonumber(g.gateQty) or 0)
+    local haveNum = tonumber(g.gateQty) or 0
+    local reqNum = tonumber(g.required) or 0
+    if g.clampToRequired == true and reqNum > 0 and haveNum > reqNum then
+      haveNum = reqNum
+    end
+
+    local repHave = tostring(haveNum)
     local repChar = tostring(tonumber(g.charQty) or 0)
     local repWB = (g.wbTotal ~= nil) and tostring(tonumber(g.wbTotal) or 0) or ""
     local repReq = tostring(tonumber(g.required) or 0)
     local repName = tostring(name or "")
 
     local before = s
-    s = s:gsub("{currency}", repHave)
-    s = s:gsub("{currency:have}", repHave)
-    s = s:gsub("{currency:char}", repChar)
-    s = s:gsub("{currency:wb}", repWB)
-    s = s:gsub("{currency:req}", repReq)
-    s = s:gsub("{currency:name}", repName)
-    s = s:gsub("%s+$", "")
-    return s, s ~= before
+    s = s:gsub("\r", "\n")
+
+    local lines = {}
+    local start = 1
+    while true do
+      local pos = s:find("\n", start, true)
+      if not pos then
+        lines[#lines + 1] = s:sub(start)
+        break
+      end
+      lines[#lines + 1] = s:sub(start, pos - 1)
+      start = pos + 1
+    end
+
+    for i = 1, #lines do
+      local line = lines[i]
+      local wantsColor = gateOk and line:find("{currency", 1, true)
+      line = line:gsub("{currency}", repHave)
+      line = line:gsub("{currency:have}", repHave)
+      line = line:gsub("{currency:char}", repChar)
+      line = line:gsub("{currency:wb}", repWB)
+      line = line:gsub("{currency:req}", repReq)
+      line = line:gsub("{currency:name}", repName)
+      line = line:gsub("%s+$", "")
+      if wantsColor then
+        line = GREEN .. line .. CLOSE
+      end
+      lines[i] = line
+    end
+
+    local out = table.concat(lines, "\n")
+    return out, out ~= before
   end
 
   do
@@ -2778,6 +2843,120 @@ local function BuildRuleStatus(rule, ctx, opts)
     newTitle, replaced = ApplyCurrencyPlaceholders(newTitle, currencyGate)
     if replaced then
       title = newTitle
+    end
+  end
+
+  local function RepStandingLabelLite(standing)
+    standing = tonumber(standing)
+    if not standing then return "Unknown" end
+    if standing == 1 then return "Hated" end
+    if standing == 2 then return "Hostile" end
+    if standing == 3 then return "Unfriendly" end
+    if standing == 4 then return "Neutral" end
+    if standing == 5 then return "Friendly" end
+    if standing == 6 then return "Honored" end
+    if standing == 7 then return "Revered" end
+    if standing == 8 then return "Exalted" end
+    return "Unknown"
+  end
+
+  local function ApplyRepPlaceholders(s, g)
+    if type(s) ~= "string" then return s, false end
+    if type(g) ~= "table" or not g.factionID then return s, false end
+    if not s:find("{rep", 1, true) then
+      return s, false
+    end
+
+    local GREEN = (_G and rawget(_G, "GREEN_FONT_COLOR_CODE")) or "|cff00ff00"
+    local CLOSE = (_G and rawget(_G, "FONT_COLOR_CODE_CLOSE")) or "|r"
+
+    local factionID = tonumber(g.factionID)
+    local reqStanding = tonumber(g.minStanding)
+    if not (factionID and factionID > 0) then return s, false end
+
+    local haveStanding = (ns and ns.GetStandingIDByFactionID and ns.GetStandingIDByFactionID(factionID)) or nil
+    local haveLabel = RepStandingLabelLite(haveStanding)
+    local reqLabel = RepStandingLabelLite(reqStanding)
+    local repOk = (tonumber(reqStanding) or 0) > 0 and (tonumber(haveStanding) or 0) >= (tonumber(reqStanding) or 0)
+
+    local fname = ""
+    local GFI = _G and rawget(_G, "GetFactionInfoByID")
+    if type(GFI) == "function" then
+      local ok, n = pcall(GFI, factionID)
+      if ok and type(n) == "string" and n ~= "" then fname = n end
+    end
+
+    local before = s
+    s = s:gsub("\r", "\n")
+
+    local lines = {}
+    local start = 1
+    while true do
+      local pos = s:find("\n", start, true)
+      if not pos then
+        lines[#lines + 1] = s:sub(start)
+        break
+      end
+      lines[#lines + 1] = s:sub(start, pos - 1)
+      start = pos + 1
+    end
+
+    for i = 1, #lines do
+      local line = lines[i]
+      local wantsColor = repOk and line:find("{rep", 1, true)
+      line = line:gsub("{rep}", haveLabel)
+      line = line:gsub("{rep:have}", haveLabel)
+      line = line:gsub("{rep:req}", reqLabel)
+      line = line:gsub("{rep:name}", tostring(fname or ""))
+      line = line:gsub("%s+$", "")
+      if wantsColor then
+        line = GREEN .. line .. CLOSE
+      end
+      lines[i] = line
+    end
+
+    local out = table.concat(lines, "\n")
+    return out, out ~= before
+  end
+
+  do
+    local newTitle = title
+    local replaced = false
+    newTitle, replaced = ApplyRepPlaceholders(newTitle, repDisplayGate)
+    if replaced then
+      title = newTitle
+    end
+  end
+
+  do
+    -- If both the currency and rep targets are met, color the primary title line green.
+    -- This is display-only (does not affect gating).
+    local function IsCurrencyTargetMet(g)
+      if type(g) ~= "table" then return false end
+      local req = tonumber(g.required) or 0
+      local have = tonumber(g.gateQty) or 0
+      return req > 0 and have >= req
+    end
+
+    local function IsRepTargetMet(g)
+      if type(g) ~= "table" then return false end
+      local fid = tonumber(g.factionID)
+      local req = tonumber(g.minStanding) or 0
+      if not (fid and fid > 0 and req > 0) then return false end
+      local have = (ns and ns.GetStandingIDByFactionID and ns.GetStandingIDByFactionID(fid)) or nil
+      have = tonumber(have) or 0
+      return have >= req
+    end
+
+    if IsCurrencyTargetMet(currencyGate) and IsRepTargetMet(repDisplayGate) and type(title) == "string" then
+      local GREEN = (_G and rawget(_G, "GREEN_FONT_COLOR_CODE")) or "|cff00ff00"
+      local CLOSE = (_G and rawget(_G, "FONT_COLOR_CODE_CLOSE")) or "|r"
+
+      local s = title:gsub("\r", "\n")
+      local firstLine, rest = s:match("^([^\n]*)(.*)$")
+      if firstLine and firstLine ~= "" then
+        title = GREEN .. firstLine .. CLOSE .. (rest or "")
+      end
     end
   end
 

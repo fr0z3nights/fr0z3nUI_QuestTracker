@@ -138,37 +138,37 @@ local bakedRules = {
 ["restedOnly"] = true,
 ["item"] = { ["itemID"] = 202046, ["required"] = { 1, true, N, 0 }, }, },
 
-{["label"] = "Delvez", ["frameID"] = "bar1", ["key"] = "wk:delves:bran",
+{["label"] = "Delvez11", ["frameID"] = "bar1", ["key"] = "wk:delves:bran",
 ["questID"] = 82706, ["requireInLog"] = false, ["hideWhenCompleted"] = true, ["showXWhenComplete"] = true,
-["playerLevel"] = { ">=", 70, },
+["playerLevel"] = { "=", 80, },
 ["progress"] = { ["objectiveIndex"] = 1 },},
 
 
 
 {["label"] = "Archives: First Disc", ["frameID"] = "bar1", ["key"] = "11wk:archives:disc1",
-["questID"] = 82678, ["hideWhenCompleted"] = true, ["playerLevel"] = { ">=", 80, },
+["questID"] = 82678, ["hideWhenCompleted"] = true, ["playerLevel"] = { "=", 80, },
 ["questInfo"] = "First Disc", },
 
 {["label"] = "Archives", ["frameID"] = "bar1", ["key"] = "11wk:archives:disc2",
 ["questID"] = 82679, ["prereq"] = { 82678, }, ["requireInLog"] = false, ["hideWhenCompleted"] = true, ["showXWhenComplete"] = true,
-["questInfo"] = "Archive", ["playerLevel"] = { ">=", 80, }, ["progress"] = { ["objectiveIndex"] = 1 },},
+["questInfo"] = "Archive", ["playerLevel"] = { "=", 80, }, ["progress"] = { ["objectiveIndex"] = 1 },},
 
 
 
 {["label"] = "Belt1", ["frameID"] = "bar1", ["key"] = "custom:q:91009:list1:XP11Disc1", ["color"] = { 0.2, 0.6, 1, },
-["questID"] = 91009, ["hideWhenCompleted"] = true,["playerLevel"] = { ">=", 80, },
+["questID"] = 91009, ["hideWhenCompleted"] = true,["playerLevel"] = { "=", 80, },
 ["questInfo"] = "Belt1", },
 
 {["label"] = "Belt2", ["frameID"] = "bar1", ["key"] = "custom:q:91026:list1:XP11Disc2", ["color"] = { 0.2, 0.6, 1, },
-["questID"] = 91026, ["prereq"] = { 91009, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { ">=", 80, },
+["questID"] = 91026, ["prereq"] = { 91009, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { "=", 80, },
 ["questInfo"] = "Belt2", },
 
 {["label"] = "Belt3", ["frameID"] = "bar1", ["key"] = "custom:q:91030:list1:XP11Disc3", ["color"] = { 0.2, 0.6, 1, },
-["questID"] = 91030, ["prereq"] = { 91026, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { ">=", 80, },
+["questID"] = 91030, ["prereq"] = { 91026, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { "=", 80, },
 ["questInfo"] = "Belt3", },
 
 {["label"] = "Belt4", ["frameID"] = "bar1", ["key"] = "custom:q:91031:list1:XP11Disc4", ["color"] = { 0.2, 0.6, 1, },
-["questID"] = 91031, ["prereq"] = { 91030, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { ">=", 80, },
+["questID"] = 91031, ["prereq"] = { 91030, }, ["hideWhenCompleted"] = true, ["playerLevel"] = { "=", 80, },
 ["questInfo"] = "Belt4", },
 
 
