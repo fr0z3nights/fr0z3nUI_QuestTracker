@@ -279,51 +279,43 @@ function XR.BuildNodes(byKey, opts)
 		return t
 	end
 
-	local roots = {
-		{ xy = "X", label = "Auto Abandon" },
-		{ xy = "Y", label = "Auto Accept" },
-		{ xy = "K", label = "Abandon All Keep" },
-	}
-
 	local groups = {}
-	for _, r in ipairs(roots) do
-		groups[r.xy] = {}
-	end
 
 	for _, e in pairs(byKey) do
 		local xy = XR.NormalizeQuestXY(e.questXY)
+		if xy then
+			local mapID = XR.ExtractFirstMapID(e.accRule) or XR.ExtractFirstMapID(e.charRule) or XR.ExtractFirstMapID(e.defRule)
+			local continentLabel, zoneLabel = nil, nil
+			local continentKey, zoneKey = nil, nil
 
-		local mapID = XR.ExtractFirstMapID(e.accRule) or XR.ExtractFirstMapID(e.charRule) or XR.ExtractFirstMapID(e.defRule)
-		local continentLabel, zoneLabel = nil, nil
-		local continentKey, zoneKey = nil, nil
+			if mapID then
+				local resolved = XR.ResolveZoneAndContinent(mapID)
+				continentLabel = (resolved and resolved.continentName) or "Global/Unknown"
+				zoneLabel = (resolved and resolved.zoneName) or "Global/Unknown"
+				continentKey = tostring((resolved and resolved.continentID) or "global")
+				zoneKey = tostring((resolved and resolved.zoneID) or "global")
+			else
+				local dbm = XR.GetDbZoneMetaForQuest(e.questID)
+				continentLabel = (dbm and dbm.continentName) or "Global/Unknown"
+				zoneLabel = (dbm and dbm.zoneName) or "Global/Unknown"
+				continentKey = tostring(continentLabel)
+				zoneKey = tostring(zoneLabel)
+			end
 
-		if mapID then
-			local resolved = XR.ResolveZoneAndContinent(mapID)
-			continentLabel = (resolved and resolved.continentName) or "Global/Unknown"
-			zoneLabel = (resolved and resolved.zoneName) or "Global/Unknown"
-			continentKey = tostring((resolved and resolved.continentID) or "global")
-			zoneKey = tostring((resolved and resolved.zoneID) or "global")
-		else
-			local dbm = XR.GetDbZoneMetaForQuest(e.questID)
-			continentLabel = (dbm and dbm.continentName) or "Global/Unknown"
-			zoneLabel = (dbm and dbm.zoneName) or "Global/Unknown"
-			continentKey = tostring(continentLabel)
-			zoneKey = tostring(zoneLabel)
+			local cont = groups[continentKey]
+			if not cont then
+				cont = { key = continentKey, label = continentLabel, zones = {} }
+				groups[continentKey] = cont
+			end
+
+			local zn = cont.zones[zoneKey]
+			if not zn then
+				zn = { key = zoneKey, label = zoneLabel, entries = {} }
+				cont.zones[zoneKey] = zn
+			end
+
+			zn.entries[#zn.entries + 1] = e
 		end
-
-		local cont = groups[xy][continentKey]
-		if not cont then
-			cont = { key = continentKey, label = continentLabel, zones = {} }
-			groups[xy][continentKey] = cont
-		end
-
-		local zn = cont.zones[zoneKey]
-		if not zn then
-			zn = { key = zoneKey, label = zoneLabel, entries = {} }
-			cont.zones[zoneKey] = zn
-		end
-
-		zn.entries[#zn.entries + 1] = e
 	end
 
 	local function SortedKeys(t)
@@ -335,58 +327,52 @@ function XR.BuildNodes(byKey, opts)
 
 	local nodes = {}
 
-	for _, root in ipairs(roots) do
-		local xy = root.xy
-		local groupNodeKey = XR.TreeKey("xy", xy)
-		local groupExpanded = IsExpanded(groupNodeKey, true)
-		nodes[#nodes + 1] = { kind = "xy", key = groupNodeKey, label = root.label, level = 0, expanded = groupExpanded, questXY = xy }
+	local contKeys = SortedKeys(groups)
+	table.sort(contKeys, function(a, b)
+		local la = tostring((groups[a] and groups[a].label) or "")
+		local lb = tostring((groups[b] and groups[b].label) or "")
+		if la ~= lb then return la < lb end
+		return tostring(a) < tostring(b)
+	end)
 
-		if groupExpanded then
-			local contKeys = SortedKeys(groups[xy])
-			table.sort(contKeys, function(a, b)
-				local la = tostring((groups[xy][a] and groups[xy][a].label) or "")
-				local lb = tostring((groups[xy][b] and groups[xy][b].label) or "")
+	for _, ck in ipairs(contKeys) do
+		local cont = groups[ck]
+		local contNodeKey = XR.TreeKey("cont", cont.label)
+		local contExpanded = IsExpanded(contNodeKey, true)
+		nodes[#nodes + 1] = { kind = "continent", key = contNodeKey, label = cont.label, level = 0, expanded = contExpanded }
+
+		if contExpanded then
+			local zoneKeys = SortedKeys(cont.zones)
+			table.sort(zoneKeys, function(a, b)
+				local la = tostring((cont.zones[a] and cont.zones[a].label) or "")
+				local lb = tostring((cont.zones[b] and cont.zones[b].label) or "")
 				if la ~= lb then return la < lb end
 				return tostring(a) < tostring(b)
 			end)
 
-			for _, ck in ipairs(contKeys) do
-				local cont = groups[xy][ck]
-				local contNodeKey = XR.TreeKey("cont", xy, cont.label)
-				local contExpanded = IsExpanded(contNodeKey, true)
-				nodes[#nodes + 1] = { kind = "continent", key = contNodeKey, label = cont.label, level = 1, expanded = contExpanded, questXY = xy }
+			for _, zk in ipairs(zoneKeys) do
+				local zn = cont.zones[zk]
+				local zoneNodeKey = XR.TreeKey("zone", cont.label, zn.label)
+				local zoneExpanded = IsExpanded(zoneNodeKey, true)
+				nodes[#nodes + 1] = { kind = "zone", key = zoneNodeKey, label = zn.label, level = 1, expanded = zoneExpanded }
 
-				if contExpanded then
-					local zoneKeys = SortedKeys(cont.zones)
-					table.sort(zoneKeys, function(a, b)
-						local la = tostring((cont.zones[a] and cont.zones[a].label) or "")
-						local lb = tostring((cont.zones[b] and cont.zones[b].label) or "")
-						if la ~= lb then return la < lb end
-						return tostring(a) < tostring(b)
+				if zoneExpanded then
+					table.sort(zn.entries, function(a, b)
+						local ta = SortTitleForEntry(a)
+						local tb = SortTitleForEntry(b)
+						local sa = tostring(ta):lower()
+						local sb = tostring(tb):lower()
+						if sa ~= sb then return sa < sb end
+						if tostring(ta) ~= tostring(tb) then return tostring(ta) < tostring(tb) end
+						if (a.questID or 0) ~= (b.questID or 0) then return (a.questID or 0) < (b.questID or 0) end
+						local ax = XR.NormalizeQuestXY(a.questXY) or ""
+						local bx = XR.NormalizeQuestXY(b.questXY) or ""
+						if ax ~= bx then return ax < bx end
+						return tostring(a.key) < tostring(b.key)
 					end)
 
-					for _, zk in ipairs(zoneKeys) do
-						local zn = cont.zones[zk]
-						local zoneNodeKey = XR.TreeKey("zone", xy, cont.label, zn.label)
-						local zoneExpanded = IsExpanded(zoneNodeKey, true)
-						nodes[#nodes + 1] = { kind = "zone", key = zoneNodeKey, label = zn.label, level = 2, expanded = zoneExpanded, questXY = xy }
-
-						if zoneExpanded then
-							table.sort(zn.entries, function(a, b)
-								local ta = SortTitleForEntry(a)
-								local tb = SortTitleForEntry(b)
-								local sa = tostring(ta):lower()
-								local sb = tostring(tb):lower()
-								if sa ~= sb then return sa < sb end
-								if tostring(ta) ~= tostring(tb) then return tostring(ta) < tostring(tb) end
-								if (a.questID or 0) ~= (b.questID or 0) then return (a.questID or 0) < (b.questID or 0) end
-								return tostring(a.key) < tostring(b.key)
-							end)
-
-							for _, e in ipairs(zn.entries) do
-								nodes[#nodes + 1] = { kind = "rule", key = e.key, entry = e, level = 3, questXY = xy }
-							end
-						end
+					for _, e in ipairs(zn.entries) do
+						nodes[#nodes + 1] = { kind = "rule", key = e.key, entry = e, level = 2 }
 					end
 				end
 			end

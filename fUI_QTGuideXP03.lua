@@ -37,20 +37,18 @@ local Y, N = true, false
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{["label"] = "Kirin Tor Ring", ["frameID"] = "list1", ["key"] = "custom:item:40586:list1:81",
-["itemInfo"] = "Kirin Tor Ring\n + 8500 |TInterface\\MoneyFrame\\UI-GoldIcon:16:16:0:0|t", 
-["playerLevel"] = { ">", 70, }, ["locationID"] = "125", ["restedOnly"] = true,
-["item"] = { ["itemID"] = 40586, ["required"] = { 1, Y, Y, 1 }, }, },
+{label = "Kirin Tor Ring", frameID = "list1", key = "custom:item:40586:list1:81",
+itemInfo = "Kirin Tor Ring\n + 8500 |TInterface\\MoneyFrame\\UI-GoldIcon:16:16:0:0|t", 
+playerLevel = { ">", 70, }, locationID = "125", restedOnly = true, item = { itemID = 40586, required = { 1, Y, Y, 1 }, }, },
 
-{["label"] = "Argent Crusader's Tabard",
-["itemInfo"] = "Argent Crusader's Tabard\n+ WBT $nm $cc / $rq ($wb)", ["frameID"] = "list1", ["key"] = "custom:item:46874:list1:128",
-["playerLevel"] = { ">", 70, }, ["locationID"] = "84, 85, 125", ["restedOnly"] = true,
- ["item"] = { ["itemID"] = 46874, ["required"] = { 1, Y, N, 0 }, ["currencyID"] = { 241, 50 }, }, },
+{label = "Argent Crusader's Tabard",
+itemInfo = "Argent Crusader's Tabard\n+ WBT $nm $cc / $rq ($wb)", frameID = "list1", key = "custom:item:46874:list1:128",
+playerLevel = { ">", 70, }, locationID = "84, 85, 125", restedOnly = true, item = { itemID = 46874, required = { 1, Y, N, 0 }, currencyID = { 241, 50 }, }, },
 
 
 
--- ["itemInfo"] = "Orgrimmar Tabard", 
--- ["locationID"] = "999999", 
+-- itemInfo = "Orgrimmar Tabard", 
+-- locationID = "999999", 
 
 
 

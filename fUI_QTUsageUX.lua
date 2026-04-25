@@ -75,10 +75,13 @@ function TF.OnPlayerRegenEnabled_Interactivity(rootFrame, applyFn)
 end
 
 function TF.GetFramePosStore()
-  if ns and ns.NormalizeSV then
-    ns.NormalizeSV()
-  elseif _G and _G.NormalizeSV then
-    _G.NormalizeSV()
+  -- This is called from hot UI paths; NormalizeSV can be very expensive if repeated.
+  if not (type(fr0z3nUI_QuestTracker_Acc) == "table" and fr0z3nUI_QuestTracker_Acc._fqtNorm) then
+    if ns and ns.NormalizeSV then
+      ns.NormalizeSV()
+    elseif _G and _G.NormalizeSV then
+      _G.NormalizeSV()
+    end
   end
 
   if type(fr0z3nUI_QuestTracker_Acc) ~= "table" then return {} end

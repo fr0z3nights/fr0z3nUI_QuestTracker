@@ -140,51 +140,51 @@ local YQuest = ns.db.xquest.YQuest
 -- - zone grouping comes from SetZone() and is used by the XRules browser tree.
 -- - XQuest is the only mode that uses map/resting gates; Keep/Y are always global.
 
-SetZone("Weekly, 00 Event")
+SetZone("Weekly, Event")
 	KQuest(83366, "World Quest Week")                    			--  Weekly		Player MAX		
 	KQuest(83347, "Dungeon Week")                     				--	Weekly		Player MAX		
 	KQuest(83345, "PvP Week")                    					--	Weekly		Player MAX			
 	KQuest(83357, "Battle Pet Week")    							--	Weekly		Warband		
 
-SetZone("Timewalking, 00 Event")
+SetZone("Timewalking, Event")
 	--	Timewalking	 01  Classic
-	KQuest(85947, "01  Classic Level")                    			--	Weekly		Player LVL			
-	KQuest(86731, "01  Classic Max")                      			--	Weekly		Player MAX		
-	KQuest(83285, "01  Classic Token")                              --	Token		Player			
+	KQuest(85947, "01 Classic LVL")                    				--	Weekly		Player LVL			
+	KQuest(86731, "01 Classic MAX")                      			--	Weekly		Player MAX		
+	KQuest(83285, "01 Classic TKN")                              	--	Token		Player			
 	--	Timewalking	 02  Outland
-	KQuest(85948, "02  Burning Level")                   		 	--	Weekly		Player LVL			
-	KQuest(83363, "02  Burning Max")                      			--	Weekly		Player MAX		
-	KQuest(40168, "02  Burning Token")                              --	Token		Player			
+	KQuest(85948, "02 Outland LVL")                   		 		--	Weekly		Player LVL			
+	KQuest(83363, "02 Outland MAX")                      			--	Weekly		Player MAX		
+	KQuest(40168, "02 Outland TKN")                              	--	Token		Player			
 	--	Timewalking	 03  Wrath
-	KQuest(85949, "03  Frozen Level")                     			--	Weekly		Player LVL				
-	KQuest(83365, "03  Frozen Max")                       			--	Weekly		Player MAX		
-	KQuest(40173, "03  Frozen Token")                               --	Token		Player			
+	KQuest(85949, "03 Wrath LVL")                     				--	Weekly		Player LVL				
+	KQuest(83365, "03 Wrath MAX")                       			--	Weekly		Player MAX		
+	KQuest(40173, "03 Wrath TKN")                              		--	Token		Player			
 	--	Timewalking	 04  Cata
-	KQuest(86556, "04  Shattered Level")                  			--	Weekly		Player LVL			
-	KQuest(83359, "04  Shattered Max")                    			--	Weekly		Player MAX		
-	KQuest(40173, "04  Shattered Token")                            --	Token		Player			
+	KQuest(86556, "04 Cata LVL")                  					--	Weekly		Player LVL			
+	KQuest(83359, "04 Cata MAX")                    				--	Weekly		Player MAX		
+	KQuest(40173, "04 Cata TKN")                            		--	Token		Player			
 	--	Timewalking	 05  Pandaria
-	KQuest(86560, "05  Misty Level")                   				--	Weekly		Player LVL			
-	KQuest(83362, "05  Misty Max")                     				--	Weekly		Player MAX		
-	KQuest(45563, "05  Misty Token")                             	--	Token		Player			
+	KQuest(86560, "05 Mists LVL")                   				--	Weekly		Player LVL			
+	KQuest(93612, "05 Mists MAX")                     				--	Weekly		Player MAX		
+	KQuest(45563, "05 Mists TKN")                             		--	Token		Player			
 	--	Timewalking	 06  Draenor
-	KQuest(86563, "06  Savage Level")                     			--	Weekly		Player LVL			
-	KQuest(83364, "06  Savage Max")                       			--	Weekly		Player MAX		
-	KQuest(55499, "06  Savage Token")                               --	Token		Player			
+	KQuest(86563, "06 Draenor LVL")                     			--	Weekly		Player LVL			
+	KQuest(83364, "06 Draenor MAX")                       			--	Weekly		Player MAX		
+	KQuest(55499, "06 Draenor TKN")                              	 --	Token		Player			
 	--	Timewalking	 07  Legion
-	KQuest(86564, "07  Fel Level")                        			--	Weekly		Player LVL			
-	KQuest(83364, "07  Fel Max")                          			--	Weekly		Player MAX		
-	KQuest(64710, "07  Fel Token")                                  --	Token		Player			
+	KQuest(86564, "07 Legion LVL")                        			--	Weekly		Player LVL			
+	KQuest(83364, "07 Legion MAX")                          		--	Weekly		Player MAX		
+	KQuest(64710, "07 Legion TKN")                                  --	Token		Player			
 	--	Timewalking	 08  Battle for Azeroth
-	KQuest(88808, "08  Scarred Level")                    			--	Weekly		Player LVL			
-	KQuest(88805, "08  Scarred Max")                     			--	Weekly		Player MAX		
-	KQuest(89222, "08  Scarred Token A")                            --	Token A		Player			
-	KQuest(89223, "08  Scarred Token H")                            --	Token H		Player			
+	KQuest(88808, "08 Battle LVL")                    				--	Weekly		Player LVL			
+	KQuest(88805, "08 Battle MAX")                     				--	Weekly		Player MAX		
+	KQuest(89222, "08 Battle TKN A")                            	--	Token A		Player			
+	KQuest(89223, "08 Battle TKN H")                            	--	Token H		Player			
     --	Timewalking	 09  Shadowlands
---	KQuest(88808, "09  Shadowy Level")								--  Weekly		Player LVL			
---	KQuest(88805, "09  Shadowy Max")					    		--  Weekly		Player MAX		
---	KQuest(89222, "09  Shadowy Token")								--  Token A		Player			
-SetZone("Darkmoon Faire, 00 Event")
+--	KQuest(88808, "09 Shadowlands LVL")								--  Weekly		Player LVL			
+--	KQuest(88805, "09 Shadowlands MAX")					    		--  Weekly		Player MAX		
+--	KQuest(89222, "09 Shadowlands TKN")								--  Token A		Player			
+SetZone("Darkmoon Island, Azeroth")
 	KQuest(29509, "Cooking Weekly")                  				--	Monthly		Player		Cooking
 	KQuest(29511, "Engineering Weekly")                             --	Monthly		Player		Engineering
 	KQuest(29513, "Fishing Weekly")                     			--	Monthly		Player		Fishing
@@ -195,14 +195,14 @@ SetZone("Darkmoon Faire, 00 Event")
 
 --  12	Midnight
 
-SetZone("Starting, 00 Midnight")
+SetZone("Starting, Midnight")
 
 --  11	War Within
 
-SetZone("Starting, 11 Khaz Algar")
+SetZone("Starting, Khaz Algar")
 	KQuest(81930, "The War Within")				            		--	Alliance	Player		
 	KQuest(78713, "The War Within")				            		--	Horde		Player		
-SetZone("Meta Quests, 11 Khaz Algar")
+SetZone("Meta Quests, Khaz Algar")
 	KQuest(91093, "More Than Just a Phase")		            		--	Weekly		Player		
 	KQuest(87422, "Worldsoul: Undermine World Quests")	            --	Weekly		Player		
 	KQuest(86369, "A Sparkling Fortune")							--	Weekly?		Player		
@@ -211,11 +211,11 @@ SetZone("Meta Quests, 11 Khaz Algar")
 	KQuest(82678, "Archives: The First Disc")						--	Weekly		Player		
 	KQuest(80672, "Hand of the Vizier")								--	Weekly		Player		
 	KQuest(80670, "Eyes of the Weaver")								--	Weekly		Player		
-SetZone("Dungeon, 11 Khaz Algar")
+SetZone("Dungeon, Khaz Algar")
 	KQuest(83469, "City of Threads")			            		--				Player		
 	KQuest(83465, "Ara-Kara, City of Echoes")	            		--				Player		
 	KQuest(83457, "The Stonevault")			            			--				Player		
-SetZone("Delves, 11 Khaz Algar")
+SetZone("Delves, Khaz Algar")
 	KQuest(91026, "Gathering an Upgrade")		    				--				Player		
 	KQuest(87419, "Worldsoul: Delves")			    				--				Player		
 	KQuest(85666, "Delver's Call: Spiral Weave")		    		--				Player		
@@ -225,13 +225,13 @@ SetZone("Delves, 11 Khaz Algar")
 	KQuest(82746, "Delves: Breaking Through to Loot Stuff")			--	Weekly		Player		
 	KQuest(82706, "Delves: Worldwide Research")						--	Weekly		Player		
 	KQuest(91009, "Durable Information Storage Container")			--	Weekly		Player		
-SetZone("Isle of Dorn, 11 Khaz Algar")
+SetZone("Isle of Dorn, Khaz Algar")
 	KQuest(84365, "Something on the Horizon")		    			--  			Player		
-SetZone("Hallowfall, 11 Khaz Algar")
+SetZone("Hallowfall, Khaz Algar")
 	KQuest(83551, "Hallowfall")				    					--				Player		
 	KQuest(85005, "A Radiant Call")									--				Player		
 	KQuest(91173, "The Flame Burns Eternal")						--				Player		
-SetZone("PvP, 11 Khaz Algar")
+SetZone("PvP, Khaz Algar")
 	KQuest(80184, "Preserving in Battle")							--	Weekly		Player		
 	KQuest(80186, "Preserving in War")								--	Weekly		Player		
 	KQuest(83345, "A Call to Battle")								--	Weekly		Player		
@@ -239,11 +239,11 @@ SetZone("PvP, 11 Khaz Algar")
 
 --  10	Dragonflight
 
-SetZone("Weekly, 10 Dragon Isles")
+SetZone("Weekly, Dragon Isles")
 	KQuest(78444, "A Worthy Ally: Dream Wardens")	                --				Player		
 	KQuest(75665, "A Worthy Ally: Loamm Niffen")	                --				Player		
 	KQuest(65435, "The Dragon Isles Awaits")	                    --	Horde		Player		
-SetZone("RAID, 10 Dragon Isles")
+SetZone("RAID, Dragon Isles")
 	KQuest(65762, "Sepulcher (M)")
 	KQuest(65763, "Sepulcher (H)")
 	KQuest(65764, "Sepulcher (N)")
@@ -256,15 +256,16 @@ SetZone("RAID, 10 Dragon Isles")
 	KQuest(78600, "Amirdrassil (N)")
 	KQuest(78601, "Amirdrassil (H)")
 	KQuest(78602, "Amirdrassil (M)")
+	KQuest(78421, "The Power of Dreams, Amirdrasil Quest for Head Enchant")
 
 --  07	Legion
 
-SetZone("Dalaran, 07 Broken Isles")
+SetZone("Dalaran, Broken Isles")
 	KQuest(44100, "Proper Introduction")							--	Startup		Player		Priest
-SetZone("Pet Battles, 07 Broken Isles")				
+SetZone("Pet Battles, Broken Isles")				
 	KQuest(47895, "Bert - Gnomeregan")								--	Legion 		Daily		Warband
 	KQuest(45083, "Crysa - Barrens")								--	Northern	Daily		Warband
-SetZone("RAID, 07 Broken Isles")
+SetZone("RAID, Broken Isles")
 	KQuest(44283, "Emerald (N)")
 	KQuest(44284, "Emerald (H)")
 	KQuest(44285, "Emerald (M)")
@@ -289,14 +290,14 @@ SetZone("RAID, 07 Broken Isles")
 
 --  06	Draenor
 
-SetZone("Pet Battles, 06 Draenor")			
+SetZone("Pet Battles, Draenor")			
 	KQuest(37208, "Taralune, Talador")								--	Talador				Daily		Warband
 	KQuest(37207, "Vesharr, Spires")								--	Spires				Daily		Warband
 	KQuest(37206, "Tarr the Terrible, Nagrand")						--	Nagrand				Daily		Warband
 	KQuest(37205, "Gargra, Frostfire")								--	Frostfire			Daily		Warband
 	KQuest(37203, "Ashlei, Shadowmoon")								--	Shadowmoon			Daily		Warband
 	KQuest(37201, "Cymre Brightblade, Gorgrond")					--	Gorgrond			Daily		Warband
-SetZone("RAID, 06 Draenor")
+SetZone("RAID, Draenor")
 	KQuest(37029, "Blackrock (N)")
 	KQuest(37030, "Blackrock (H)")
 	KQuest(37031, "Blackrock (M)")
@@ -306,10 +307,12 @@ SetZone("RAID, 06 Draenor")
 	KQuest(39502, "Hellfire: Spire (N)")
 	KQuest(39504, "Hellfire: Spire (H)")
 	KQuest(39505, "Hellfire: Spire (M)")
+SetZone("Startup, Draenor")
+	LQuest(34398, "Warlords of Draenor: The Dark Portal", 17)		--  Starting		Player		
 
 -- 05	Pandaria
 
-SetZone("Pet Battles, 05 Pandaria")
+SetZone("Pet Battles, Pandaria")
 	KQuest(63435, "")												--					Daily		Warband		
 	KQuest(32441, "Thundering Spirit")								--  Kun-Lai Summit	Daily		Warband
 	KQuest(32440, "Whispering Spirit")								--	Jade Forest		Daily		Warband
@@ -323,9 +326,12 @@ SetZone("Pet Battles, 05 Pandaria")
 	KQuest(31954, "Mo'ruk")		        							--	Karasang		Daily		Warband
 	KQuest(31953, "Hyuna")			    							--	Jade Forest		Daily		Warband
 
+SetZone("Unknown, Northrend")
 	KQuest(24756, "Blood Infusion")      							--  DK Legendary Quest from WotLK
 
-	KQuest(78421, "The Power of Dreams, Amirdrasil Quest for Head Enchant")
+	
+
+--	01
 
 -- Seed DB-backed X/Y/K rules so they appear in XRules and can be toggled.
 do

@@ -3,6 +3,15 @@ local addonName, ns = ...
 ns.FQTOptionsPanels = ns.FQTOptionsPanels or {}
 
 local XQ = (type(ns) == "table" and ns.XQuest) or {}
+local NormalizeQuestXY = (type(XQ) == "table" and XQ.NormalizeQuestXY) or function(v)
+  v = tostring(v or ""):upper():gsub("%s+", "")
+  if v == "QUESTX" then v = "X" end
+  if v == "QUESTY" then v = "Y" end
+  if v == "X" or v == "Y" or v == "K" then
+    return v
+  end
+  return nil
+end
 
 function ns.FQTOptionsPanels.BuildQuestX(ctx)
   if type(ctx) ~= "table" then return end

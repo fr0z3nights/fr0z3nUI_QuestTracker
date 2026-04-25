@@ -120,16 +120,23 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
     btnAcc:SetText("A")
     row.btnAcc = btnAcc
 
+    local typeText = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    typeText:SetJustifyH("RIGHT")
+    typeText:SetWordWrap(false)
+    typeText:SetPoint("RIGHT", btnAcc, "LEFT", -4, 0)
+    typeText:SetWidth(60)
+    row.typeText = typeText
+
     local fs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     fs:SetPoint("LEFT", expBtn, "RIGHT", 6, 0)
-    fs:SetPoint("RIGHT", btnAcc, "LEFT", -6, 0)
+    fs:SetPoint("RIGHT", typeText, "LEFT", -6, 0)
     fs:SetJustifyH("LEFT")
     fs:SetWordWrap(false)
     row.text = fs
 
     local click = CreateFrame("Button", nil, row)
     click:SetPoint("TOPLEFT", expBtn, "TOPRIGHT", 0, 0)
-    click:SetPoint("BOTTOMRIGHT", btnAcc, "BOTTOMLEFT", 0, 0)
+    click:SetPoint("BOTTOMRIGHT", typeText, "BOTTOMLEFT", 0, 0)
     click:RegisterForClicks("LeftButtonUp")
     row.btnClick = click
 
@@ -198,21 +205,28 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
         row.btnExpand:ClearAllPoints()
         row.btnExpand:SetPoint("LEFT", row, "LEFT", indent, 0)
 
-        if node.kind == "xy" or node.kind == "continent" or node.kind == "zone" then
+        if node.kind == "continent" or node.kind == "zone" then
           row.btnExpand:Show()
           row.btnExpand:SetText(node.expanded and "-" or "+")
           row.btnAcc:Hide()
           row.btnChar:Hide()
           row.btnDel:Hide()
+          if row.typeText then
+            row.typeText:SetText("")
+            row.typeText:Hide()
+          end
           row.btnAcc:SetScript("OnClick", nil)
           row.btnChar:SetScript("OnClick", nil)
           row.btnDel:SetScript("OnClick", nil)
           row.btnAcc:SetEnabled(false)
           row.btnChar:SetEnabled(false)
+
+          row.text:ClearAllPoints()
+          row.text:SetPoint("LEFT", row.btnExpand, "RIGHT", 6, 0)
+          row.text:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+
           row.text:SetText(node.label)
-          if node.kind == "xy" then
-            row.text:SetTextColor(0.8, 0.9, 1, 1)
-          elseif node.kind == "continent" then
+          if node.kind == "continent" then
             row.text:SetTextColor(0.75, 0.85, 1, 1)
           else
             row.text:SetTextColor(1, 1, 1, 1)
@@ -234,6 +248,18 @@ function ns.FQTOptionsPanels.BuildXRules(ctx)
           row.btnAcc:Show()
           row.btnChar:Show()
           row.btnDel:Show()
+          if row.typeText then
+            row.typeText:Show()
+            local label = ""
+            if xy == "Y" then label = "Accept"
+            elseif xy == "K" then label = "Keep"
+            else label = "Abandon" end
+            row.typeText:SetText(label)
+          end
+
+          row.text:ClearAllPoints()
+          row.text:SetPoint("LEFT", row.btnExpand, "RIGHT", 6, 0)
+          row.text:SetPoint("RIGHT", row.typeText, "LEFT", -6, 0)
 
           local qTitle
           if type(GetQuestTitle) == "function" and qid > 0 then

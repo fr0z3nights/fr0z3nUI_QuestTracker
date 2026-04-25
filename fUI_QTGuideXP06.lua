@@ -37,84 +37,76 @@ local Y, N = true, false
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{["label"] = "SU  06  Garrison 01 A", ["frameID"] = "list1", ["key"] = "custom:q:36941:list1:XP06017",
-["questID"] = 36941, ["prereq"] = { 47189, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Portal Tower Entrance\n   - After Port Abandom Quest\n + Iron Horde Invasion (Zygor)",
-["faction"] = "Alliance", },
+{label = "SU  06  Garrison 01 A", frameID = "list1", key = "custom:q:36941:list1:XP06017",
+questID = 36941, prereq = { 47189, }, hideWhenCompleted = true, faction = "Alliance",
+questInfo = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Portal Tower Entrance\n   - After Port Abandom Quest\n + Iron Horde Invasion (Zygor)",},
 
-{["label"] = "SU  06  Garrison 02 A", ["frameID"] = "list1", ["key"] = "custom:q:34586:list1:XP06018",
-["questID"] = 34586, ["prereq"] = { 36941, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - In Portal Tower Entrance\n   - After Port Abandom Quest\n   - Take Red Portal (Draenor)\n   - Do Initial Quests",
-["faction"] = "Alliance", },
+{label = "SU  06  Garrison 02 A", frameID = "list1", key = "custom:q:34586:list1:XP06018",
+questID = 34586, prereq = { 36941, }, hideWhenCompleted = true, faction = "Alliance",
+questInfo = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - In Portal Tower Entrance\n   - After Port Abandom Quest\n   - Take Red Portal (Draenor)\n   - Do Initial Quests",},
 
-{["label"] = "SU  06  Garrison 03 A", ["frameID"] = "list1", ["key"] = "custom:q:34775:list1:XP06019",
-["questID"] = 34775, ["prereq"] = { 34586, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n + Zygor: Shadowmoon Valley\n    01-31 \"Delegating on Draenor\"",
-["faction"] = "Alliance", },
+{label = "SU  06  Garrison 03 A", frameID = "list1", key = "custom:q:34775:list1:XP06019",
+questID = 34775, prereq = { 34586, }, hideWhenCompleted = true, faction = "Alliance",
+questInfo = "Warlords of Draenor\n + Zygor: Shadowmoon Valley\n    01-31 \"Delegating on Draenor\"",},
 
-{["label"] = "SU  06  Garrison 01 H", ["frameID"] = "list1", ["key"] = "custom:q:36940:list1:XP06020",
-["questID"] = 36940, ["prereq"] = { 47514, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Lower Portal Room\n   - After Port Abandom Quest\n + Iron Horde Invasion (Zygor)",
-["faction"] = "Horde", },
+{label = "SU  06  Garrison 01 H", frameID = "list1", key = "custom:q:36940:list1:XP06020",
+questID = 36940, prereq = { 47514, }, hideWhenCompleted = true, faction = "Horde",
+questInfo = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Lower Portal Room\n   - After Port Abandom Quest\n + Iron Horde Invasion (Zygor)",},
 
-{["label"] = "SU  06  Garrison 02 H", ["frameID"] = "list1", ["key"] = "custom:q:34586:list1:XP06021",
-["questID"] = 34586, ["prereq"] = { 36940, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Lower Portal Room\n   - After Port Abandom Quest\n   - Take Red Portal (Draenor)\n   - Do Initial Quests",
-["faction"] = "Horde", },
+{label = "SU  06  Garrison 02 H", frameID = "list1", key = "custom:q:34586:list1:XP06021",
+questID = 34586, prereq = { 36940, }, hideWhenCompleted = true, faction = "Horde",
+questInfo = "Warlords of Draenor\n+ Warboard: The Dark Portal\n + Talk to Battlemage\n   - Lower Portal Room\n   - After Port Abandom Quest\n   - Take Red Portal (Draenor)\n   - Do Initial Quests",},
 
-{["label"] = "SU  06  Garrison 03 H", ["frameID"] = "list1", ["key"] = "custom:q:34960:list1:XP06022",
-["questID"] = 34960, ["prereq"] = { 34586, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n + Frostfire Ridge (Zygor)\n + Quest Until Step 26\n     ' The Land Provides'\n",
-["faction"] = "Horde", },
+{label = "SU  06  Garrison 03 H", frameID = "list1", key = "custom:q:34960:list1:XP06022",
+questID = 34960, prereq = { 34586, }, hideWhenCompleted = true, faction = "Horde",
+questInfo = "Warlords of Draenor\n + Frostfire Ridge (Zygor)\n + Quest Until Step 26\n     ' The Land Provides'\n",},
 
-{["label"] = "SU  06  Garrison 04 H", ["frameID"] = "list1", ["key"] = "custom:q:36567:list1:XP06023",
-["questID"] = 36567, ["prereq"] = { 34960, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Warlords of Draenor\n + Collect 200 Garrison Resources\n + Upgrade Garrison to Level 2\n              (Turn in Quest)",
-["faction"] = "Horde", },
+{label = "SU  06  Garrison 04 H", frameID = "list1", key = "custom:q:36567:list1:XP06023",
+questID = 36567, prereq = { 34960, }, hideWhenCompleted = true, faction = "Horde",
+questInfo = "Warlords of Draenor\n + Collect 200 Garrison Resources\n + Upgrade Garrison to Level 2\n              (Turn in Quest)",},
 
-{["label"] = "SU  06  Wiggling Egg (Pet)", ["frameID"] = "list1", ["key"] = "custom:q:33505:list1:XP06024",
-["questID"] = 33505, ["prereq"] = { 34586, }, ["hideWhenCompleted"] = true,
-["questInfo"] = "Frostfire Ridge\n + Wiggling Egg",
-["locationID"] = 525, },
+{label = "SU  06  Wiggling Egg (Pet)", frameID = "list1", key = "custom:q:33505:list1:XP06024", locationID = 525,
+questID = 33505, prereq = { 34586, }, hideWhenCompleted = true, questInfo = "Frostfire Ridge\n + Wiggling Egg", },
 
-{["label"] = "Draenor Alchemy", ["frameID"] = "list1", ["key"] = "custom:spell:list1:203", ["notInGroup"] = false,
-["professionSkillLineID"] = 171, ["missingProfessionSkillLineID"] = 2480, ["locationID"] = 6666666, },
+--  PROFESSIONS                                            /dump C_Map.GetBestMapForUnit("player")
+{label = "Draenor Alchemy", frameID = "list1", key = "custom:spell:list1:203", notInGroup = false,
+professionSkillLineID = 171, missingProfessionSkillLineID = 2480, locationID = 6666666, },
 
-{["label"] = "Draenor Blacksmithing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:204", ["notInGroup"] = false,
-["professionSkillLineID"] = 164, ["missingProfessionSkillLineID"] = 2472, ["locationID"] = 6666666, },
+{label = "Draenor Blacksmithing", frameID = "list1", key = "custom:spell:list1:204", notInGroup = false,
+professionSkillLineID = 164, missingProfessionSkillLineID = 2472, locationID = 6666666, },
 
-{["label"] = "Draenor Cooking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:211", ["notInGroup"] = false,
-["professionSkillLineID"] = 185, ["missingProfessionSkillLineID"] = 2543, ["locationID"] = 6666666, },
+{label = "Draenor Cooking", frameID = "list1", key = "custom:spell:list1:211", notInGroup = false,
+professionSkillLineID = 185, missingProfessionSkillLineID = 2543, locationID = 6666666, },
 
-{["label"] = "Draenor Enchanting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:205", ["notInGroup"] = false,
-["professionSkillLineID"] = 333, ["missingProfessionSkillLineID"] = 2488, ["locationID"] = 6666666, },
+{label = "Draenor Enchanting", frameID = "list1", key = "custom:spell:list1:205", notInGroup = false,
+professionSkillLineID = 333, missingProfessionSkillLineID = 2488, locationID = 6666666, },
 
-{["label"] = "Draenor Engineering", ["frameID"] = "list1", ["key"] = "custom:spell:list1:206", ["notInGroup"] = false,
-["professionSkillLineID"] = 202, ["missingProfessionSkillLineID"] = 2501, ["locationID"] = 6666666, },
+{label = "Draenor Engineering", frameID = "list1", key = "custom:spell:list1:206", notInGroup = false,
+professionSkillLineID = 202, missingProfessionSkillLineID = 2501, locationID = 6666666, },
 
-{["label"] = "Draenor Fishing", ["frameID"] = "list1", ["key"] = "custom:spell:list1:212", ["notInGroup"] = false,
-["professionSkillLineID"] = 356, ["missingProfessionSkillLineID"] = 2587, ["locationID"] = 6666666, },
+{label = "Draenor Fishing", frameID = "list1", key = "custom:spell:list1:212", notInGroup = false,
+professionSkillLineID = 356, missingProfessionSkillLineID = 2587, locationID = 6666666, },
 
-{["label"] = "Draenor Herbalism", ["frameID"] = "list1", ["key"] = "custom:spell:list1:200", ["notInGroup"] = false,
-["professionSkillLineID"] = 182, ["missingProfessionSkillLineID"] = 2551, ["locationID"] = 6666666, },
+{label = "Draenor Herbalism", frameID = "list1", key = "custom:spell:list1:200", notInGroup = false,
+professionSkillLineID = 182, missingProfessionSkillLineID = 2551, locationID = 6666666, },
 
-{["label"] = "Draenor Inscription", ["frameID"] = "list1", ["key"] = "custom:spell:list1:207", ["notInGroup"] = false,
-["professionSkillLineID"] = 773, ["missingProfessionSkillLineID"] = 2509, ["locationID"] = 6666666, },
+{label = "Draenor Inscription", frameID = "list1", key = "custom:spell:list1:207", notInGroup = false,
+professionSkillLineID = 773, missingProfessionSkillLineID = 2509, locationID = 6666666, },
 
-{["label"] = "Draenor Jewelcrafting", ["frameID"] = "list1", ["key"] = "custom:spell:list1:208", ["notInGroup"] = false,
-["professionSkillLineID"] = 755, ["missingProfessionSkillLineID"] = 2519, ["locationID"] = 6666666, },
+{label = "Draenor Jewelcrafting", frameID = "list1", key = "custom:spell:list1:208", notInGroup = false,
+professionSkillLineID = 755, missingProfessionSkillLineID = 2519, locationID = 6666666, },
 
-{["label"] = "Draenor Leatherworking", ["frameID"] = "list1", ["key"] = "custom:spell:list1:209", ["notInGroup"] = false,
-["professionSkillLineID"] = 165, ["missingProfessionSkillLineID"] = 2527, ["locationID"] = 6666666, },
+{label = "Draenor Leatherworking", frameID = "list1", key = "custom:spell:list1:209", notInGroup = false,
+professionSkillLineID = 165, missingProfessionSkillLineID = 2527, locationID = 6666666, },
 
-{["label"] = "Draenor Mining", ["frameID"] = "list1", ["key"] = "custom:spell:list1:201", ["notInGroup"] = false,
-["professionSkillLineID"] = 186, ["missingProfessionSkillLineID"] = 2567, ["locationID"] = 6666666, },
+{label = "Draenor Mining", frameID = "list1", key = "custom:spell:list1:201", notInGroup = false,
+professionSkillLineID = 186, missingProfessionSkillLineID = 2567, locationID = 6666666, },
 
-{["label"] = "Draenor Skinning", ["frameID"] = "list1", ["key"] = "custom:spell:list1:202", ["notInGroup"] = false,
-["professionSkillLineID"] = 393, ["missingProfessionSkillLineID"] = 2559, ["locationID"] = 6666666, },
+{label = "Draenor Skinning", frameID = "list1", key = "custom:spell:list1:202", notInGroup = false,
+professionSkillLineID = 393, missingProfessionSkillLineID = 2559, locationID = 6666666, },
 
-{["label"] = "Draenor Tailoring", ["frameID"] = "list1", ["key"] = "custom:spell:list1:210", ["notInGroup"] = false,
-["professionSkillLineID"] = 197, ["missingProfessionSkillLineID"] = 2535, ["locationID"] = 6666666, },
+{label = "Draenor Tailoring", frameID = "list1", key = "custom:spell:list1:210", notInGroup = false,
+professionSkillLineID = 197, missingProfessionSkillLineID = 2535, locationID = 6666666, },
 
 
 

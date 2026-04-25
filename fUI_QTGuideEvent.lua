@@ -149,9 +149,10 @@ local function RememberWeeklyTimewalkingKind(kind)
   kind = tostring(kind or "")
   if kind == "" then return end
   NormalizeSV()
-  -- Timewalking kind memory is intentionally short-lived.
-  -- Store it only until the next DAILY reset to avoid stale/incorrect kinds persisting.
-  local resetAt = GetDailyResetAt()
+  -- Store the active weekly TW kind until the next WEEKLY reset.
+  -- This is used to show token/indicator rows on alts once any character
+  -- has picked up the weekly quest.
+  local resetAt = GetWeeklyResetAt()
   if resetAt and resetAt > 0 then
     fr0z3nUI_QuestTracker_Acc.cache.twWeekly.kind = kind
     fr0z3nUI_QuestTracker_Acc.cache.twWeekly.exp = resetAt
@@ -165,8 +166,8 @@ local function HasRememberedWeeklyTimewalkingKind(kind)
   if type(cache) ~= "table" then return false end
   local exp = tonumber(cache.exp) or 0
   -- If expiration is absurdly far in the future, treat as corrupt/stale.
-  -- Daily reset should be within ~48 hours.
-  if exp > (now + (60 * 60 * 48)) then
+  -- Weekly resets should be within ~8 days.
+  if exp > (now + (60 * 60 * 24 * 8)) then
     cache.kind = nil
     cache.exp = nil
     return false
@@ -197,12 +198,17 @@ local function ClearRememberedTimewalkingKind()
   end
 end
 
-local function ClearRememberedEventState()
+local function ClearRememberedEventState(opts)
   NormalizeSV()
   if not (fr0z3nUI_QuestTracker_Acc and type(fr0z3nUI_QuestTracker_Acc.cache) == "table") then return end
   local cache = fr0z3nUI_QuestTracker_Acc.cache
 
-  if type(cache.weeklyAuras) == "table" then
+  opts = (type(opts) == "table") and opts or {}
+  local clearWeekly = (opts.clearWeekly ~= false)
+  local clearDaily = (opts.clearDaily ~= false)
+  local clearTimewalking = (opts.clearTimewalking ~= false)
+
+  if clearWeekly and type(cache.weeklyAuras) == "table" then
     for k in pairs(cache.weeklyAuras) do
       if type(k) == "string" and k:find("^event:") then
         cache.weeklyAuras[k] = nil
@@ -210,7 +216,7 @@ local function ClearRememberedEventState()
     end
   end
 
-  if type(cache.dailyAuras) == "table" then
+  if clearDaily and type(cache.dailyAuras) == "table" then
     for k in pairs(cache.dailyAuras) do
       if type(k) == "string" and k:find("^event:") then
         cache.dailyAuras[k] = nil
@@ -218,7 +224,7 @@ local function ClearRememberedEventState()
     end
   end
 
-  if type(cache.twWeekly) == "table" then
+  if clearTimewalking and type(cache.twWeekly) == "table" then
     cache.twWeekly.kind = nil
     cache.twWeekly.exp = nil
   end
@@ -244,7 +250,9 @@ local function MaybeAutoResetEventsOncePerDay()
     return
   end
 
-  ClearRememberedEventState()
+  -- On daily reset, clear only daily calendar-derived event memory.
+  -- Weekly remembered state (including Timewalking kind) should persist until weekly reset.
+  ClearRememberedEventState({ clearDaily = true, clearWeekly = false, clearTimewalking = false })
   cache.eventAutoResetDailyStamp = dailyResetAt
 end
 

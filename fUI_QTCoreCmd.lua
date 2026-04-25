@@ -189,6 +189,35 @@ local function DispatchDebugCommand(cmd, rest)
       tostring(isWednesday and true or false)
     ))
 
+    do
+      NormalizeSV()
+      local anyTW = (ns and ns.Calendar and ns.Calendar.IsAnyTimewalkingEventActive) or nil
+      local eventActive = (type(anyTW) == "function" and anyTW()) and true or false
+
+      local rememberedAny = false
+      local rememberedFn = (ns and ns.Calendar and ns.Calendar.HasRememberedWeeklyTimewalkingKind) or nil
+      if type(rememberedFn) == "function" then
+        rememberedAny = rememberedFn() and true or false
+      end
+
+      local kind = _G.fr0z3nUI_QuestTracker_Acc
+        and _G.fr0z3nUI_QuestTracker_Acc.cache
+        and _G.fr0z3nUI_QuestTracker_Acc.cache.twWeekly
+        and _G.fr0z3nUI_QuestTracker_Acc.cache.twWeekly.kind
+      local exp = _G.fr0z3nUI_QuestTracker_Acc
+        and _G.fr0z3nUI_QuestTracker_Acc.cache
+        and _G.fr0z3nUI_QuestTracker_Acc.cache.twWeekly
+        and _G.fr0z3nUI_QuestTracker_Acc.cache.twWeekly.exp
+
+      Say(string.format(
+        "twWeekly: rememberedAny=%s kind=%s exp=%s; eventActiveNow=%s",
+        tostring(rememberedAny and true or false),
+        tostring(kind or ""),
+        tostring(exp or 0),
+        tostring(eventActive and true or false)
+      ))
+    end
+
     local function EndsSuffix(titleLower)
       if type(titleLower) ~= "string" then return false end
       return (string.match(titleLower, "[%s]ends?%s*$") ~= nil)

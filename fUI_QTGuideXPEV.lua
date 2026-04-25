@@ -41,207 +41,203 @@ local bakedRules = {
 -- Player vs Player Brawls
 
   {aura = { eventKind = "calendar", keywords = { "PvP Brawl: Southshore vs. Tarren Mill" }, mustHave = true, rememberWeekly = true },
-  label = "PvP: Southshore vs Tarren Mill", ["frameID"] = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:southshore-tarren-mill",
+  label = "PvP: Southshore vs Tarren Mill", frameID = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:southshore-tarren-mill",
   questInfo = "PvP: SS vs TM", noAutoDisplay = true, },
 
   {aura = { eventKind = "calendar", keywords = { "PvP Brawl: Classic Ashran" }, mustHave = true, rememberWeekly = true },
-  label = "PvP Brawl: Classic Ashran", ["frameID"] = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:classic-ashran",
+  label = "PvP Brawl: Classic Ashran", frameID = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:classic-ashran",
   questInfo = "PvP: Ashran", noAutoDisplay = true, },
 
   {aura = { eventKind = "calendar", keywords = { "PvP Brawl: Packed House" }, mustHave = true, rememberWeekly = true },
-  label = "PvP Brawl: Packed House", ["frameID"] = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:packed-house",
+  label = "PvP Brawl: Packed House", frameID = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:packed-house",
   questInfo = "PvP: Packed House", noAutoDisplay = true, },
 
   {aura = { eventKind = "calendar", keywords = { "PvP Brawl: Deep Six" }, mustHave = true, rememberWeekly = true },
-  label = "PvP Brawl: Deep Six", ["frameID"] = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:deep-six",
+  label = "PvP Brawl: Deep Six", frameID = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:deep-six",
   questInfo = "PvP: Deep Six", noAutoDisplay = true, },
 
 -- Levelling Events
 
   {aura = { eventKind = "calendar", keywords = { "Winds of Mysterious Fortune" }, mustHave = true, rememberWeekly = true },
-  label = "Winds of Mysterious Fortune", ["frameID"] = "list2", key = "event:winds-of-mysterious-fortune",
+  label = "Winds of Mysterious Fortune", frameID = "list2", key = "event:winds-of-mysterious-fortune",
   questInfo = "Level Up Bonus", levelGate = "leveling", hideWhenCompleted = false, },
 
 -- Darkmoon Faire
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 00, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon Faire", ["frameID"] = "list2", key = "event:darkmoon-faire", questInfo = "Darkmoon Faire", hideWhenCompleted = false, },
-  {["group"] = "event:darkmoon-faire", ["order"] = 01, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon Adventurer's Guide", ["frameID"] = "list2", key = "custom:seq:item:71634:list2:evdm00",
+  {group = "event:darkmoon-faire", order = 00, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon Faire", frameID = "list2", key = "event:darkmoon-faire", questInfo = "Darkmoon Faire", hideWhenCompleted = false, },
+  {group = "event:darkmoon-faire", order = 01, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon Adventurer's Guide", frameID = "list2", key = "custom:seq:item:71634:list2:evdm00",
   itemInfo = "Darkmoon Adventurer's Guide\n- Hidden if in bags/bank", item = {itemID = 71634, includeBank = true, required = { 1, Y, N, 0 }, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 02, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon Game Tokens", ["frameID"] = "list2", key = "custom:seq:item:71083:list2:evdm01",
+  {group = "event:darkmoon-faire", order = 02, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon Game Tokens", frameID = "list2", key = "custom:seq:item:71083:list2:evdm01",
   itemInfo = "Game Tokens", item = {itemID = 71083, showWhenBelow = 21, required = { 20, N, Y, 200 }, 
   buy = {enabled = Y, min = 20, target = 100, max = 200, yieldItemID = 71083, yieldCount = 20, cheapestOf = { 78910, 78909, 78908, 78907, 78906, 78905 }, }, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 03, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Pet Battle: Jeremy", ["frameID"] = "list2", key = "custom:seq:q:32175:list2:evdmPB01",
+  {group = "event:darkmoon-faire", order = 03, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Pet Battle: Jeremy", frameID = "list2", key = "custom:seq:q:32175:list2:evdmPB01",
   questInfo = "Pet Battle: Jeremy", questID = 32175, hideWhenCompleted = true, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 04, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Pet Battle: Christoph", ["frameID"] = "list2", key = "custom:seq:q:36471:list2:evdmPB02",
+  {group = "event:darkmoon-faire", order = 04, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Pet Battle: Christoph", frameID = "list2", key = "custom:seq:q:36471:list2:evdmPB02",
   questInfo = "Pet Battle: Christoph", questID = 36471, hideWhenCompleted = true, },
 
 -- Darkmoon Faire weekly profession quests
   -- Display gate: uses base profession skillLineIDs so these only show if you
   -- actually know the corresponding profession (more reliable than spellID lists).
 
-  {["faction"] = "Alliance",
-  ["group"] = "event:darkmoon-faire", ["order"] = 05, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Alchemy", ["frameID"] = "list2", key = "custom:seq:q:29506:list2:evdmwk01A",
+  {faction = "Alliance",
+  group = "event:darkmoon-faire", order = 05, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Alchemy", frameID = "list2", key = "custom:seq:q:29506:list2:evdmwk01A",
   questInfo = "Darkmoon: Alchemy\n%sl\n - Vendor Outside Portal", questID = 29506, professionSkillLineID = 171,
   autoBuyShopping = true, shopping = { { itemID = 1645, required = 5, buy = true }, }, },
 
-  {["faction"] = "Horde",
-  ["group"] = "event:darkmoon-faire", ["order"] = 06, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Alchemy", ["frameID"] = "list2", key = "custom:seq:q:29506:list2:evdmwk01H",
+  {faction = "Horde",
+  group = "event:darkmoon-faire", order = 06, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Alchemy", frameID = "list2", key = "custom:seq:q:29506:list2:evdmwk01H",
   questInfo = "Darkmoon: Alchemy\n%sl\n - Vendor Thunder Bluff", questID = 29506, professionSkillLineID = 171,
   autoBuyShopping = true, shopping = { { itemID = 1645, required = 5, buy = true }, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 07, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Archaeology", ["frameID"] = "list2", key = "custom:seq:q:29507:list2:evdmwk02",
+  {group = "event:darkmoon-faire", order = 07, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Archaeology", frameID = "list2", key = "custom:seq:q:29507:list2:evdmwk02",
   questInfo = "DMF: Archaeology\n - Fossil Fragments $hv/$rq\n  (or Quest is in Log)", questID = 29507, professionSkillLineID = 794, item = { itemID = 111245, currencyID = { 393, 15 }, required = { 20, N, Y, 200 }, },
   showIf = { any = { { questInLog = 29507 }, { currencyID = { 393, 15 } }, }, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 08, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Blacksmithing", ["frameID"] = "list2", key = "custom:seq:q:29508:list2:evdmwk03",
+  {group = "event:darkmoon-faire", order = 08, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Blacksmithing", frameID = "list2", key = "custom:seq:q:29508:list2:evdmwk03",
   questInfo = "DMF: Blacksmithing", questID = 29508, professionSkillLineID = 164, },
 
-  {["faction"] = "Alliance",
-  ["group"] = "event:darkmoon-faire", ["order"] = 09, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Cooking", ["frameID"] = "list2", key = "custom:seq:q:29509:list2:evdmwk04A",
+  {faction = "Alliance",
+  group = "event:darkmoon-faire", order = 09, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Cooking", frameID = "list2", key = "custom:seq:q:29509:list2:evdmwk04A",
   questInfo = "DMF: Cooking\n%sl\n - Old Town Inn Cooking Vendor", questID = 29509, professionSkillLineID = 185,
   autoBuyShopping = true, shopping = {{ itemID = 30817, required = 20, buy = true }, }, },
 
-  {["faction"] = "Horde",
-  ["group"] = "event:darkmoon-faire", ["order"] = 10, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Cooking", ["frameID"] = "list2", key = "custom:seq:q:29509:list2:evdmwk04H",
+  {faction = "Horde",
+  group = "event:darkmoon-faire", order = 10, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Cooking", frameID = "list2", key = "custom:seq:q:29509:list2:evdmwk04H",
   questInfo = "DMF: Cooking\n%sl\n - Drag Cooking Vendor", questID = 29509, professionSkillLineID = 185,
   autoBuyShopping = true, shopping = {{ itemID = 30817, required = 20, buy = true }, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 11, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Enchanting", ["frameID"] = "list2", key = "custom:seq:q:29510:list2:evdmwk05",
+  {group = "event:darkmoon-faire", order = 11, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Enchanting", frameID = "list2", key = "custom:seq:q:29510:list2:evdmwk05",
   questInfo = "DMF: Enchanting", questID = 29510, professionSkillLineID = 333, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 12, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Engineering", ["frameID"] = "list2", key = "custom:seq:q:29511:list2:evdmwk06",
+  {group = "event:darkmoon-faire", order = 12, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Engineering", frameID = "list2", key = "custom:seq:q:29511:list2:evdmwk06",
   questInfo = "DMF: Engineering", questID = 29511, professionSkillLineID = 202, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 13, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Fishing", ["frameID"] = "list2", key = "custom:seq:q:29513:list2:evdmwk07",
+  {group = "event:darkmoon-faire", order = 13, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Fishing", frameID = "list2", key = "custom:seq:q:29513:list2:evdmwk07",
   questInfo = "DMF: Fishing", questID = 29513, professionSkillLineID = 356, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 14, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Herbalism", ["frameID"] = "list2", key = "custom:seq:q:29514:list2:evdmwk08",
+  {group = "event:darkmoon-faire", order = 14, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Herbalism", frameID = "list2", key = "custom:seq:q:29514:list2:evdmwk08",
   questInfo = "DMF: Herbalism", questID = 29514, professionSkillLineID = 182, },
 
-  {["faction"] = "Alliance",
-  ["group"] = "event:darkmoon-faire", ["order"] = 15, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Inscription", ["frameID"] = "list2", key = "custom:seq:q:29515:list2:evdmwk09A",
+  {faction = "Alliance",
+  group = "event:darkmoon-faire", order = 15, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Inscription", frameID = "list2", key = "custom:seq:q:29515:list2:evdmwk09A",
   questInfo = "DMF: Inscription\n%sl\n - Vendor Outside Portal", questID = 29515, professionSkillLineID = 773,
   autoBuyShopping = true, shopping = { { itemID = 39354, required = 10, buy = true }, }, },
 
-  {["faction"] = "Horde",
-  ["group"] = "event:darkmoon-faire", ["order"] = 16, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Inscription", ["frameID"] = "list2", key = "custom:seq:q:29515:list2:evdmwk09H",
+  {faction = "Horde",
+  group = "event:darkmoon-faire", order = 16, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Inscription", frameID = "list2", key = "custom:seq:q:29515:list2:evdmwk09H",
   questInfo = "DMF: Inscription\n%sl\n - Vendor Thunder Bluff", questID = 29515, professionSkillLineID = 773,
   autoBuyShopping = true, shopping = { { itemID = 39354, required = 10, buy = true }, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 17, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Jewelcrafting", ["frameID"] = "list2", key = "custom:seq:q:29516:list2:evdmwk10",
+  {group = "event:darkmoon-faire", order = 17, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Jewelcrafting", frameID = "list2", key = "custom:seq:q:29516:list2:evdmwk10",
   questInfo = "DMF: Jewelcrafting", questID = 29516, professionSkillLineID = 755, },
 
-  {["faction"] = "Alliance",
-  ["group"] = "event:darkmoon-faire", ["order"] = 18, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Leatherworking", ["frameID"] = "list2", key = "custom:seq:q:29517:list2:evdmwk11A",
+  {faction = "Alliance",
+  group = "event:darkmoon-faire", order = 18, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Leatherworking", frameID = "list2", key = "custom:seq:q:29517:list2:evdmwk11A",
   questInfo = "DMF: Leatherworking\n%sl\n - Vendor Outside Portal", questID = 29517, professionSkillLineID = 165,
   autoBuyShopping = true, shopping = { { itemID = 6529, required = 10, buy = true }, { itemID = 2320, required = 5, buy = true }, { itemID = 6260, required = 10, buy = true }, }, },
-  {["faction"] = "Horde",
-  ["group"] = "event:darkmoon-faire", ["order"] = 19, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Leatherworking", ["frameID"] = "list2", key = "custom:seq:q:29517:list2:evdmwk11H",
+  {faction = "Horde",
+  group = "event:darkmoon-faire", order = 19, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Leatherworking", frameID = "list2", key = "custom:seq:q:29517:list2:evdmwk11H",
   questInfo = "DMF: Leatherworking\n%sl\n - Vendor Thunder Bluff", questID = 29517, professionSkillLineID = 165,
   autoBuyShopping = true, shopping = { { itemID = 6529, required = 10, buy = true }, { itemID = 2320, required = 5, buy = true }, { itemID = 6260, required = 10, buy = true }, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 20, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Mining", ["frameID"] = "list2", key = "custom:seq:q:29518:list2:evdmwk12",
+  {group = "event:darkmoon-faire", order = 20, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Mining", frameID = "list2", key = "custom:seq:q:29518:list2:evdmwk12",
     questInfo = "DMF: Mining", questID = 29518, professionSkillLineID = 186, },
 
-    {["group"] = "event:darkmoon-faire", ["order"] = 21, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Skinning", ["frameID"] = "list2", key = "custom:seq:q:29519:list2:evdmwk13",
+    {group = "event:darkmoon-faire", order = 21, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Skinning", frameID = "list2", key = "custom:seq:q:29519:list2:evdmwk13",
   questInfo = "DMF: Skinning", questID = 29519, professionSkillLineID = 393, },
 
-  {["faction"] = "Alliance",
-  ["group"] = "event:darkmoon-faire", ["order"] = 22, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Tailoring", ["frameID"] = "list2", key = "custom:seq:q:29520:list2:evdmwk14A",
+  {faction = "Alliance",
+  group = "event:darkmoon-faire", order = 22, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Tailoring", frameID = "list2", key = "custom:seq:q:29520:list2:evdmwk14A",
   questInfo = "DMF: Tailoring\n%sl\n - Vendor Outside Portal", questID = 29520, professionSkillLineID = 197,
   autoBuyShopping = true, shopping = { { itemID = 2320, required = 6, buy = true }, { itemID = 2604, required = 6, buy = true }, { itemID = 6260, required = 6, buy = true }, }, },
 
-  {["faction"] = "Horde",
-  ["group"] = "event:darkmoon-faire", ["order"] = 23, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Darkmoon: Tailoring", ["frameID"] = "list2", key = "custom:seq:q:29520:list2:evdmwk14H",
+  {faction = "Horde",
+  group = "event:darkmoon-faire", order = 23, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Darkmoon: Tailoring", frameID = "list2", key = "custom:seq:q:29520:list2:evdmwk14H",
   questInfo = "DMF: Tailoring\n%sl\n - Vendor Thunder Bluff", questID = 29520, professionSkillLineID = 197,
   autoBuyShopping = true, shopping = { { itemID = 2320, required = 6, buy = true }, { itemID = 2604, required = 6, buy = true }, { itemID = 6260, required = 6, buy = true }, }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 24, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Test Your Strength", ["frameID"] = "list2", playerLevel = { ">=", 20 }, key = "custom:seq:q:29433:list2:evdmSTR",
+  {group = "event:darkmoon-faire", order = 24, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Test Your Strength", frameID = "list2", playerLevel = { ">=", 20 }, key = "custom:seq:q:29433:list2:evdmSTR",
   questInfo = "Test Your Strength", questID = 29433, hideWhenCompleted = true, },
 
 -- Darkmoon Faire Item Quests
-  {["group"] = "event:darkmoon-faire", ["order"] = 25, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "A Treatise on Strategy", ["frameID"] = "list2", key = "custom:seq:q:29451:list2:evdmit01",
+  {group = "event:darkmoon-faire", order = 25, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "A Treatise on Strategy", frameID = "list2", key = "custom:seq:q:29451:list2:evdmit01",
   questInfo = "A Treatise on Strategy", questID = 29451, hideWhenCompleted = true, showIf = { itemID = 71715, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 26, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Imbued Crystal", ["frameID"] = "list2", key = "custom:seq:q:29443:list2:evdmit02",
+  {group = "event:darkmoon-faire", order = 26, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Imbued Crystal", frameID = "list2", key = "custom:seq:q:29443:list2:evdmit02",
   questInfo = "Imbued Crystal", questID = 29443, hideWhenCompleted = true, showIf = { itemID = 71635, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 27, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Monstrous Egg", ["frameID"] = "list2", key = "custom:seq:q:29444:list2:evdmit03",
+  {group = "event:darkmoon-faire", order = 27, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Monstrous Egg", frameID = "list2", key = "custom:seq:q:29444:list2:evdmit03",
   questInfo = "Monstrous Egg", questID = 29444, hideWhenCompleted = true, showIf = { itemID = 71636, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 28, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Mysterious Grimoire", ["frameID"] = "list2", key = "custom:seq:q:29445:list2:evdmit04",
+  {group = "event:darkmoon-faire", order = 28, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Mysterious Grimoire", frameID = "list2", key = "custom:seq:q:29445:list2:evdmit04",
   questInfo = "Mysterious Grimoire", questID = 29445, hideWhenCompleted = true, showIf = { itemID = 71637, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 29, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Ornate Weapon", ["frameID"] = "list2", key = "custom:seq:q:29446:list2:evdmit05",
+  {group = "event:darkmoon-faire", order = 29, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Ornate Weapon", frameID = "list2", key = "custom:seq:q:29446:list2:evdmit05",
   questInfo = "Ornate Weapon", questID = 29446, hideWhenCompleted = true, showIf = { itemID = 71638, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 30, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Banner of the Fallen", ["frameID"] = "list2", key = "custom:seq:q:29456:list2:evdmit06",
+  {group = "event:darkmoon-faire", order = 30, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Banner of the Fallen", frameID = "list2", key = "custom:seq:q:29456:list2:evdmit06",
   questInfo = "Banner of the Fallen", questID = 29456, hideWhenCompleted = true, showIf = { itemID = 71951, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 31, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Captured Insignia", ["frameID"] = "list2", key = "custom:seq:q:29457:list2:evdmit07",
+  {group = "event:darkmoon-faire", order = 31, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Captured Insignia", frameID = "list2", key = "custom:seq:q:29457:list2:evdmit07",
   questInfo = "Captured Insignia", questID = 29457, hideWhenCompleted = true, showIf = { itemID = 71952, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 32, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Fallen Adventurer's Journal", ["frameID"] = "list2", key = "custom:seq:q:29458:list2:evdmit08",
+  {group = "event:darkmoon-faire", order = 32, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Fallen Adventurer's Journal", frameID = "list2", key = "custom:seq:q:29458:list2:evdmit08",
   questInfo = "Fallen Adventurer's Journal", questID = 29458, hideWhenCompleted = true, showIf = { itemID = 71953, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 33, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Soothsayer's Runes", ["frameID"] = "list2", key = "custom:seq:q:29464:list2:evdmit09",
+  {group = "event:darkmoon-faire", order = 33, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Soothsayer's Runes", frameID = "list2", key = "custom:seq:q:29464:list2:evdmit09",
   questInfo = "Soothsayer's Runes", questID = 29464, hideWhenCompleted = true, showIf = { itemID = 71716, includeBank = true }, },
 
-  {["group"] = "event:darkmoon-faire", ["order"] = 34, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
-  label = "Moonfang's Pelt", ["frameID"] = "list2", key = "custom:seq:q:33354:list2:evdmit10",
+  {group = "event:darkmoon-faire", order = 34, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
+  label = "Moonfang's Pelt", frameID = "list2", key = "custom:seq:q:33354:list2:evdmit10",
   questInfo = "Moonfang's Pelt", questID = 33354, hideWhenCompleted = true, showIf = { itemID = 105891, includeBank = true }, },
 
   -- Valentines
 
-  {["group"] = "event:valentines", ["order"] = 00, aura = { eventKind = "calendar", keywords = { "Love is in the Air" }, mustHave = true, rememberDaily = true },
-  label = "Love is in the Air", ["frameID"] = "list2", key = "event:love-is-in-the-air",
+  {group = "event:valentines", order = 00, aura = { eventKind = "calendar", keywords = { "Love is in the Air" }, mustHave = true, rememberDaily = true },
+  label = "Love is in the Air", frameID = "list2", key = "event:love-is-in-the-air",
   questInfo = "Valentines", hideWhenCompleted = false, },
 
-  {["label"] = "Blingtron", ["frameID"] = "list2", ["key"] = "custom:q:44184:list2:XPEVBT",
-  ["questInfo"] = "BLINGTRON", ["questID"] = 44184, ["hideWhenCompleted"] = true, },
+  {label = "Blingtron", frameID = "list2", key = "custom:q:44184:list2:XPEVBT",
+  questInfo = "BLINGTRON", questID = 44184, hideWhenCompleted = true, },
 
-  -- Shows During MoP Timewalking or on Timeless Isle
-  {label = "Time-Lost Artifact", frameID = "list2", key = "event:timewalking:pandaria:time-lost-artifact",
-  aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
-  textInfo = "Time-Lost Artifact\n - Timeless Coins: $hv / $rq\n - Emperor Shaohao: {rep:have}", currencyID = { 777, 7500, Y }, repDisplay = { factionID = 1492, minStanding = 6 },
-  complete = { any = { { itemIDs = { 103678, 219222 }, includeBank = true }, }, }, },
+
 
 
 }

@@ -8,6 +8,14 @@ end
 ns.Print = Print
 
 local function NormalizeSV()
+  if type(fr0z3nUI_QuestTracker_Acc) == "table"
+    and fr0z3nUI_QuestTracker_Acc._fqtNorm
+    and type(fr0z3nUI_QuestTracker_Char) == "table"
+    and fr0z3nUI_QuestTracker_Char._fqtNorm
+  then
+    return fr0z3nUI_QuestTracker_Acc, fr0z3nUI_QuestTracker_Char
+  end
+
   if type(fr0z3nUI_QuestTracker_Acc) ~= "table" then
     fr0z3nUI_QuestTracker_Acc = {}
   end
@@ -37,6 +45,9 @@ local function NormalizeSV()
 
   -- Frame scroll offset store.
   ch.settings.frameScroll = (type(ch.settings.frameScroll) == "table") and ch.settings.frameScroll or {}
+
+  acc._fqtNorm = true
+  ch._fqtNorm = true
 
   return acc, ch
 end
@@ -276,6 +287,37 @@ ns.GetItemRequiredGate = GetItemRequiredGate
 
 local function NormalizeLocationID(value)
   if value == nil then return nil end
+  if type(value) == "table" then
+    local out = {}
+    local seen = {}
+    for i = 1, #value do
+      local v = value[i]
+      if type(v) == "number" then
+        local n = tonumber(v)
+        if n and n > 0 and not seen[n] then
+          out[#out + 1] = n
+          seen[n] = true
+        end
+      else
+        local s = tostring(v or "")
+        s = s:gsub("%s+", "")
+        for token in s:gmatch("[^,;]+") do
+          local digits = token:match("^%a*(%d+)$") or token:match("^(%d+)$")
+          local n = digits and tonumber(digits) or nil
+          if n and n > 0 and not seen[n] then
+            out[#out + 1] = n
+            seen[n] = true
+          end
+        end
+      end
+    end
+
+    if not out[1] then return nil end
+    if #out == 1 then return out[1] end
+    local parts = {}
+    for i = 1, #out do parts[i] = tostring(out[i]) end
+    return table.concat(parts, ",")
+  end
   if type(value) == "number" then
     if value > 0 then return value end
     return nil
@@ -305,6 +347,32 @@ end
 
 local function ParseLocationIDs(value)
   if value == nil then return nil end
+  if type(value) == "table" then
+    local out = {}
+    local seen = {}
+    for i = 1, #value do
+      local v = value[i]
+      if type(v) == "number" then
+        local n = tonumber(v)
+        if n and n > 0 and not seen[n] then
+          out[#out + 1] = n
+          seen[n] = true
+        end
+      else
+        local s = tostring(v or "")
+        s = s:gsub("%s+", "")
+        for token in s:gmatch("[^,;]+") do
+          local digits = token:match("^%a*(%d+)$") or token:match("^(%d+)$")
+          local n = digits and tonumber(digits) or nil
+          if n and n > 0 and not seen[n] then
+            out[#out + 1] = n
+            seen[n] = true
+          end
+        end
+      end
+    end
+    return out[1] and out or nil
+  end
   if type(value) == "number" then
     if value > 0 then return { value } end
     return nil
@@ -2254,7 +2322,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     if g == "max" and not atMax then
       return nil
     end
-    if (g == "level" or g == "leveling") and atMax then
+    if (g == "level" or g == "leveling" or g == "lvl") and atMax then
       return nil
     end
   end
@@ -2270,7 +2338,19 @@ local function BuildRuleStatus(rule, ctx, opts)
   -- out of the quest log (Timewalking weeklies commonly do this).
   if applyGates and questID and rule.requireInLog == true and not IsQuestInLog(questID) then
     if not (completed and hideWhenCompleted == false) then
+      -- Special-case for Timewalking: token rows and other indicators intentionally
+      -- appear on alts once the weekly kind is known. Allow specific TW quest rows
+      -- to bypass requireInLog when the current TW kind has been remembered.
+      if type(rule) == "table" and rule.showIfRememberedTimewalkingKind == true and rule.twKind ~= nil then
+        local anyTW = (ns and ns.Calendar and ns.Calendar.IsAnyTimewalkingEventActive) or nil
+        if type(anyTW) == "function" and anyTW() and HasRememberedWeeklyTimewalkingKind(rule.twKind) then
+          -- ok
+        else
+          return nil
+        end
+      else
       return nil
+      end
     end
   end
 

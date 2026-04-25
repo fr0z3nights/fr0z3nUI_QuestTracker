@@ -91,470 +91,123 @@ ns.rules = {
   -- Keep showing after completion, and show "X" when complete.
   -- Append a red/green marker for the token quest completion.
 
-  {
-    key = "tw:reminder",
-    frameID = "bar1",
-    label = "Timewalking Reminder",
-    questInfo = "Timewalking",
-    preferQuestInfoForTitle = true,
-    aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true },
-    hideIfAnyQuestInLog = {
-      86731, 85947, -- Classic
-      83363, 85948, -- Outland
-      83365, 85949, -- Wrath
-      83359, 86556, -- Cata
-      83362, 86560, -- Pandaria
-      83364, 86563, -- Draenor
-      83360, 86564, -- Legion
-      88805, 88808, -- BFA
-      92649, 92647, -- Shadowlands
-    },
-    hideIfAnyQuestCompleted = {
-      86731, 85947, -- Classic
-      83363, 85948, -- Outland
-      83365, 85949, -- Wrath
-      83359, 86556, -- Cata
-      83362, 86560, -- Pandaria
-      83364, 86563, -- Draenor
-      83360, 86564, -- Legion
-      88805, 88808, -- BFA
-      92649, 92647, -- Shadowlands
-    },
-    hideWhenCompleted = false,
-  },
+  {label = "Timewalking Reminder", frameID = "bar1", key = "tw:reminder", 
+  questInfo = "Timewalking", preferQuestInfoForTitle = true, hideIfRememberedTimewalkingKind = true,
+  aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true }, hideWhenCompleted = false,
+  hideIfAnyQuestInLog =     {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 83364,   86564, 83360,   88808, 88805,   92647, 92649,},
+  hideIfAnyQuestCompleted = {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 83364,   86564, 83360,   88808, 88805,   92647, 92649,}, },
+  --                         Classic          Outland        Wrath           Cata            Pandaria        Draenor         Legion          BFA             Shadowlands
 
-  {
-    key = "event:pet-battle-bonus-event",
-    frameID = "bar1",
-    label = "Pet Battle Bonus Event",
-    questInfo = "Pet XP",
-    aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true },
-    playerLevel = { ">=", 20 },
-    hideWhenCompleted = false,
-  },
+  -- Classic              UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Classic LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 85947, questInfo = "Classic", requireInLog = true, twKind = "classic", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
-    {
-    key = "event:delves-bonus-event",
-    frameID = "bar1",
-    label = "Delves Bonus Event",
-    questInfo = "Delves",
-    aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true },
-    playerLevel = { ">=", 70 },
-    hideWhenCompleted = false,
-  },
+  {label = "Timewalking Classic MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 86731, questInfo = "Classic", requireInLog = true, twKind = "classic", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
-  {
-    questID = 83366,
-    frameID = "bar1",
-    label = "World Quest Bonus Event",
-    questInfo = "WQ",
-    aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true },
-    playerLevel = { ">=", 80 },
-    requireInLog = false,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
+  {label = "Timewalking Classic TKN", frameID = "bar1", key = "tw:token:classic", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 83285 }, preferQuestInfoForTitle = true, twKind = "classic", hideWhenCompleted = false,
+  indicators = { { questID = 83285, shape = "square", overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
-  -- Classic
-  {
-    questID = 86731,
-    frameID = "bar1",
-    label = "Timewalking Classic Max",
-    questInfo = "Classic",
-    twKind = "classic",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 85947,
-    frameID = "bar1",
-    label = "Timewalking Classic Level",
-    questInfo = "Classic",
-    twKind = "classic",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:classic",
-    frameID = "bar1",
-    label = "Timewalking Classic Token",
-    questInfo = "\194\160",
-    twKind = "classic",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 83285 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questID = 83285,
-        shape = "square",
-        overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
+  -- Outland             UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Outland LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 85948, questInfo = "Outland", requireInLog = true, twKind = "outland", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
-  -- Outland
-  {
-    questID = 83363,
-    frameID = "bar1",
-    label = "Timewalking Outland Max",
-    questInfo = "Outland",
-    twKind = "outland",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 85948,
-    frameID = "bar1",
-    label = "Timewalking Outland Level",
-    questInfo = "Outland",
-    twKind = "outland",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:outland",
-    frameID = "bar1",
-    label = "Timewalking Outland Token",
-    questInfo = "\194\160",
-    twKind = "outland",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 40168 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questID = 40168,
-        shape = "square",
-        overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
+  {label = "Timewalking Outland MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 83363, questInfo = "Outland", requireInLog = true, twKind = "outland", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
-  -- Wrath
-  {
-    questID = 83365,
-    frameID = "bar1",
-    label = "Timewalking Wrath Max",
-    questInfo = "Wrath",
-    twKind = "wrath",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 85949,
-    frameID = "bar1",
-    label = "Timewalking Wrath Level",
-    questInfo = "Wrath",
-    twKind = "wrath",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:wrath",
-    frameID = "bar1",
-    label = "Timewalking Wrath Token",
-    questInfo = "\194\160",
-    twKind = "wrath",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 40173 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questID = 40173,
-        shape = "square",
-        overlay = { itemIDs = { 129928, }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
+  {label = "Timewalking Outland TKN", frameID = "bar1", key = "tw:token:outland", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 40168 }, preferQuestInfoForTitle = true, twKind = "outland", hideWhenCompleted = false,
+  indicators = { { questID = 40168, shape = "square", overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
-  -- Cataclysm (token quest differs by faction)
-  {
-    questID = 83359,
-    frameID = "bar1",
-    label = "Timewalking Cataclysm Max",
-    questInfo = "Cataclysm",
-    twKind = "cata",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 86556,
-    frameID = "bar1",
-    label = "Timewalking Cataclysm Level",
-    questInfo = "Cataclysm",
-    twKind = "cata",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:cata",
-    frameID = "bar1",
-    label = "Timewalking Cataclysm Token",
-    questInfo = "\194\160",
-    twKind = "cata",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 40787, 40786 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questIDs = { 40787, 40786 },
-        shape = "square",
-        overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
+  -- Wrath               UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Wrath LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 85949, questInfo = "Wrath", requireInLog = true, twKind = "wrath", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
-  -- Pandaria
-  {
-    questID = 83362,
-    frameID = "bar1",
-    label = "Timewalking Pandaria Max",
-    questInfo = "Pandaria",
-    twKind = "pandaria",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 86560,
-    frameID = "bar1",
-    label = "Timewalking Pandaria Level",
-    questInfo = "Pandaria",
-    twKind = "pandaria",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:pandaria",
-    frameID = "bar1",
-    label = "Timewalking Pandaria Token",
-    questInfo = "\194\160",
-    twKind = "pandaria",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 45563 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questID = 45563,
-        shape = "square",
-        overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
+  {label = "Timewalking Wrath MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 83365, questInfo = "Wrath", requireInLog = true, twKind = "wrath", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Wrath TKN", frameID = "bar1", key = "tw:token:wrath", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 40173 }, preferQuestInfoForTitle = true, twKind = "wrath", hideWhenCompleted = false,
+  indicators = { { questID = 40173, shape = "square", overlay = { itemIDs = { 129928, }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+
+  -- Cataclysm           UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Cataclysm LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 86556, questInfo = "Cataclysm", requireInLog = true, twKind = "cata", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Cataclysm MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 83359, questInfo = "Cataclysm", requireInLog = true, twKind = "cata", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Cataclysm TKN", frameID = "bar1", key = "tw:token:cata", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 40787, 40786 }, preferQuestInfoForTitle = true, twKind = "cata", hideWhenCompleted = false,
+  indicators = { { questIDs = { 40787, 40786 }, shape = "square", overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+
+  -- Pandaria           UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Pandaria LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 86560, questInfo = "Pandaria", requireInLog = true, twKind = "pandaria", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Pandaria MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 93612, questInfo = "Pandaria", requireInLog = true, twKind = "pandaria", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Pandaria TKN", frameID = "bar1", key = "tw:token:pandaria", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 45563 }, preferQuestInfoForTitle = true, twKind = "pandaria", hideWhenCompleted = false,
+  indicators = { { questID = 45563, shape = "square", overlay = { itemIDs = { 143776 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+
+  -- Draenor            UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Draenor LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 86563, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Draenor MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 83364, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Draenor TKN", frameID = "bar1", key = "tw:token:draenor", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 55498, 55499 }, preferQuestInfoForTitle = true, twKind = "draenor", hideWhenCompleted = false,
+  indicators = { { questIDs = { 55498, 55499 }, shape = "square", overlay = { itemIDs = { 167921, 167922 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+
+   -- Legion            UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Legion LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 86564, questInfo = "Legion", requireInLog = true, twKind = "legion", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Legion MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 83360, questInfo = "Legion", requireInLog = true, twKind = "legion", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Legion TKN", frameID = "bar1", key = "tw:token:legion", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 64710 }, preferQuestInfoForTitle = true, twKind = "legion", hideWhenCompleted = false,
+  indicators = { { questID = 64710, shape = "square", overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+
+  -- Battle             UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Battle LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 88808, questInfo = "Battle", requireInLog = true, twKind = "bfa", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Battle MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 88805, questInfo = "Battle", requireInLog = true, twKind = "bfa", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Battle TKN", frameID = "bar1", key = "tw:token:bfa", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 89222, 89223 }, preferQuestInfoForTitle = true, twKind = "bfa", hideWhenCompleted = false,
+  indicators = { { questIDs = { 89222, 89223 }, shape = "square", overlay = { itemIDs = { 238790, 238791 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+
+  -- Shadowlands        UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
+  {label = "Timewalking Shadowlands LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 92647, questInfo = "Shadowlands", requireInLog = true, twKind = "shadowlands", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Shadowlands MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 92649, questInfo = "Shadowlands", requireInLog = true, twKind = "shadowlands", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+
+  {label = "Timewalking Shadowlands TKN", frameID = "bar1", key = "tw:token:shadowlands", requireRememberedTimewalkingKind = true,
+  questInfo = "\194\160", fallbackQuestInLog = { 92650 }, preferQuestInfoForTitle = true, twKind = "shadowlands", hideWhenCompleted = false,
+  indicators = { { questID = 92650, shape = "square", overlay = { itemIDs = { 253517, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+
+  {label = "Pet Battle Bonus Event", frameID = "bar1", playerLevel = { ">=", 20 }, hideWhenCompleted = false, key = "event:pet-battle-bonus-event",
+  questInfo = "Pet XP", aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+
+  {label = "Delves Bonus Event", frameID = "bar1", playerLevel = { ">=", 70 }, hideWhenCompleted = false, key = "event:delves-bonus-event",
+  questInfo = "Delves", aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+
+  {label = "World Quest Bonus Event", frameID = "bar1", playerLevel = { ">=", 80 }, hideWhenCompleted = false, requireInLog = false, showXWhenComplete = true,
+  questInfo = "WQ", questID = 83366, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true }, },
 
 
 
-  -- Draenor (token reward differs by faction; using item possession as marker)
-  {
-    questID = 83364,
-    frameID = "bar1",
-    label = "Timewalking Draenor Max",
-    questInfo = "Draenor",
-    twKind = "draenor",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 86563,
-    frameID = "bar1",
-    label = "Timewalking Draenor Level",
-    questInfo = "Draenor",
-    twKind = "draenor",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:draenor",
-    frameID = "bar1",
-    label = "Timewalking Draenor Token",
-    questInfo = "\194\160",
-    twKind = "draenor",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 55498, 55499 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questIDs = { 55498, 55499 },
-        shape = "square",
-        overlay = { itemIDs = { 167921, 167922 }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
-
-
-
-  -- Legion
-  {
-    questID = 83360,
-    frameID = "bar1",
-    label = "Timewalking Legion Max",
-    questInfo = "Legion",
-    twKind = "legion",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 86564,
-    frameID = "bar1",
-    label = "Timewalking Legion Level",
-    questInfo = "Legion",
-    twKind = "legion",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:legion",
-    frameID = "bar1",
-    label = "Timewalking Legion Token",
-    questInfo = "\194\160",
-    twKind = "legion",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 64710 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questID = 64710,
-        shape = "square",
-        overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
-
-  -- Battle for Azeroth (token quest differs by faction)
-  {
-    questID = 88805,
-    frameID = "bar1",
-    label = "Timewalking Battle Max",
-    questInfo = "Battle",
-    twKind = "bfa",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 88808,
-    frameID = "bar1",
-    label = "Timewalking Battle Level",
-    questInfo = "Battle",
-    twKind = "bfa",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:bfa",
-    frameID = "bar1",
-    label = "Timewalking Battle Token",
-    questInfo = "\194\160",
-    twKind = "bfa",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 89222, 89223 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questIDs = { 89222, 89223 },
-        shape = "square",
-        overlay = { itemIDs = { 238790, 238791 }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
-
-  -- Shadowlands (single weekly listed)
-  {
-    questID = 92649,
-    frameID = "bar1",
-    label = "Timewalking Shadowlands Max",
-    questInfo = "Shadowlands",
-    twKind = "shadowlands",
-    levelGate = "max",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    questID = 92647,
-    frameID = "bar1",
-    label = "Timewalking Shadowlands Level",
-    questInfo = "Shadowlands",
-    twKind = "shadowlands",
-    levelGate = "leveling",
-    requireInLog = true,
-    progress = { objectiveIndex = 1 },
-    hideWhenCompleted = false,
-    showXWhenComplete = true,
-  },
-  {
-    key = "tw:token:shadowlands",
-    frameID = "bar1",
-    label = "Timewalking Shadowlands Token",
-    questInfo = "\194\160",
-    twKind = "shadowlands",
-    preferQuestInfoForTitle = true,
-    requireRememberedTimewalkingKind = true,
-    fallbackQuestInLog = { 92650 },
-    hideWhenCompleted = false,
-    indicators = {
-      {
-        questID = 92650,
-        shape = "square",
-        overlay = { itemIDs = { 253517, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } },
-      },
-    },
-  },
 
 }
 
