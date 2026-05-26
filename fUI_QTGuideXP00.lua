@@ -38,6 +38,27 @@ local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
 
+{label = "Guild Cloak A1", frameID = "bar1", showIf = { factionID = 1168, minStanding = 6 }, key = "rep:guild:alliance:cloak1",
+textInfo = "|cff1eff00Guild Cloak|r", faction = "alliance", locationID = 84, complete = { any = { { itemIDs = { 63352 }, includeBank = true }, }, }, },
+
+{label = "Guild Cloak A2", frameID = "bar1", showIf = { all = { { factionID = 1168, minStanding = 7 }, { itemIDs = { 63352 }, includeBank = true }, }, }, key = "rep:guild:alliance:cloak2",
+textInfo = "|cff0070ddGuild Cloak|r", faction = "alliance", locationID = 84, complete = { any = { { itemIDs = { 63206 }, includeBank = true }, }, }, },
+
+{label = "Guild Cloak A3", frameID = "bar1", showIf = { all = { { factionID = 1168, minStanding = 8 }, { itemIDs = { 63206 }, includeBank = true }, }, }, key = "rep:guild:alliance:cloak3",
+textInfo = "|cffa335eeGuild Cloak|r", faction = "alliance", locationID = 84, complete = { any = { { itemIDs = { 65360 }, includeBank = true }, }, }, },
+
+{label = "Guild Cloak H1", frameID = "bar1", showIf = { factionID = 1168, minStanding = 6 }, key = "rep:guild:horde:cloak1",
+textInfo = "|cff1eff00Guild Cloak|r", faction = "horde", locationID = 85, complete = { any = { { itemIDs = { 63353 }, includeBank = true }, }, }, },
+
+{label = "Guild Cloak H2", frameID = "bar1", showIf = { all = { { factionID = 1168, minStanding = 7 }, { itemIDs = { 63353 }, includeBank = true }, }, }, key = "rep:guild:horde:cloak2",
+textInfo = "|cff0070ddGuild Cloak|r", faction = "horde", locationID = 85, complete = { any = { { itemIDs = { 63207 }, includeBank = true }, }, }, },
+
+{label = "Guild Cloak H3", frameID = "bar1", showIf = { all = { { factionID = 1168, minStanding = 8 }, { itemIDs = { 63207 }, includeBank = true }, }, }, key = "rep:guild:horde:cloak3",
+textInfo = "|cffa335eeGuild Cloak|r", faction = "horde", locationID = 85, complete = { any = { { itemIDs = { 65274 }, includeBank = true }, }, }, },
+
+--  /dump C_Map.GetBestMapForUnit("player") 
+--{label = "Phaze Blasted Cata", textInfo = "|cffa335eeCATACLYSM PHAZED|r", locationID = 17, frameID = "list2", questID = 66560, showIf = { completedQuestID = 66560 }, key = "zone:blastedlands:cataclysm", },
+{label = "Phaze Blasted WoD",  questInfo = "|cffa335eeWARLORDS PHAZED|r",  locationID = 17, frameID = "list2", questID = 66560, key = "zone:blastedlands:warlords", }
 
 
 

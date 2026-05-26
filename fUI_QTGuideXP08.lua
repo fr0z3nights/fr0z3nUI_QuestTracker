@@ -44,7 +44,7 @@ questInfo = "Battle For Azeroth\n + Tiragarde Sound (Zygor)", },
 
 {label = "SU  The War Campaign 01", faction = "Alliance", frameID = "list1", key = "custom:q:52544:list1:XP08028",
 questID = 52544, prereq = { 47189, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   1: WBT 200 War Resources\\n       Get Resources Chests", },
+questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   1: WBT 200 War Resources\n       Get Resources Chests", },
 
 {label = "SU The War Campaign 02", faction = "Alliance", frameID = "list1", key = "custom:q:53332:list1:XP08029",
 questID = 53332, prereq = { 52544, }, hideWhenCompleted = true,
@@ -96,7 +96,7 @@ questInfo = "Battle For Azeroth\n + Mechagon (Zygor)\n + Quest Until Turning In\
 
 {label = "SU  N'Zoth Invasions 01", faction = "Alliance", frameID = "list1", key = "custom:q:58506:list1:XP08061A",
 questID = 58506, prereq = { 56156, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\\n  + PickUp Missive\\n     A  Dockmasters Office\\n  + Follow Guide\\n    - Consoles Unnamed?, Relog", },
+questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\n  + PickUp Missive\n     A  Dockmasters Office\n  + Follow Guide\n    - Consoles Unnamed?, Relog", },
 
 -- PROFESSIONS                                            /dump C_Map.GetBestMapForUnit("player")
 {label = "Battle Archaeology", frameID = "list1", key = "custom:spell:list1:XP08097", notInGroup = false,
@@ -135,11 +135,11 @@ professionSkillLineID = 197, missingProfessionSkillLineID = 2533, locationID = "
 -- Horde
 {label = "SU  Zuldazar", faction = "Horde", frameID = "list1", key = "custom:q:47514:list1:XP08026",
 questID = 47514, prereq = { 60151, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + Zuldazar (Zygor)\n + Click Map Choose Zuldazar\nNo", },
+questInfo = "Battle For Azeroth\n + Zuldazar (Zygor)\n + Click Map Choose Zuldazar", },
 
 {label = "SU The War Campaign 01", faction = "Horde", frameID = "list1", key = "custom:q:52746:list1:XP08037",
 questID = 52746, prereq = { 46931, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   1: Take War Campaign Quest\\n Warband Transfer Resources\\n       Then Port to Orgimmar & Back\\n   2: Get Resources Chests/WBT", },
+questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   1: Take War Campaign Quest\n   Warband Transfer Resources\n   Port to Orgimmar & Back\n   2: Get Resources Chests/WBT", },
 
 {label = "SU The War Campaign 02", faction = "Horde", frameID = "list1", key = "custom:q:53333:list1:XP08038",
 questID = 53333, prereq = { 52746, }, hideWhenCompleted = true,
@@ -147,7 +147,7 @@ questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   3: Return to Ship",
 
 {label = "SU The War Campaign 03", faction = "Horde", frameID = "list1", key = "custom:q:51800:list1:XP08039",
 questID = 51800, prereq = { 53333, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   4: Start Mission, Skip to 10\\n   Table: Tiragarde", },
+questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   4: Start Mission, Skip to 10\n   Table: Tiragarde", },
 
 {label = "SU The War Campaign 04", faction = "Horde", frameID = "list1", key = "custom:q:51438:list1:XP08040",
 questID = 51438, prereq = { 51800, }, hideWhenCompleted = true,

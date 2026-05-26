@@ -94,9 +94,9 @@ ns.rules = {
   {label = "Timewalking Reminder", frameID = "bar1", key = "tw:reminder", 
   questInfo = "Timewalking", preferQuestInfoForTitle = true, hideIfRememberedTimewalkingKind = true,
   aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true }, hideWhenCompleted = false,
-  hideIfAnyQuestInLog =     {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 83364,   86564, 83360,   88808, 88805,   92647, 92649,},
-  hideIfAnyQuestCompleted = {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 83364,   86564, 83360,   88808, 88805,   92647, 92649,}, },
-  --                         Classic          Outland        Wrath           Cata            Pandaria        Draenor         Legion          BFA             Shadowlands
+  hideIfAnyQuestInLog =     {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 83360,   88808, 88805,   92647, 92649,},
+  hideIfAnyQuestCompleted = {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 83360,   88808, 88805,   92647, 92649,}, },
+  --                         Classic          Outland        Wrath           Cata            Pandaria        Draenor  L/M    Legion          BFA             Shadowlands
 
   -- Classic              UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
   {label = "Timewalking Classic LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
@@ -158,7 +158,7 @@ ns.rules = {
   questID = 86563, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
   {label = "Timewalking Draenor MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 83364, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+  questID = 93613, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
   {label = "Timewalking Draenor TKN", frameID = "bar1", key = "tw:token:draenor", requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 55498, 55499 }, preferQuestInfoForTitle = true, twKind = "draenor", hideWhenCompleted = false,
@@ -204,7 +204,14 @@ ns.rules = {
   questInfo = "Delves", aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true }, },
 
   {label = "World Quest Bonus Event", frameID = "bar1", playerLevel = { ">=", 80 }, hideWhenCompleted = false, requireInLog = false, showXWhenComplete = true,
-  questInfo = "WQ", questID = 83366, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+  questInfo = "WQ", questID = 93605, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+
+  {label = "Void Strike", frameID = "list2", playerLevel = { "=", 90 }, hideWhenCompleted = true, requireInLog = false, showXWhenComplete = true,
+  questInfo = "Void Strike\n - Rutual Site and Void Incursion (Zygor)", questID = 96080, },
+
+--  {label = "Void Strike", frameID = "list2", playerLevel = { "=", 90 }, hideWhenCompleted = true, requireInLog = true, showXWhenComplete = true,
+--  questInfo = "Void Strike\n - Rutual Site and Void Incursion (Zygor)", questID = 96080, },
+
 
 
 

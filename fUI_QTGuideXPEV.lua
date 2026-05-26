@@ -234,6 +234,10 @@ local bakedRules = {
   label = "Love is in the Air", frameID = "list2", key = "event:love-is-in-the-air",
   questInfo = "Valentines", hideWhenCompleted = false, },
 
+  {group = "event:childrens", order = 00, aura = { eventKind = "calendar", keywords = { "Children's Week" }, mustHave = true, rememberDaily = true },
+  label = "Children's Week", frameID = "list2", key = "event:childrens",
+  questInfo = "Children's Week", questID = 99999999, hideWhenCompleted = true, },
+
   {label = "Blingtron", frameID = "list2", key = "custom:q:44184:list2:XPEVBT",
   questInfo = "BLINGTRON", questID = 44184, hideWhenCompleted = true, },
 

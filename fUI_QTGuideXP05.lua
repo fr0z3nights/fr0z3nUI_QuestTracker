@@ -39,23 +39,23 @@ local bakedRules = {
 
 {label = "SU  05  Jade Forest  A", frameID = "list1", key = "custom:q:29562:list1:XP05013",
 questID = 29562, prereq = { 34775, }, hideWhenCompleted = true, faction = "Alliance",
-questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n      Until 'Jail Break'\n07N",},
+questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n      Until 'Jail Break'\n ",},
 
 {label = "SU  05  Jade Forest  H", frameID = "list1", key = "custom:q:29822:list1:XP05014",
 questID = 29822, prereq = { 34960, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n       Until \"Lay of the Land\"\n07N",},
+questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n       Until \"Lay of the Land\"\n ",},
 
 {label = "SU  05  Kun-Lai  A", frameID = "list1", key = "custom:q:30515:list1:XP05015",
 questID = 30515, prereq = { 29562, }, hideWhenCompleted = true, faction = "Alliance",
-questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      9  Do Village Quests\n    47  Complete\n      \"Challenge Accepted\"\n05A",},
+questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      9  Do Village Quests\n    47  Complete\n      \"Challenge Accepted\"\n ",},
 
 {label = "SU  05  Kun-Lai  H", frameID = "list1", key = "custom:q:30515:list1:XP05016",
 questID = 30515, prereq = { 29822, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      Until \"Challenge Accepted\" \n07N",},
+questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      Until \"Challenge Accepted\" \n ",},
 
 {label = "SU  05  Kun-Lai  Sprite's Cloth Chest", frameID = "list1", key = "custom:q:31412:list1:XP05017",
 questID = 31412, prereq = { 29562, }, hideWhenCompleted = true,
-questInfo = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n07N", },
+questInfo = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n ", },
 
   -- Shows During MoP Timewalking or on Timeless Isle
 {label = "Timeless Isle Celestial", frameID = "list2", key = "event:timewalking:pandaria:celestial",

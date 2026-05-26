@@ -169,7 +169,7 @@ SetZone("Timewalking, Event")
 	KQuest(45563, "05 Mists TKN")                             		--	Token		Player			
 	--	Timewalking	 06  Draenor
 	KQuest(86563, "06 Draenor LVL")                     			--	Weekly		Player LVL			
-	KQuest(83364, "06 Draenor MAX")                       			--	Weekly		Player MAX		
+	KQuest(93613, "06 Draenor MAX")                       			--	Weekly		Player MAX		
 	KQuest(55499, "06 Draenor TKN")                              	 --	Token		Player			
 	--	Timewalking	 07  Legion
 	KQuest(86564, "07 Legion LVL")                        			--	Weekly		Player LVL			
@@ -191,11 +191,12 @@ SetZone("Darkmoon Island, Azeroth")
 	KQuest(29518, "Mining Weekly")                           		--	Monthly		Player		Mining
 	KQuest(29520, "Tailoring Weekly")                    			--	Monthly		Player		Tailoring
 	KQuest(29433, "Test Your Strength")                             --	Monthly		Player		
-	LQuest(29438, "He Shoots, He Scores!", 407)						--  Monthly		Player		
+	LQuest(29438, "He Shoots, He Scores!", 407)						--  Monthly		Player						/dump C_Map.GetBestMapForUnit("player")
 
 --  12	Midnight
 
-SetZone("Starting, Midnight")
+SetZone("Silvermoon City, Quel'Thalas")
+	KQuest(81930, "The War Within")				            		--	Alliance	Player		
 
 --  11	War Within
 
@@ -290,11 +291,13 @@ SetZone("RAID, Broken Isles")
 
 --  06	Draenor
 
-SetZone("Pet Battles, Draenor")			
+SetZone("Frostfire Ridge, Draenor")
+	LQuest(38568, "We Need a Shipwright", 590)						--  Monthly		Player	H					/dump C_Map.GetBestMapForUnit("player")
+SetZone("Pet Battles, Draenor")
 	KQuest(37208, "Taralune, Talador")								--	Talador				Daily		Warband
 	KQuest(37207, "Vesharr, Spires")								--	Spires				Daily		Warband
-	KQuest(37206, "Tarr the Terrible, Nagrand")						--	Nagrand				Daily		Warband
 	KQuest(37205, "Gargra, Frostfire")								--	Frostfire			Daily		Warband
+	KQuest(37206, "Tarr the Terrible, Nagrand")						--	Nagrand				Daily		Warband
 	KQuest(37203, "Ashlei, Shadowmoon")								--	Shadowmoon			Daily		Warband
 	KQuest(37201, "Cymre Brightblade, Gorgrond")					--	Gorgrond			Daily		Warband
 SetZone("RAID, Draenor")
@@ -309,6 +312,10 @@ SetZone("RAID, Draenor")
 	KQuest(39505, "Hellfire: Spire (M)")
 SetZone("Startup, Draenor")
 	LQuest(34398, "Warlords of Draenor: The Dark Portal", 17)		--  Starting		Player		
+SetZone("Shadowmoon Valley, Draenor")
+	LQuest(37433, "Proving Grounds", 582)							--  Monthly		Player						/dump C_Map.GetBestMapForUnit("player")
+	LQuest(38257, "We Need a Shipwright", 582)						--  Monthly		Player	A					/dump C_Map.GetBestMapForUnit("player")
+	LQuest(38567, "Garrison Campaign: War Council", 582)			--  Monthly		Player	A					/dump C_Map.GetBestMapForUnit("player")
 
 -- 05	Pandaria
 

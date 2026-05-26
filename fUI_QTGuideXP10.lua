@@ -43,12 +43,12 @@ questInfo = "+ 34 Bag in Dragon Isles\n   WS 58,53 %c\n07N", },
 
 {label = "SU  10  Dragon Isles  Q-67700  65445  Horde", frameID = "list1", key = "custom:q:67700:list1:XP10085",
 questID = 67700, prereq = { 30515, }, hideWhenCompleted = true,
-questInfo = "Dragon Isles  (H)\n + Use Dragon Scale\n    or Cata Portal Area\n + Do Initial Quests\n + Take Portal\nWiggling Egg",
+questInfo = "Dragon Isles  (H)\n + Use Dragon Scale\n    or Cata Portal Area\n + Do Initial Quests\n + Take Portal\n ",
 faction = "Horde", },
 
 {label = "SU  10  Dragon Isles  Q-67700  65444  Alliance", frameID = "list1", key = "custom:q:67700:list1:XP10086",
 questID = 67700, prereq = { 30515, }, hideWhenCompleted = true,
-questInfo = "Dragon Isles\n + Use Dragon Scale\n    or Castle Balcony\n + Do Initial Quests\n + Take Portal\nWiggling Egg",
+questInfo = "Dragon Isles\n + Use Dragon Scale\n    or Castle Balcony\n + Do Initial Quests\n + Take Portal\n ",
 faction = "Alliance", },
 
 -- PROFESSIONS                                            /dump C_Map.GetBestMapForUnit("player")

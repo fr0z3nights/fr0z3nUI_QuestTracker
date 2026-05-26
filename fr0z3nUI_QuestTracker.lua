@@ -2306,8 +2306,10 @@ local function BuildRuleStatus(rule, ctx, opts)
 
   -- Faction gate (optional)
   if applyGates and type(rule) == "table" and rule.faction ~= nil then
-    local want = tostring(rule.faction)
-    if want == "Alliance" or want == "Horde" then
+    local wantRaw = tostring(rule.faction)
+    local wantLower = wantRaw:lower()
+    local want = (wantLower == "alliance") and "Alliance" or (wantLower == "horde") and "Horde" or nil
+    if want then
       local have = (ctx and ctx.faction) or GetPlayerFaction()
       if have and tostring(have) ~= want then
         return nil
