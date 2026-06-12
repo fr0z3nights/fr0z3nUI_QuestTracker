@@ -91,45 +91,6 @@ locationID = "2369",
 item = { itemID = 230728, required = { 1, true, N, 0 }, },
 restedOnly = false, },
 
--- PROFESSIONS                                            /dump C_Map.GetBestMapForUnit("player")
-{label = "Khaz Alchemy", frameID = "list1", key = "custom:spell:list1:XP11152", notInGroup = false,
-professionSkillLineID = 171, missingProfessionSkillLineID = 2871, locationID = 6666666, },
-
-{label = "Khaz Blacksmithing", frameID = "list1", key = "custom:spell:list1:XP11153", notInGroup = false,
-professionSkillLineID = 164, missingProfessionSkillLineID = 2872, locationID = 6666666, },
-
-{label = "Khaz Cooking", frameID = "list1", key = "custom:spell:list1:XP11144", notInGroup = false,
-professionSkillLineID = 185, missingProfessionSkillLineID = 2873, locationID = 6666666, },
-
-{label = "Khaz Enchanting", frameID = "list1", key = "custom:spell:list1:XP11154", notInGroup = false,
-professionSkillLineID = 333, missingProfessionSkillLineID = 2874, locationID = 6666666, },
-
-{label = "Khaz Engineering", frameID = "list1", key = "custom:spell:list1:XP11151", notInGroup = false,
-professionSkillLineID = 202, missingProfessionSkillLineID = 2875, locationID = 6666666, },
-
-{label = "Khaz Fishing", frameID = "list1", key = "custom:spell:list1:XP11146", notInGroup = false,
-professionSkillLineID = 356, missingProfessionSkillLineID = 2876, locationID = 6666666, },
-
-{label = "Khaz Herbalism", frameID = "list1", key = "custom:spell:list1:XP11150", notInGroup = false,
-professionSkillLineID = 182, missingProfessionSkillLineID = 2877, locationID = 6666666, },
-
-{label = "Khaz Inscription", frameID = "list1", key = "custom:spell:list1:XP11155", notInGroup = false,
-professionSkillLineID = 773, missingProfessionSkillLineID = 2878, locationID = 6666666, },
-
-{label = "Khaz Jewelcrafting", frameID = "list1", key = "custom:spell:list1:XP11156", notInGroup = false,
-professionSkillLineID = 755, missingProfessionSkillLineID = 2879, locationID = 6666666, },
-
-{label = "Khaz Leatherworking", frameID = "list1", key = "custom:spell:list1:XP11157", notInGroup = false,
-professionSkillLineID = 165, missingProfessionSkillLineID = 2880, locationID = 6666666, },
-
-{label = "Khaz Mining", frameID = "list1", key = "custom:spell:list1:XP11149", notInGroup = false,
-professionSkillLineID = 186, missingProfessionSkillLineID = 2881, locationID = 6666666, },
-
-{label = "Khaz Skinning", frameID = "list1", key = "custom:spell:list1:XP11148", notInGroup = false,
-professionSkillLineID = 393, missingProfessionSkillLineID = 2882, locationID = 6666666, },
-
-{label = "Khaz Tailoring", frameID = "list1", key = "custom:spell:list1:XP11147", notInGroup = false,
-professionSkillLineID = 197, missingProfessionSkillLineID = 2883, locationID = 6666666, },
 
 {label = "Lucky Tortollan Charm\n      Near Azj-Kahet Portal", frameID = "list1", key = "custom:item:202046:list1:72",
 hideWhenCompleted = false, playerLevel = { ">", 70 }, faction = "Horde", restedOnly = true, item = { itemID = 202046, required = { 1, true, N, 0 }, }, },

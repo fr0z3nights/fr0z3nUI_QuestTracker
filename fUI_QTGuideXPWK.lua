@@ -84,6 +84,22 @@ local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 -- Examples below are placeholders; replace with your real questIDs/items/auras.
 
 ns.rules = {
+
+
+
+
+
+  {label = "Event: Pet Battle", frameID = "bar1", playerLevel = { ">=", 20 }, hideWhenCompleted = false, key = "event:pet-battle-bonus-event",
+  questInfo = "Pet XP", aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+
+  {label = "Event: Delves", frameID = "bar1", playerLevel = { ">=", 70 }, hideWhenCompleted = false, key = "event:delves-bonus-event",
+  questInfo = "Delves", aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+
+  {label = "Event: World Quest", frameID = "bar1", playerLevel = { ">=", 80 }, hideWhenCompleted = false, requireInLog = false, showXWhenComplete = true,
+  questInfo = "WQ", questID = 93605, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+
+
+
   -- Timewalking weekly bar entries.
   -- Goal: calendar strings can be generic ("Timewalking Dungeon Event"), so we:
   --   1) show a single generic reminder when any Timewalking/Turbulent Timeways event is up
@@ -94,9 +110,9 @@ ns.rules = {
   {label = "Timewalking Reminder", frameID = "bar1", key = "tw:reminder", 
   questInfo = "Timewalking", preferQuestInfoForTitle = true, hideIfRememberedTimewalkingKind = true,
   aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true }, hideWhenCompleted = false,
-  hideIfAnyQuestInLog =     {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 83360,   88808, 88805,   92647, 92649,},
-  hideIfAnyQuestCompleted = {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 83360,   88808, 88805,   92647, 92649,}, },
-  --                         Classic          Outland        Wrath           Cata            Pandaria        Draenor  L/M    Legion          BFA             Shadowlands
+  --                         LVL  01  MAX    LVL  02  MAX    LVL  03  MAX    LVL  04  MAX    LVL  05  MAX    LVL  06  MAX    LVL  07  MAX    LVL  08  MAX    LVL  09  MAX
+  hideIfAnyQuestInLog =     {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 88805,   92647, 92649,},
+  hideIfAnyQuestCompleted = {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 88805,   92647, 92649,}, },
 
   -- Classic              UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
   {label = "Timewalking Classic LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
@@ -169,11 +185,11 @@ ns.rules = {
   questID = 86564, questInfo = "Legion", requireInLog = true, twKind = "legion", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
   {label = "Timewalking Legion MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 83360, questInfo = "Legion", requireInLog = true, twKind = "legion", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+  questID = 93614, questInfo = "Legion", requireInLog = true, twKind = "legion", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
   {label = "Timewalking Legion TKN", frameID = "bar1", key = "tw:token:legion", requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 64710 }, preferQuestInfoForTitle = true, twKind = "legion", hideWhenCompleted = false,
-  indicators = { { questID = 64710, shape = "square", overlay = { itemIDs = { 9999999, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+  indicators = { { questID = 64710, shape = "square", overlay = { itemIDs = { 187611 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
   -- Battle             UPDATE REMINDER ABOVE & XRULESDB WHEN UPDATING LVL/MAX QUESTID
   {label = "Timewalking Battle LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
@@ -196,15 +212,6 @@ ns.rules = {
   {label = "Timewalking Shadowlands TKN", frameID = "bar1", key = "tw:token:shadowlands", requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 92650 }, preferQuestInfoForTitle = true, twKind = "shadowlands", hideWhenCompleted = false,
   indicators = { { questID = 92650, shape = "square", overlay = { itemIDs = { 253517, 9999999 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
-  {label = "Pet Battle Bonus Event", frameID = "bar1", playerLevel = { ">=", 20 }, hideWhenCompleted = false, key = "event:pet-battle-bonus-event",
-  questInfo = "Pet XP", aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true }, },
-
-  {label = "Delves Bonus Event", frameID = "bar1", playerLevel = { ">=", 70 }, hideWhenCompleted = false, key = "event:delves-bonus-event",
-  questInfo = "Delves", aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true }, },
-
-  {label = "World Quest Bonus Event", frameID = "bar1", playerLevel = { ">=", 80 }, hideWhenCompleted = false, requireInLog = false, showXWhenComplete = true,
-  questInfo = "WQ", questID = 93605, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true }, },
 
   {label = "Void Strike", frameID = "list2", playerLevel = { "=", 90 }, hideWhenCompleted = true, requireInLog = false, showXWhenComplete = true,
   questInfo = "Void Strike\n - Rutual Site and Void Incursion (Zygor)", questID = 96080, },

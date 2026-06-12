@@ -37,9 +37,13 @@ local Y, N = true, false
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "SU  07  Hearthstone Unlock", frameID = "list1", key = "custom:q:44184:list1:XP07011",
-questID = 44184, prereq = { 60151, 60150, 61874, }, hideWhenCompleted = true,
-questInfo = "Legion\n + Chromie: Off\n + Warboard: Broken Shore\n + Set Hearth\n + Talk to Quest Guy\n     Orgirmmar - Out Front Gate\n     Stormwind - In the Harbor\n + Skip Scenario if you can\n       Quest Until Getting\n         %2.i %2.n\n07N", },
+{label = "SU  07  Hearthstone Unlock", faction = "alliance", frameID = "list1", key = "custom:q:44184:list1:XP07011",
+questID = 44184, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 44184, 44659, },
+questInfo = "Legion\n + Warboard: Broken Shore\n + NPC in Stormwind Harbor\n + Skip Scenario if you can\n + Reach Legion Dalaran\n ", },
+--questID = 44659, prereq = { 60151, 60150, 61874, }, 
+{label = "SU  07  Hearthstone Unlock", faction = "horde", frameID = "list1", key = "custom:q:44184:list1:XP07011",
+questID = 44184, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 44184, 44659, },
+questInfo = "Legion\n + Warboard: Broken Shore\n + NPC Outside Front Gate\n + Skip Scenario if you can\n + Reach Legion Dalaran\n ", },
 
 {label = "SU  07  Karazhan 01", frameID = "list1", key = "custom:q:45727:list1:XP07001",
 questID = 45727, prereq = { 60151, 60150, 46931, 30515, }, hideWhenCompleted = true,
@@ -77,45 +81,7 @@ questInfo = "Legion\n + %n\nNotes:\n    - Current Opera: Wikket\n    - Turn off 
 questID = 45296, prereq = { 45295, }, hideWhenCompleted = true,
 questInfo = "Legion\n + %n\nNotes:\n    - Current Opera: Wikket\n    - Turn off Instance Reset\n    - Front of Karazhan Quest\n       (Centre Legion Dalaran)\nReturn to Karazhan\\n + Change to MYTHIC & Enter\\n + Get 5 CRYSTALS\\n    Opera, Maiden, Moroes (keys)\\n    Attuman (kill), Spiders, Curator\\n + Back Down Kill Nightbane", },
 
---  PROFESSIONS                                            /dump C_Map.GetBestMapForUnit("player")
-{label = "Legion Alchemy", frameID = "list1", key = "custom:spell:list1:220", notInGroup = false,
-professionSkillLineID = 171, missingProfessionSkillLineID = 2479, locationID = 6666666, },
 
-{label = "Legion Blacksmithing", frameID = "list1", key = "custom:spell:list1:221", notInGroup = false,
-professionSkillLineID = 164, missingProfessionSkillLineID = 2454, locationID = 6666666, },
-
-{label = "Legion Cooking", frameID = "list1", key = "custom:spell:list1:222", notInGroup = false,
-professionSkillLineID = 185, missingProfessionSkillLineID = 2542, locationID = 6666666, },
-
-{label = "Legion Enchanting", frameID = "list1", key = "custom:spell:list1:223", notInGroup = false,
-professionSkillLineID = 333, missingProfessionSkillLineID = 2487, locationID = 6666666, },
-
-{label = "Legion Engineering", frameID = "list1", key = "custom:spell:list1:224", notInGroup = false,
-professionSkillLineID = 202, missingProfessionSkillLineID = 2500, locationID = 6666666, },
-
-{label = "Legion Fishing", frameID = "list1", key = "custom:spell:list1:225", notInGroup = false,
-professionSkillLineID = 356, missingProfessionSkillLineID = 2586, locationID = 6666666, },
-
-{label = "Legion Herbalism", frameID = "list1", key = "custom:spell:list1:226", notInGroup = false,
-professionSkillLineID = 182, missingProfessionSkillLineID = 2550, locationID = 6666666, },
-
-{label = "Legion Inscription", frameID = "list1", key = "custom:spell:list1:227", notInGroup = false,
-professionSkillLineID = 773, missingProfessionSkillLineID = 2508, locationID = 6666666, },
-
-{label = "Legion Jewelcrafting", frameID = "list1", key = "custom:spell:list1:228", notInGroup = false,
-professionSkillLineID = 755, missingProfessionSkillLineID = 2518, locationID = 6666666, },
-
-{label = "Legion Leatherworking", frameID = "list1", key = "custom:spell:list1:229", notInGroup = false,
-professionSkillLineID = 165, missingProfessionSkillLineID = 2526, locationID = 6666666, },
-
-{label = "Legion Mining", frameID = "list1", key = "custom:spell:list1:230", notInGroup = false,
-professionSkillLineID = 186, missingProfessionSkillLineID = 2566, locationID = 6666666, },
-
-{label = "Legion Skinning", frameID = "list1", key = "custom:spell:list1:231", notInGroup = false,
-professionSkillLineID = 393, missingProfessionSkillLineID = 2558, locationID = 6666666, },
-
-{label = "Legion Tailoring", frameID = "list1", key = "custom:spell:list1:232", notInGroup = false,
-professionSkillLineID = 197, missingProfessionSkillLineID = 2534, locationID = 6666666, },
 
 }
 

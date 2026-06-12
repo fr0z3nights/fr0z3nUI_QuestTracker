@@ -49,8 +49,8 @@ questInfo = "Warlords of Draenor\n + Warboard: The Dark Portal\n + Talk to Battl
 questID = 34775, prereq = { 34586, }, hideWhenCompleted = true, faction = "Alliance",
 questInfo = "Warlords of Draenor\n + Zygor: Shadowmoon Valley\n    01-31 \"Delegating on Draenor\"",},
 
-{label = "SU  06  Garrison 04 A", faction = "alliance", frameID = "list2", key = "custom:q:36615:list1:XP06021", locationID = {84, 582},
-questID = 36615, hideWhenCompleted = true, questInfo = "Level Garrison to 3", },             -- /dump C_Map.GetBestMapForUnit("player")        prereq = { 34775, },
+{label = "SU  06  Garrison 04 A", faction = "alliance", frameID = "list2", key = "custom:q:36615:list1:XP06021",
+questID = 36615, hideWhenCompleted = true, questInfo = "Level Garrison to 3", },             -- /dump C_Map.GetBestMapForUnit("player")        prereq = { 34775, }, locationID = {84, 582},
 
 {label = "SU  06  Garrison 01 H", frameID = "list1", key = "custom:q:36940:list1:XP06022",
 questID = 36940, prereq = { 47514, }, hideWhenCompleted = true, faction = "Horde",
@@ -68,51 +68,11 @@ questInfo = "Warlords of Draenor\n + Frostfire Ridge (Zygor)\n + Quest Until Ste
 questID = 36567, prereq = { 34960, }, hideWhenCompleted = true, faction = "Horde",
 questInfo = "Warlords of Draenor\n + Collect 200 Garrison Resources\n + Upgrade Garrison to Level 2\n           (Turn in Quest)",},
 
-{label = "SU  06  Garrison 05 H", faction = "horde", frameID = "list2", key = "custom:q:36615:list1:XP06026", locationID = {85, 590},
-questID = 36614, hideWhenCompleted = true, questInfo = "Level Garrison to 3", },            -- /dump C_Map.GetBestMapForUnit("player")      prereq = { 36567, },
+{label = "SU  06  Garrison 05 H", faction = "horde", frameID = "list2", key = "custom:q:36615:list1:XP06026",
+questID = 36614, hideWhenCompleted = true, questInfo = "Level Garrison to 3", },            -- /dump C_Map.GetBestMapForUnit("player")      prereq = { 36567, }, locationID = {85, 590},
 
 {label = "SU  06  Wiggling Egg (Pet)", frameID = "list1", key = "custom:q:33505:list1:XP06027", locationID = 525,
 questID = 33505, prereq = { 34586, }, hideWhenCompleted = true, questInfo = "Frostfire Ridge\n + Wiggling Egg", },
-
---  PROFESSIONS                                            /dump C_Map.GetBestMapForUnit("player")
-{label = "Draenor Alchemy", frameID = "list1", key = "custom:spell:list1:203", notInGroup = false,
-professionSkillLineID = 171, missingProfessionSkillLineID = 2480, locationID = 6666666, },
-
-{label = "Draenor Blacksmithing", frameID = "list1", key = "custom:spell:list1:204", notInGroup = false,
-professionSkillLineID = 164, missingProfessionSkillLineID = 2472, locationID = 6666666, },
-
-{label = "Draenor Cooking", frameID = "list1", key = "custom:spell:list1:211", notInGroup = false,
-professionSkillLineID = 185, missingProfessionSkillLineID = 2543, locationID = 6666666, },
-
-{label = "Draenor Enchanting", frameID = "list1", key = "custom:spell:list1:205", notInGroup = false,
-professionSkillLineID = 333, missingProfessionSkillLineID = 2488, locationID = 6666666, },
-
-{label = "Draenor Engineering", frameID = "list1", key = "custom:spell:list1:206", notInGroup = false,
-professionSkillLineID = 202, missingProfessionSkillLineID = 2501, locationID = 6666666, },
-
-{label = "Draenor Fishing", frameID = "list1", key = "custom:spell:list1:212", notInGroup = false,
-professionSkillLineID = 356, missingProfessionSkillLineID = 2587, locationID = 6666666, },
-
-{label = "Draenor Herbalism", frameID = "list1", key = "custom:spell:list1:200", notInGroup = false,
-professionSkillLineID = 182, missingProfessionSkillLineID = 2551, locationID = 6666666, },
-
-{label = "Draenor Inscription", frameID = "list1", key = "custom:spell:list1:207", notInGroup = false,
-professionSkillLineID = 773, missingProfessionSkillLineID = 2509, locationID = 6666666, },
-
-{label = "Draenor Jewelcrafting", frameID = "list1", key = "custom:spell:list1:208", notInGroup = false,
-professionSkillLineID = 755, missingProfessionSkillLineID = 2519, locationID = 6666666, },
-
-{label = "Draenor Leatherworking", frameID = "list1", key = "custom:spell:list1:209", notInGroup = false,
-professionSkillLineID = 165, missingProfessionSkillLineID = 2527, locationID = 6666666, },
-
-{label = "Draenor Mining", frameID = "list1", key = "custom:spell:list1:201", notInGroup = false,
-professionSkillLineID = 186, missingProfessionSkillLineID = 2567, locationID = 6666666, },
-
-{label = "Draenor Skinning", frameID = "list1", key = "custom:spell:list1:202", notInGroup = false,
-professionSkillLineID = 393, missingProfessionSkillLineID = 2559, locationID = 6666666, },
-
-{label = "Draenor Tailoring", frameID = "list1", key = "custom:spell:list1:210", notInGroup = false,
-professionSkillLineID = 197, missingProfessionSkillLineID = 2535, locationID = 6666666, },
 
 
 

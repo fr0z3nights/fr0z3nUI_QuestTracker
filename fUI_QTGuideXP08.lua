@@ -98,40 +98,6 @@ questInfo = "Battle For Azeroth\n + Mechagon (Zygor)\n + Quest Until Turning In\
 questID = 58506, prereq = { 56156, }, hideWhenCompleted = true,
 questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\n  + PickUp Missive\n     A  Dockmasters Office\n  + Follow Guide\n    - Consoles Unnamed?, Relog", },
 
--- PROFESSIONS                                            /dump C_Map.GetBestMapForUnit("player")
-{label = "Battle Archaeology", frameID = "list1", key = "custom:spell:list1:XP08097", notInGroup = false,
-missingProfessionSkillLineID = 794, locationID = {1163,}, },
-
-{label = "Battle Blacksmithing", frameID = "list1", key = "custom:spell:list1:XP08098", notInGroup = false,
-professionSkillLineID = 164, missingProfessionSkillLineID = 2437, locationID = "1163,", },
-
-{label = "Battle Cooking", frameID = "list1", key = "custom:spell:list1:XP08099", notInGroup = false,
-professionSkillLineID = 185, missingProfessionSkillLineID = 2541, locationID = "1163,", },
-
-{label = "Battle Enchanting", frameID = "list1", key = "custom:spell:list1:XP08100", notInGroup = false,
-professionSkillLineID = 333, missingProfessionSkillLineID = 2486, locationID = "1163,", },
-
-{label = "Battle Engineering", frameID = "list1", key = "custom:spell:list1:XP08101", notInGroup = false,
-professionSkillLineID = 202, missingProfessionSkillLineID = 2499, locationID = "1163,", },
-
-{label = "Battle Fishing", frameID = "list1", key = "custom:spell:list1:XP08102", notInGroup = false,
-professionSkillLineID = 356, missingProfessionSkillLineID = 2585, locationID = "1163,", },
-
-{label = "Battle Herbalism", frameID = "list1", key = "custom:spell:list1:XP08103", notInGroup = false,
-professionSkillLineID = 182, missingProfessionSkillLineID = 2549, locationID = "1163,", },
-
-{label = "Battle Leatherworking", frameID = "list1", key = "custom:spell:list1:XP08104", notInGroup = false,
-professionSkillLineID = 165, missingProfessionSkillLineID = 2525, locationID = "1163,", },
-
-{label = "Battle Mining", frameID = "list1", key = "custom:spell:list1:XP08105", notInGroup = false,
-professionSkillLineID = 186, missingProfessionSkillLineID = 2565, locationID = "1163,", },
-
-{label = "Battle Skinning", frameID = "list1", key = "custom:spell:list1:XP08106", notInGroup = false,
-professionSkillLineID = 393, missingProfessionSkillLineID = 2557, locationID = "1163,", },
-
-{label = "Battle Tailoring", frameID = "list1", key = "custom:spell:list1:XP08107", notInGroup = false,
-professionSkillLineID = 197, missingProfessionSkillLineID = 2533, locationID = "1163,", },
-
 -- Horde
 {label = "SU  Zuldazar", faction = "Horde", frameID = "list1", key = "custom:q:47514:list1:XP08026",
 questID = 47514, prereq = { 60151, }, hideWhenCompleted = true,

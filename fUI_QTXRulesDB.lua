@@ -173,7 +173,7 @@ SetZone("Timewalking, Event")
 	KQuest(55499, "06 Draenor TKN")                              	 --	Token		Player			
 	--	Timewalking	 07  Legion
 	KQuest(86564, "07 Legion LVL")                        			--	Weekly		Player LVL			
-	KQuest(83364, "07 Legion MAX")                          		--	Weekly		Player MAX		
+	KQuest(93614, "07 Legion MAX")                          		--	Weekly		Player MAX		
 	KQuest(64710, "07 Legion TKN")                                  --	Token		Player			
 	--	Timewalking	 08  Battle for Azeroth
 	KQuest(88808, "08 Battle LVL")                    				--	Weekly		Player LVL			

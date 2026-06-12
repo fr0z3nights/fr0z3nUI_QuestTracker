@@ -83,45 +83,8 @@ aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly =
 textInfo = "Time-Lost Artifact\n - Timeless Coins: $hv / $rq\n - Emperor Shaohao: {rep:have}", currencyID = { 777, 7500, Y }, repDisplay = { factionID = 1492, minStanding = 6 },
 complete = { any = { { itemIDs = { 103678, 219222 }, includeBank = true }, }, }, },
 
---  PROFESSIONS                                            /dump C_Map.GetBestMapForUnit("player")
-{label = "Pandaria Alchemy", frameID = "list1", key = "custom:spell:list1:XP05097", notInGroup = false, 
-professionSkillLineID = 171, missingProfessionSkillLineID = 2481, locationID = 6666666, },
 
-{label = "Pandaria Blacksmithing", frameID = "list1", key = "custom:spell:list1:XP05098", notInGroup = false,
-professionSkillLineID = 164, missingProfessionSkillLineID = 2473, locationID = 6666666, },
 
-{label = "Pandaria Cooking", frameID = "list1", key = "custom:spell:list1:XP05105", notInGroup = false,
-professionSkillLineID = 185, missingProfessionSkillLineID = 2544, locationID = 6666666, },
-
-{label = "Pandaria Enchanting", frameID = "list1", key = "custom:spell:list1:XP05099", notInGroup = false,
-professionSkillLineID = 333, missingProfessionSkillLineID = 2489, locationID = 6666666, },
-
-{label = "Pandaria Engineering", frameID = "list1", key = "custom:spell:list1:XP05100", notInGroup = false,
-professionSkillLineID = 202, missingProfessionSkillLineID = 2502, locationID = 6666666, },
-
-{label = "Pandaria Fishing", frameID = "list1", key = "custom:spell:list1:XP05106", notInGroup = false,
-professionSkillLineID = 356, missingProfessionSkillLineID = 2588, locationID = 6666666, },
-
-{label = "Pandaria Herbalism", frameID = "list1", key = "custom:spell:list1:XP05094", notInGroup = false,
-professionSkillLineID = 182, missingProfessionSkillLineID = 2552, locationID = 6666666, },
-
-{label = "Pandaria Inscription", frameID = "list1", key = "custom:spell:list1:XP05101", notInGroup = false,
-professionSkillLineID = 773, missingProfessionSkillLineID = 2510, locationID = 6666666, },
-
-{label = "Pandaria Jewelcrafting", frameID = "list1", key = "custom:spell:list1:XP05102", notInGroup = false,
-professionSkillLineID = 755, missingProfessionSkillLineID = 2520, locationID = 6666666, },
-
-{label = "Pandaria Leatherworking", frameID = "list1", key = "custom:spell:list1:XP05103", notInGroup = false,
-professionSkillLineID = 165, missingProfessionSkillLineID = 2528, locationID = 6666666, },
-
-{label = "Pandaria Mining", frameID = "list1", key = "custom:spell:list1:XP05095", notInGroup = false,
-professionSkillLineID = 186, missingProfessionSkillLineID = 2568, locationID = 6666666, },
-
-{label = "Pandaria Skinning", frameID = "list1", key = "custom:spell:list1:XP05096", notInGroup = false,
-professionSkillLineID = 393, missingProfessionSkillLineID = 2560, locationID = 6666666, },
-
-{label = "Pandaria Tailoring", frameID = "list1", key = "custom:spell:list1:XP05104", notInGroup = false,
-professionSkillLineID = 197, missingProfessionSkillLineID = 2536, locationID = 6666666, },
 
 }
 
