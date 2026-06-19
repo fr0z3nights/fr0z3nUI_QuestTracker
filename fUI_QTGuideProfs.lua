@@ -590,14 +590,14 @@ local function SkillLineMatches(wantID, haveID)
   if wantID == haveID then
     return true
   end
+
+  -- Allow a base profession request to match a specialization skill line
+  -- such as Midnight Cooking/Fishing when the rule asks for Cooking/Fishing.
   local base = ALIAS_SKILLLINE_TO_BASE[haveID]
   if base and base == wantID then
     return true
   end
-  base = ALIAS_SKILLLINE_TO_BASE[wantID]
-  if base and base == haveID then
-    return true
-  end
+
   return false
 end
 
