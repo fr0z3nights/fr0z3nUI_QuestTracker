@@ -171,13 +171,14 @@ end
 local RuleKey
 
 local GetPlayerClass
-local HasProfessionSkillLineID, GetPrimaryProfessionNames, HasTradeSkillLine, CanQueryTradeSkillLines
+local HasProfessionSkillLineID, HasExactProfessionSkillLineID, GetPrimaryProfessionNames, HasTradeSkillLine, CanQueryTradeSkillLines
 local GetProfessionIndices, IsPrimaryProfessionSlotMissing, IsSecondaryProfessionMissing, HasProfession
 
 do
   local Profs = (type(ns) == "table") and ns.Profs or nil
 
   HasProfessionSkillLineID = Profs and (Profs.HasProfessionSkillLineID or Profs.HasSkillLineID) or nil
+  HasExactProfessionSkillLineID = Profs and (Profs.HasExactProfessionSkillLineID or Profs.HasExactSkillLineID) or nil
   GetProfessionIndices = Profs and Profs.GetProfessionIndices or nil
   IsPrimaryProfessionSlotMissing = Profs and Profs.IsPrimaryProfessionSlotMissing or nil
   IsSecondaryProfessionMissing = Profs and Profs.IsSecondaryProfessionMissing or nil
@@ -188,6 +189,7 @@ do
 end
 
 if type(HasProfessionSkillLineID) ~= "function" then HasProfessionSkillLineID = function(_) return false end end
+if type(HasExactProfessionSkillLineID) ~= "function" then HasExactProfessionSkillLineID = HasProfessionSkillLineID end
 if type(GetProfessionIndices) ~= "function" then GetProfessionIndices = function() return nil end end
 if type(IsPrimaryProfessionSlotMissing) ~= "function" then IsPrimaryProfessionSlotMissing = function(_) return false end end
 if type(IsSecondaryProfessionMissing) ~= "function" then IsSecondaryProfessionMissing = function(_) return false end end
@@ -813,6 +815,7 @@ ns._FQTSlash.deps = {
   SetFramesEnabled = function(v) framesEnabled = (v == true) end,
   GetEditMode = function() return editMode and true or false end,
   HasProfessionSkillLineID = HasProfessionSkillLineID,
+  HasExactProfessionSkillLineID = HasExactProfessionSkillLineID,
 }
 
 -- NOTE: deps.DispatchDebugCommand is attached later once the debug handler is defined.
@@ -1495,6 +1498,45 @@ local function EvaluateIndicatorCondition(ind)
   return false
 end
 
+local function PlayerHasFindFishUnlocked()
+  if not (C_Minimap and type(C_Minimap.GetNumTrackingTypes) == "function" and type(C_Minimap.GetTrackingInfo) == "function") then
+    return false
+  end
+
+  local n = tonumber(C_Minimap.GetNumTrackingTypes()) or 0
+  for i = 1, n do
+    local ok, a, b, c, d, e, f = pcall(C_Minimap.GetTrackingInfo, i)
+    if ok then
+      local name, trackingType
+
+      if type(a) == "table" then
+        -- Newer API shape: returns a table.
+        name = a.name
+        trackingType = a.type or a.trackingType or a.category
+      else
+        -- Legacy API shape: returns tuple values.
+        name = a
+        trackingType = d
+      end
+
+      if type(name) == "string" then
+        if name == "Find Fish" then
+          return true
+        end
+      end
+
+      if type(trackingType) == "string" then
+        local tt = trackingType:lower()
+        if tt == "fish" or tt == "findfish" or tt == "find_fish" then
+          return true
+        end
+      end
+    end
+  end
+
+  return false
+end
+
 local function EvaluateRuleCondition(node)
   if type(node) ~= "table" then return false end
 
@@ -1570,6 +1612,23 @@ local function EvaluateRuleCondition(node)
       return false
     end
     if HasTradeSkillLine(node.missingTradeSkillLine) then
+      return false
+    end
+  end
+
+  if node.findFish ~= nil or node.hasFindFish ~= nil then
+    hadCondition = true
+    local want = (node.findFish ~= nil) and (node.findFish == true) or (node.hasFindFish == true)
+    if PlayerHasFindFishUnlocked() ~= want then
+      return false
+    end
+  end
+
+  if node.missingFindFish ~= nil then
+    hadCondition = true
+    local missing = (node.missingFindFish == true)
+    local wantUnlocked = (not missing)
+    if PlayerHasFindFishUnlocked() ~= wantUnlocked then
       return false
     end
   end
@@ -2027,29 +2086,66 @@ local function BuildRuleStatus(rule, ctx, opts)
   local complete = (type(rule) == "table" and type(rule.complete) == "table") and rule.complete or nil
   if complete then
     local ok
+    local tested = false
     if type(complete.any) == "table" or type(complete.all) == "table" then
       ok = EvaluateRuleCondition(complete)
+      tested = true
     else
       ok = true
       if complete.questID then
+        tested = true
         ok = ok and IsQuestCompleted(tonumber(complete.questID))
       end
       if type(complete.item) == "table" and complete.item.itemID then
+        tested = true
         local itemID = tonumber(complete.item.itemID)
         local need = tonumber(complete.item.count) or tonumber(complete.item.required) or 1
         local have = GetItemCountSafe(itemID)
         ok = ok and (have >= need)
       end
       if complete.rep ~= nil or complete.factionID ~= nil or complete.minStanding ~= nil or complete.maxStanding ~= nil then
+        tested = true
         ok = ok and EvaluateRuleCondition({ rep = complete.rep, factionID = complete.factionID, minStanding = complete.minStanding, maxStanding = complete.maxStanding })
       end
       if complete.profession ~= nil then
+        tested = true
         ok = ok and HasProfession(complete.profession)
       end
+      if complete.skillLineID ~= nil then
+        tested = true
+        ok = ok and HasProfessionSkillLineID(complete.skillLineID)
+      end
+      if type(complete.skillLineIDs) == "table" then
+        tested = true
+        local anySkill = false
+        for _, sid in ipairs(complete.skillLineIDs) do
+          if HasProfessionSkillLineID(sid) then
+            anySkill = true
+            break
+          end
+        end
+        ok = ok and anySkill
+      end
       if type(complete.aura) == "table" and complete.aura.spellID then
+        tested = true
         local has = HasAuraSpellID(tonumber(complete.aura.spellID))
         local must = (complete.aura.mustHave ~= false)
         ok = ok and (must and has or (not must and not has))
+      end
+      if complete.findFish ~= nil or complete.hasFindFish ~= nil then
+        tested = true
+        local want = (complete.findFish ~= nil) and (complete.findFish == true) or (complete.hasFindFish == true)
+        ok = ok and (PlayerHasFindFishUnlocked() == want)
+      end
+      if complete.missingFindFish ~= nil then
+        tested = true
+        local missing = (complete.missingFindFish == true)
+        local wantUnlocked = (not missing)
+        ok = ok and (PlayerHasFindFishUnlocked() == wantUnlocked)
+      end
+
+      if not tested then
+        ok = false
       end
     end
 
@@ -2201,7 +2297,23 @@ local function BuildRuleStatus(rule, ctx, opts)
   -- Missing profession skillLine gate (optional): show only if the player does NOT have this skillLineID.
   -- Intended for "you are missing this profession" reminders where spell-based gates are unreliable.
   if applyGates and type(rule) == "table" and rule.missingProfessionSkillLineID ~= nil then
-    if HasProfessionSkillLineID(rule.missingProfessionSkillLineID) then
+    if HasExactProfessionSkillLineID(rule.missingProfessionSkillLineID) then
+      return nil
+    end
+  end
+
+  -- Find Fish unlock gate (optional): derived from minimap tracking entries.
+  if applyGates and type(rule) == "table" and (rule.findFish ~= nil or rule.hasFindFish ~= nil) then
+    local want = (rule.findFish ~= nil) and (rule.findFish == true) or (rule.hasFindFish == true)
+    if PlayerHasFindFishUnlocked() ~= want then
+      return nil
+    end
+  end
+
+  if applyGates and type(rule) == "table" and rule.missingFindFish ~= nil then
+    local missing = (rule.missingFindFish == true)
+    local wantUnlocked = (not missing)
+    if PlayerHasFindFishUnlocked() ~= wantUnlocked then
       return nil
     end
   end

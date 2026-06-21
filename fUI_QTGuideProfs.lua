@@ -581,6 +581,33 @@ local ALIAS_SKILLLINE_TO_BASE = {
   [2911] = 356, -- Fishing
 }
 
+local function GetProfessionKeyBySkillLineID(skillLineID)
+  skillLineID = tonumber(skillLineID)
+  if not skillLineID or skillLineID <= 0 then
+    return nil
+  end
+
+  local direct = Profs.SKILLLINE_TO_PROFKEY and Profs.SKILLLINE_TO_PROFKEY[skillLineID]
+  if type(direct) == "string" and direct ~= "" then
+    return direct
+  end
+
+  local tiers = Profs.TIERS_BY_PROFKEY
+  if type(tiers) == "table" then
+    for profKey, byXP in pairs(tiers) do
+      if type(byXP) == "table" then
+        for _, sid in pairs(byXP) do
+          if tonumber(sid) == skillLineID then
+            return tostring(profKey)
+          end
+        end
+      end
+    end
+  end
+
+  return nil
+end
+
 local function SkillLineMatches(wantID, haveID)
   wantID = tonumber(wantID)
   haveID = tonumber(haveID)
@@ -588,6 +615,12 @@ local function SkillLineMatches(wantID, haveID)
     return false
   end
   if wantID == haveID then
+    return true
+  end
+
+  local wantKey = GetProfessionKeyBySkillLineID(wantID)
+  local haveKey = GetProfessionKeyBySkillLineID(haveID)
+  if wantKey and haveKey and wantKey == haveKey then
     return true
   end
 
@@ -643,7 +676,13 @@ local function MarkSkillLine(outLines, outKeys, skillLineID, name)
     outLines[base] = true
   end
 
-  local stable = Profs.SKILLLINE_TO_PROFKEY[skillLineID]
+  local stable = GetProfessionKeyBySkillLineID(skillLineID)
+  local stableBase = stable and Profs.BASE_SKILLLINE_BY_PROFKEY and Profs.BASE_SKILLLINE_BY_PROFKEY[stable] or nil
+  stableBase = tonumber(stableBase)
+  if stableBase and stableBase > 0 then
+    outLines[stableBase] = true
+  end
+
   local key = tostring(stable or name or "")
   if key ~= "" then
     outKeys[key] = true
@@ -651,11 +690,33 @@ local function MarkSkillLine(outLines, outKeys, skillLineID, name)
   return true
 end
 
+local function RememberKnownSkillLine(skillLineID, name)
+  local c = EnsureCache()
+  if type(c.knownProfessionSkillLines) ~= "table" then
+    c.knownProfessionSkillLines = {}
+  end
+  if type(c.knownProfessionKeys) ~= "table" then
+    c.knownProfessionKeys = {}
+  end
+
+  MarkSkillLine(c.knownProfessionSkillLines, c.knownProfessionKeys, skillLineID, name)
+
+  if type(time) == "function" then
+    local t = time()
+    c.knownProfessionSkillLinesAt = t
+    c.knownProfessionKeysAt = t
+  else
+    c.knownProfessionSkillLinesAt = c.knownProfessionSkillLinesAt or 0
+    c.knownProfessionKeysAt = c.knownProfessionKeysAt or 0
+  end
+end
+
 -- Refresh the cached *base profession skillLineIDs*.
 -- Also attempts to include expansion-tier profession skillLineIDs via C_TradeSkillUI when available.
 -- Returns: true if cache was updated, false otherwise.
 function Profs.RefreshKnownProfessionSkillLines(force)
   local c = EnsureCache()
+  local priorLines = (type(c.knownProfessionSkillLines) == "table") and c.knownProfessionSkillLines or nil
 
   local now = (type(GetTime) == "function") and GetTime() or nil
   if not force and type(now) == "number" then
@@ -749,6 +810,19 @@ function Profs.RefreshKnownProfessionSkillLines(force)
     return false
   end
 
+  -- Preserve prior learned tier line IDs for professions we still know.
+  -- Some login states only report stable/base IDs at first, then tier IDs later.
+  if type(priorLines) == "table" then
+    for priorLineID, had in pairs(priorLines) do
+      if had == true and outLines[priorLineID] ~= true then
+        local key = GetProfessionKeyBySkillLineID(priorLineID)
+        if key and outKeys[key] == true then
+          outLines[priorLineID] = true
+        end
+      end
+    end
+  end
+
   c.knownProfessionSkillLines = outLines
   if type(time) == "function" then
     c.knownProfessionSkillLinesAt = time()
@@ -795,8 +869,9 @@ function Profs.HasSkillLineID(skillLineID)
         local idx = indices[i]
         if idx ~= nil then
           -- NOTE: pcall prepends a boolean success flag; skillLine is the 7th return from GetProfessionInfo.
-          local ok2, _, _, _, _, _, _, line = pcall(GPI, idx)
+          local ok2, name, _, _, _, _, _, line = pcall(GPI, idx)
           if ok2 and SkillLineMatches(skillLineID, line) then
+            RememberKnownSkillLine(line, name)
             return true
           end
           -- Slot-based fallback for secondaries.
@@ -817,6 +892,7 @@ function Profs.HasSkillLineID(skillLineID)
       local maxLvl = tonumber(info.maxSkillLevel)
       local lvl = tonumber(info.skillLevel)
       if (type(maxLvl) == "number" and maxLvl > 0) or (type(lvl) == "number" and lvl > 0) then
+        RememberKnownSkillLine(skillLineID, info.professionName or info.name)
         return true
       end
     end
@@ -824,6 +900,64 @@ function Profs.HasSkillLineID(skillLineID)
 
   return false
 end
+
+function Profs.HasExactSkillLineID(skillLineID)
+  skillLineID = tonumber(skillLineID)
+  if not skillLineID or skillLineID <= 0 then return false end
+
+  local c = EnsureCache()
+
+  -- Try live refresh first; if it fails, fall back to cache.
+  pcall(Profs.RefreshKnownProfessionSkillLines, false)
+
+  local at = c.knownProfessionSkillLinesAt
+  if type(at) == "number" and at > 0 then
+    if type(c.knownProfessionSkillLines) == "table" and c.knownProfessionSkillLines[skillLineID] == true then
+      return true
+    end
+  end
+
+  -- Exact fallback via GetProfessions/GetProfessionInfo (no base/tier collapsing).
+  local GP = _G and rawget(_G, "GetProfessions")
+  local GPI = _G and rawget(_G, "GetProfessionInfo")
+  if type(GP) == "function" and type(GPI) == "function" then
+    local ok, p1, p2, a, f, c2 = pcall(GP)
+    if ok then
+      local indices = { p1, p2, a, f, c2 }
+      for i = 1, 5 do
+        local idx = indices[i]
+        if idx ~= nil then
+          local ok2, name, _, _, _, _, _, line = pcall(GPI, idx)
+          line = tonumber(line)
+          if ok2 and line and line == skillLineID then
+            RememberKnownSkillLine(line, name)
+            return true
+          end
+          if i == 3 and skillLineID == 794 then return true end
+          if i == 4 and skillLineID == 356 then return true end
+          if i == 5 and skillLineID == 185 then return true end
+        end
+      end
+    end
+  end
+
+  -- Exact targeted probe for this specific line ID.
+  if C_TradeSkillUI and type(C_TradeSkillUI.GetProfessionInfoBySkillLineID) == "function" then
+    local ok, info = pcall(C_TradeSkillUI.GetProfessionInfoBySkillLineID, skillLineID)
+    if ok and type(info) == "table" then
+      local maxLvl = tonumber(info.maxSkillLevel)
+      local lvl = tonumber(info.skillLevel)
+      if (type(maxLvl) == "number" and maxLvl > 0) or (type(lvl) == "number" and lvl > 0) then
+        RememberKnownSkillLine(skillLineID, info.professionName or info.name)
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
+Profs.HasExactProfessionSkillLineID = Profs.HasExactSkillLineID
 
 function Profs.HasProfessionKey(professionKey)
   local c = EnsureCache()
