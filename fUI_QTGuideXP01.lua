@@ -79,13 +79,13 @@ complete = { any = { { item = { itemID = 45580, count = 1 } }, { rep = { faction
 {group = "classic:tabards:alliance-tabards", order = 6,
 label = "Ironforge Tabard", faction = "Alliance", frameID = "list1", key = "custom:item:45577:list1:0107",
 itemInfo = "Ironforge Tabard\n - Ironforge Near FP", rep = { sellWhenExalted = Y, factionID = 47, },
-item = { itemID = 45577, required = { 1, Y, Y, 1 }, }, locationID = "84, ", restedOnly = Y,
+item = { itemID = 45577, required = { 1, Y, Y, 1 }, }, locationID = "84, 87, ", restedOnly = Y,
 complete = { any = { { item = { itemID = 45577, count = 1 } }, { rep = { factionID = 47, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:alliance-tabards", order = 7,
 label = "Gnomeregan Tabard", faction = "Alliance", frameID = "list1", key = "custom:item:45578:list1:0106",
 itemInfo = "Gnomeregan Tabard\n Ironforge Near FP", rep = { sellWhenExalted = Y, factionID = 54, },
-item = { itemID = 45578, required = { 1, Y, Y, 1 }, }, locationID = "84, ", restedOnly = Y,
+item = { itemID = 45578, required = { 1, Y, Y, 1 }, }, locationID = "84, 87, ", restedOnly = Y,
 complete = { any = { { item = { itemID = 45578, count = 1 } }, { rep = { factionID = 54, minStanding = 8 } }, }, }, },
 
 -- HORDE TABARDS     (Orgrimmar 85)
