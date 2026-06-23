@@ -201,11 +201,11 @@ local bakedRules = {
 
 --  /dump C_Map.GetBestMapForUnit("player") 
 --{label = "Phaze Blasted Cata", textInfo = "|cffa335eeCATACLYSM PHAZED|r", locationID = 17, frameID = "list2", questID = 66560, showIf = { completedQuestID = 66560 }, key = "zone:blastedlands:cataclysm", },
-{label = "Blasted Phaze WoD",   questInfo = "|cffa335eeWARLORDS PHAZED|r", locationID = 17, frameID = "bar1", questID = 66560, key = "zone:blastedlands:warlords", },
-{label = "Silithus Phaze BFA",  questInfo = "|cffa335eeBATTLE PHAZED|r",   locationID = 81, frameID = "bar1", questID = 50659, key = "zone:silithus:bfa", },
-{label = "Arathi Phaze BFA",    questInfo = "|cffa335eeBATTLE PHAZED|r",   locationID = 14, frameID = "bar1", questID = 50659, key = "zone:arathi:bfa", },
-{label = "Tirisfal Phaze BFA",  questInfo = "|cffa335eeBATTLE PHAZED|r",   locationID = 18, frameID = "bar1", questID = 52758, key = "zone:tirisfal:bfa", },
-{label = "Darkshore Phaze BFA", questInfo = "|cffa335eeBATTLE PHAZED|r",   locationID = 62, frameID = "bar1", questID = 52758, key = "zone:darkshore:bfa", },
+{label = "Blasted Phaze WoD",   questInfo = "|cffa335eeWARLORDS PHAZED|r", locationID = 17,         frameID = "bar1", questID = 66560, key = "zone:blastedlands:warlords", },
+{label = "Silithus Phaze BFA",  questInfo = "|cffa335eeBATTLE PHAZED|r",   locationID = 81,         frameID = "bar1", questID = 50659, key = "zone:silithus:bfa", },
+{label = "Arathi Phaze BFA",    questInfo = "|cffa335eeBATTLE PHAZED|r",   locationID = 14,         frameID = "bar1", questID = 50659, key = "zone:arathi:bfa", },
+{label = "Tirisfal Phaze BFA",  questInfo = "|cffa335eeBATTLE PHAZED|r",   locationID = {18, 2070}, frameID = "bar1", questID = 52758, key = "zone:tirisfal:bfa", },
+{label = "Darkshore Phaze BFA", questInfo = "|cffa335eeBATTLE PHAZED|r",   locationID = 62,         frameID = "bar1", questID = 52758, key = "zone:darkshore:bfa", },
 
 
 
