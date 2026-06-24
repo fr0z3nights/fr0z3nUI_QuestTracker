@@ -184,6 +184,10 @@ SetZone("Timewalking, Event")
 --	KQuest(88808, "09 Shadowlands LVL")								--  Weekly		Player LVL			
 --	KQuest(88805, "09 Shadowlands MAX")					    		--  Weekly		Player MAX		
 --	KQuest(89222, "09 Shadowlands TKN")								--  Token A		Player			
+    --	Timewalking	 10  Shadowlands
+--	KQuest(88808, "10 Dragonflight LVL")								--  Weekly		Player LVL			
+--	KQuest(88805, "10 Dragonflight MAX")					    		--  Weekly		Player MAX		
+--	KQuest(89222, "10 Dragonflight TKN")								--  Token A		Player			
 SetZone("Darkmoon Island, Azeroth")
 	KQuest(29509, "Cooking Weekly")                  				--	Monthly		Player		Cooking
 	KQuest(29511, "Engineering Weekly")                             --	Monthly		Player		Engineering

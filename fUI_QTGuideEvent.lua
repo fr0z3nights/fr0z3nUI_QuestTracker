@@ -279,6 +279,8 @@ local timewalkingSpellToKeywords = {
   [359082] = { "Legion" },
   [1223878] = { "Azeroth", "BFA", "Battle for Azeroth" },
   [1256081] = { "Shadowlands" },
+  [1305981] = { "Dragonflight" },
+
 }
 
 local _calendarOpened = false
