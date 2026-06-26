@@ -39,11 +39,11 @@ local bakedRules = {
 
 {label = "SU  06  Garrison 01 A", frameID = "list1", key = "custom:q:36941:list1:XP06017",
 questID = 36941, prereq = { 47189, }, hideWhenCompleted = true, faction = "Alliance",
-questInfo = "Warlords of Draenor\n + Warboard: The Dark Portal\n + Talk to Battlemage\n   - Portal Tower Entrance\n   - After Port Abandom Quest\n + Iron Horde Invasion (Zygor)",},
+questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Dark Portal\n  - Talk to Battlemage\n  - Portal Tower Entrance\n  - After Port Abandom Quest",},
 
 {label = "SU  06  Garrison 02 A", frameID = "list1", key = "custom:q:34586:list1:XP06018",
 questID = 34586, prereq = { 36941, }, hideWhenCompleted = true, faction = "Alliance",
-questInfo = "Warlords of Draenor\n + Warboard: The Dark Portal\n + Talk to Battlemage\n   - In Portal Tower Entrance\n   - After Port Abandom Quest\n   - Take Red Portal (Draenor)\n   - Do Initial Quests",},
+questInfo = "Warlords of Draenor\n + Warboard: Dark Portal\n  - Talk to Battlemage\n  - In Portal Tower Entrance\n  - After Port Abandom Quest\n  - Take Red Portal (Draenor)",},
 
 {label = "SU  06  Garrison 03 A", frameID = "list1", key = "custom:q:34775:list1:XP06019",
 questID = 34775, prereq = { 34586, }, hideWhenCompleted = true, faction = "Alliance",
@@ -54,15 +54,15 @@ questID = 36615, hideWhenCompleted = true, questInfo = "Level Garrison to 3", },
 
 {label = "SU  06  Garrison 01 H", frameID = "list1", key = "custom:q:36940:list1:XP06022",
 questID = 36940, prereq = { 47514, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Warlords of Draenor\n + Warboard: The Dark Portal\n + Talk to Battlemage\n   - Lower Portal Room\n   - After Port Abandom Quest\n + Iron Horde Invasion (Zygor)",},
+questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Dark Portal\n  - Talk to Battlemage\n  - Lower Portal Room\n  - After Port Abandom Quest",},
 
 {label = "SU  06  Garrison 02 H", frameID = "list1", key = "custom:q:34586:list1:XP06023",
 questID = 34586, prereq = { 36940, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Warlords of Draenor\n + Warboard: The Dark Portal\n + Talk to Battlemage\n   - Lower Portal Room\n   - After Port Abandom Quest\n   - Take Red Portal (Draenor)\n   - Do Initial Quests",},
+questInfo = "Warlords of Draenor\n  - Warboard: The Dark Portal\n  - Talk to Battlemage\n  - Lower Portal Room\n  - After Port Abandom Quest\n  - Take Red Portal (Draenor)",},
 
 {label = "SU  06  Garrison 03 H", frameID = "list1", key = "custom:q:34960:list1:XP06024",
 questID = 34960, prereq = { 34586, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Warlords of Draenor\n + Frostfire Ridge (Zygor)\n + Quest Until Step 26\n    'The Land Provides'\n ",},
+questInfo = "Warlords of Draenor\n + Frostfire Ridge (Zygor)\n  - Quest Until Step 26\n  - 'The Land Provides'",},
 
 {label = "SU  06  Garrison 04 H", frameID = "list1", key = "custom:q:36567:list1:XP06025",
 questID = 36567, prereq = { 34960, }, hideWhenCompleted = true, faction = "Horde",
