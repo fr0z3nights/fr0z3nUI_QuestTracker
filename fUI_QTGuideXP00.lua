@@ -10,6 +10,16 @@ local EXPANSION_NAME = "Unclassified"
 
 local Y, N = true, false
 
+local WHITE = "ffffff"
+local RED = "ff4040"
+local ORANGE = "ff8c1a"
+local YELLOW = "ffe633"
+local GREEN = "33ff33"
+local BLUE = "3399ff"
+local PURPLE = "9933ff"
+local CYAN = "33ffff"
+local GREY = "bfbfbf"
+
 -- Currency gates (optional):
 --   item.currencyID = { currencyID, required }
 -- Amount sources (Retail):
@@ -53,7 +63,7 @@ local bakedRules = {
   {label = "Midnight Tailoring",      frameID = "list1", professionSkillLineID = 197, missingProfessionSkillLineID = 2918, textInfo = "Midnight Tailoring",       key = "XP12:Prof:Tailoring",            locationID = {2393, }, },
   {label = "Midnight Cooking",        frameID = "list1", professionSkillLineID = 185, missingProfessionSkillLineID = 2908, textInfo = "Midnight Cooking\n  - Open Prof Book", key = "XP12:Prof:Cooking",  locationID = {2393, }, },
   {label = "Midnight Fishing",        frameID = "list1", professionSkillLineID = 356, missingProfessionSkillLineID = 2911, textInfo = "Midnight Fishing",         key = "XP12:Prof:Fishing",              locationID = {2393, }, },
-  {label = "Midnight Find Fish",      frameID = "list1", professionSkillLineID = 356, missingFindFish = true, showIf = { missingFindFish = true },      textInfo = "Midnight Fish Finder\n - Olirea @ Fountain 45,60\n - Buy Angler's Guide", key = "XP12:Prof:FindFish", },
+  {label = "Midnight Find Fish",      frameID = "list1", professionSkillLineID = 356, missingFindFish = true, showIf = { missingFindFish = true },      textInfo = "Midnight Fish Finder\n - Olirea @ Fountain 45,60\n - Buy Angler's Guide", key = "XP12:Prof:FindFish", rested = true },
 
 --  11   KHAZ ALGAR PROFESSIONS       If Not Clearing, Try Loading a Profession's Book After Learning                      /dump C_Map.GetBestMapForUnit("player")
   {label = "Khaz Alchemy",            frameID = "list1", professionSkillLineID = 171, missingProfessionSkillLineID = 2871, textInfo = "Khaz Alchemy",             key = "XP11:Prof:Alchemy",              locationID = {2339, }, },
@@ -193,11 +203,11 @@ local bakedRules = {
   {label = "Classic Fishing",         frameID = "list1",                                   missingProfessionSkillLineID = 356, key = "XP01:Prof:Fishing", },
 
   {label = "Guild Cloak A1",          frameID = "bar1",  textInfo = "|cff1eff00Guild Cloak|r", faction = "alliance",       locationID = 84, showIf = { factionID = 1168, minStanding = 6 },                                                              complete = { any = { { itemIDs = { 63352 }, includeBank = true }, }, }, key = "rep:guild:alliance:cloak1", },
-  {label = "Guild Cloak A2",          frameID = "bar1",  textInfo = "|cff1eff00Guild Cloak|r", faction = "alliance",       locationID = 84, showIf = { all = { { factionID = 1168, minStanding = 7 }, { itemIDs = { 63352 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 63206 }, includeBank = true }, }, }, key = "rep:guild:alliance:cloak2", },
-  {label = "Guild Cloak A3",          frameID = "bar1",  textInfo = "|cff1eff00Guild Cloak|r", faction = "alliance",       locationID = 84, showIf = { all = { { factionID = 1168, minStanding = 8 }, { itemIDs = { 63206 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 65360 }, includeBank = true }, }, }, key = "rep:guild:alliance:cloak3", },
+  {label = "Guild Cloak A2",          frameID = "bar1",  textInfo = "|cff0070ddGuild Cloak|r", faction = "alliance",       locationID = 84, showIf = { all = { { factionID = 1168, minStanding = 7 }, { itemIDs = { 63352 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 63206 }, includeBank = true }, }, }, key = "rep:guild:alliance:cloak2", },
+  {label = "Guild Cloak A3",          frameID = "bar1",  textInfo = "|cffa335eeGuild Cloak|r", faction = "alliance",       locationID = 84, showIf = { all = { { factionID = 1168, minStanding = 8 }, { itemIDs = { 63206 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 65360 }, includeBank = true }, }, }, key = "rep:guild:alliance:cloak3", },
   {label = "Guild Cloak H1",          frameID = "bar1",  textInfo = "|cff1eff00Guild Cloak|r", faction = "horde",          locationID = 85, showIf = { factionID = 1168, minStanding = 6 },                                                              complete = { any = { { itemIDs = { 63353 }, includeBank = true }, }, }, key = "rep:guild:horde:cloak1",    },
-  {label = "Guild Cloak H2",          frameID = "bar1",  textInfo = "|cff1eff00Guild Cloak|r", faction = "horde",          locationID = 85, showIf = { all = { { factionID = 1168, minStanding = 7 }, { itemIDs = { 63353 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 63207 }, includeBank = true }, }, }, key = "rep:guild:horde:cloak2",    },
-  {label = "Guild Cloak H3",          frameID = "bar1",  textInfo = "|cff1eff00Guild Cloak|r", faction = "horde",          locationID = 85, showIf = { all = { { factionID = 1168, minStanding = 8 }, { itemIDs = { 63207 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 65274 }, includeBank = true }, }, }, key = "rep:guild:horde:cloak3",    },
+  {label = "Guild Cloak H2",          frameID = "bar1",  textInfo = "|cff0070ddGuild Cloak|r", faction = "horde",          locationID = 85, showIf = { all = { { factionID = 1168, minStanding = 7 }, { itemIDs = { 63353 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 63207 }, includeBank = true }, }, }, key = "rep:guild:horde:cloak2",    },
+  {label = "Guild Cloak H3",          frameID = "bar1",  textInfo = "|cffa335eeGuild Cloak|r", faction = "horde",          locationID = 85, showIf = { all = { { factionID = 1168, minStanding = 8 }, { itemIDs = { 63207 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 65274 }, includeBank = true }, }, }, key = "rep:guild:horde:cloak3",    },
 
 --  /dump C_Map.GetBestMapForUnit("player") 
 --{label = "Phaze Blasted Cata", textInfo = "|cffa335eeCATACLYSM PHAZED|r", locationID = 17, frameID = "list2", questID = 66560, showIf = { completedQuestID = 66560 }, key = "zone:blastedlands:cataclysm", },

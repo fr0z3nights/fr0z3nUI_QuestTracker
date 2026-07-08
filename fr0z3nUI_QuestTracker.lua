@@ -1308,6 +1308,49 @@ local function ColorText(rgb, text)
   return text
 end
 
+local function NormalizeColorString(color)
+  if color == nil then return nil end
+  local s = tostring(color)
+  s = s:gsub("^%s+", ""):gsub("%s+$", "")
+  if s == "" then return nil end
+  s = s:gsub("^|[cC]", "")
+  s = s:gsub("^#", "")
+  s = s:gsub("^0x", "")
+  s = s:lower()
+  if #s == 8 then
+    s = s:sub(3)
+  end
+  if #s == 6 and s:match("^[0-9a-f]+$") then
+    return s
+  end
+  return nil
+end
+
+local function ResolveColorRGB(color)
+  if type(color) == "table" then
+    local r = tonumber(color[1] or color.r)
+    local g = tonumber(color[2] or color.g)
+    local b = tonumber(color[3] or color.b)
+    if not (r and g and b) then return nil end
+    if r > 1 or g > 1 or b > 1 then
+      r = r / 255
+      g = g / 255
+      b = b / 255
+    end
+    if r < 0 then r = 0 elseif r > 1 then r = 1 end
+    if g < 0 then g = 0 elseif g > 1 then g = 1 end
+    if b < 0 then b = 0 elseif b > 1 then b = 1 end
+    return r, g, b
+  end
+
+  local hex = NormalizeColorString(color)
+  if not hex then return nil end
+  local r = tonumber(hex:sub(1, 2), 16) / 255
+  local g = tonumber(hex:sub(3, 4), 16) / 255
+  local b = tonumber(hex:sub(5, 6), 16) / 255
+  return r, g, b
+end
+
 local function ResolveFontPath(fontNameOrPath)
   if not fontNameOrPath then return nil end
   local s = tostring(fontNameOrPath)
@@ -1352,14 +1395,14 @@ local function GetRuleFontDef(rule)
   local name = rule.font or rule.textFont or rule.fontName
   if name ~= nil and tostring(name):lower() == "inherit" then name = nil end
 
-  local size = rule.size or rule.fontSize
+  local size = rule.size or rule.Size or rule.fontSize or rule.FontSize
   size = tonumber(size)
   if size ~= nil and size <= 0 then size = nil end
 
   local flags = rule.fontFlags or rule.flags
   if flags ~= nil and tostring(flags):lower() == "inherit" then flags = nil end
 
-  local color = rule.fontColor
+  local color = rule.color or rule.Color or rule.fontColor or rule.FontColor
   if color ~= nil and tostring(color):lower() == "inherit" then color = nil end
 
   if name == nil and size == nil and flags == nil and color == nil then
@@ -1384,13 +1427,8 @@ local function ApplyFontStyle(fs, fontDef)
   end
 
   if fontDef.color then
-    local hex = tostring(fontDef.color):gsub("^#", "")
-    if hex:len() == 6 then
-      local r = tonumber(hex:sub(1, 2), 16) / 255
-      local g = tonumber(hex:sub(3, 4), 16) / 255
-      local b = tonumber(hex:sub(5, 6), 16) / 255
-      if fs.SetTextColor then fs:SetTextColor(r, g, b, 1) end
-    end
+    local r, g, b = ResolveColorRGB(fontDef.color)
+    if r and fs.SetTextColor then fs:SetTextColor(r, g, b, 1) end
   end
 
   if fs.SetShadowColor and fs.SetShadowOffset then
@@ -1523,12 +1561,12 @@ local function PlayerHasFindFishUnlocked()
         if name == "Find Fish" then
           return true
         end
-      end
 
-      if type(trackingType) == "string" then
-        local tt = trackingType:lower()
-        if tt == "fish" or tt == "findfish" or tt == "find_fish" then
-          return true
+        local trackingTypeNum = tonumber(trackingType)
+        if trackingTypeNum == 7 or trackingTypeNum == 8 then
+          if name:lower():find("fish", 1, true) then
+            return true
+          end
         end
       end
     end
@@ -3251,8 +3289,8 @@ local function BuildRuleStatus(rule, ctx, opts)
 
   local indicators = BuildIndicators(rule)
 
-  if type(rule) == "table" and rule.color ~= nil then
-    local c = rule.color
+  if type(rule) == "table" and (rule.color ~= nil or rule.Color ~= nil or rule.fontColor ~= nil or rule.FontColor ~= nil) then
+    local c = rule.color or rule.Color or rule.fontColor or rule.FontColor
     if c ~= false and tostring(c):lower() ~= "inherit" then
       title = ColorText(c, title)
     end
@@ -4507,6 +4545,14 @@ end
 -- Slash-only helper: Abandon All Quests (Keep List) without confirmation.
 ns.RunQuestXKeepListAbandonNoConfirm = function()
   RunQuestXKeepListAbandonFromRules(true)
+end
+
+_G.FQT_RunQuestXKeepListAbandonNoConfirm = function()
+  if type(ns) == "table" and type(ns.RunQuestXKeepListAbandonNoConfirm) == "function" then
+    ns.RunQuestXKeepListAbandonNoConfirm()
+    return true
+  end
+  return false
 end
 
 local function QueueTryAbandonQuestX()

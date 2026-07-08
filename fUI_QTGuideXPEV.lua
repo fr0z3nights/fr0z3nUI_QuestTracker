@@ -10,6 +10,16 @@ local EXPANSION_NAME = "Events"
 
 local Y, N = true, false
 
+local WHITE = "ffffff"
+local RED = "ff4040"
+local ORANGE = "ff8c1a"
+local YELLOW = "ffe633"
+local GREEN = "33ff33"
+local BLUE = "3399ff"
+local PURPLE = "9933ff"
+local CYAN = "33ffff"
+local GREY = "bfbfbf"
+
 -- Currency gates (optional):
 --   item.currencyID = { currencyID, required }
 -- Amount sources (Retail):
@@ -66,6 +76,7 @@ local bakedRules = {
 
   {group = "event:darkmoon-faire", order = 00, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon Faire", frameID = "list2", key = "event:darkmoon-faire", questInfo = "Darkmoon Faire", hideWhenCompleted = false, },
+
   {group = "event:darkmoon-faire", order = 01, aura = { eventKind = "calendar", keywords = { "Darkmoon Faire" }, includeHolidayText = true, mustHave = true, rememberDaily = true },
   label = "Darkmoon Adventurer's Guide", frameID = "list2", key = "custom:seq:item:71634:list2:evdm00",
   itemInfo = "Darkmoon Adventurer's Guide\n- Hidden if in bags/bank", item = {itemID = 71634, includeBank = true, required = { 1, Y, N, 0 }, }, },
@@ -234,6 +245,10 @@ local bakedRules = {
   label = "Love is in the Air", frameID = "list2", key = "event:love-is-in-the-air",
   questInfo = "Valentines", hideWhenCompleted = false, },
 
+  {group = "event:midsummer", order = 00, aura = { eventKind = "calendar", keywords = { "Midsummer Fire Festival" }, mustHave = true, rememberDaily = true },
+  label = "Midsummer Fire Festival", frameID = "list2", key = "event:midsummer-fire-festival", size = 22, color = "ffe633",
+  itemInfo = "Midsummer", hideWhenCompleted = false, item = { itemID = 23247, required = { 999, N, N, 0 }, },},
+
   {group = "event:childrens", order = 00, aura = { eventKind = "calendar", keywords = { "Children's Week" }, mustHave = true, rememberDaily = true },
   label = "Children's Week", frameID = "list2", key = "event:childrens",
   questInfo = "Children's Week", questID = 99999999, hideWhenCompleted = true, },
@@ -242,7 +257,7 @@ local bakedRules = {
   questInfo = "BLINGTRON", questID = 44184, hideWhenCompleted = true, },
 
 
-
+ 
 
 }
 

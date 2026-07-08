@@ -10,6 +10,16 @@ local EXPANSION_NAME = "The War Within"
 
 local Y, N = true, false
 
+local WHITE = "ffffff"
+local RED = "ff4040"
+local ORANGE = "ff8c1a"
+local YELLOW = "ffe633"
+local GREEN = "33ff33"
+local BLUE = "3399ff"
+local PURPLE = "9933ff"
+local CYAN = "33ffff"
+local GREY = "bfbfbf"
+
 -- Currency gates (optional):
 --   item.currencyID = { currencyID, required }
 -- Amount sources (Retail):

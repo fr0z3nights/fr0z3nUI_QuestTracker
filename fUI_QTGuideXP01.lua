@@ -9,6 +9,16 @@ local EXPANSION_NAME = "Classic"
 
 local Y, N = true, false
 
+local WHITE = "ffffff"
+local RED = "ff4040"
+local ORANGE = "ff8c1a"
+local YELLOW = "ffe633"
+local GREEN = "33ff33"
+local BLUE = "3399ff"
+local PURPLE = "9933ff"
+local CYAN = "33ffff"
+local GREY = "bfbfbf"
+
 -- Currency gates (optional):
 --   item.currencyID = { currencyID, required }
 -- Amount sources (Retail):
@@ -122,7 +132,7 @@ complete = { any = { { item = { itemID = 45583, count = 1 } }, { rep = { faction
 {group = "classic:tabards:horde-tabards", order = 6,
 label = "Silvermoon Tabard", faction = "Horde", frameID = "list1", key = "custom:item:45585:list1:013",
 itemInfo = "Silvermoon Tabard", rep = { sellWhenExalted = Y, factionID = 911, },
-item = { itemID = 45585, required = { 1, Y, Y, 1 }, }, locationID = "85, ", restedOnly = Y,
+item = { itemID = 45585, required = { 1, Y, Y, 1 }, }, locationID = "85, 94, 110,", restedOnly = Y,
 complete = { any = { { item = { itemID = 45585, count = 1 } }, { rep = { factionID = 911, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:horde-tabards", order = 7,

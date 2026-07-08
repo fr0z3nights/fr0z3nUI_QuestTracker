@@ -779,6 +779,10 @@ function ns.Render.RenderList(frameDef, frame, entries)
     end
 
     if e then
+      if e.rule and GetRuleFontDef and ApplyFontStyle then
+        ApplyFontStyle(fs, GetRuleFontDef(e.rule))
+      end
+
       local isDMFHeader = false
       do
         local r = e.rule
