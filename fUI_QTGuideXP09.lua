@@ -49,11 +49,11 @@ local bakedRules = {
 
 {label = "SU  09  Open", faction = "alliance", frameID = "list1", key = "custom:q:60151:list1:XP09011a",
 questID = 60150, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 60151, 61874, 999999 },
-questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n - In Front Of Castle\n + Skip Quests If Possible\n + Learn Professions\n ", },
+questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n  - Castle Entryway\n  - Skip Quests If Possible\n + Learn Professions\n ", },
 --Warboard   (Accept if there)\n    - Chromie\n    - Legion\n    - Warlords\n    - Jade Forest\n\n
 {label = "SU  09  Open", faction = "horde", frameID = "list1", key = "custom:q:60151:list1:XP09011h",
 questID = 60150, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 60151, 61874, 999999 },
-questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n - Front Warchief Building\n + Skip Quests If Possible\n + Learn Professions\n ", },
+questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n  - Valley of Strength\n  - Skip Quests If Possible\n + Learn Professions\n ", },
 
 
 

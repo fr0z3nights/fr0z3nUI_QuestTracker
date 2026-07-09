@@ -93,7 +93,7 @@ questInfo = "The War Within\nFollow Guide or Skip", },
 
 {label = "SU  11  N  01  Intro & Isle of Dorn 03", frameID = "list1", key = "custom:q:85573:list1:XP11080",
 questID = 85573, prereq = { 45727, }, hideWhenCompleted = true,
-questInfo = "The War Within\nSiren Isle (Zygor)\\n + Follow Guide", },
+questInfo = "The War Within\n + Siren Isle (Zygor)\n  - Follow Guide", },
 
 {frameID = "list1", key = "custom:item:230728:list1:129",
 hideWhenCompleted = false,

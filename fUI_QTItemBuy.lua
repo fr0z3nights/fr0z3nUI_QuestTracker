@@ -261,6 +261,18 @@ local function AutoBuyItemsAtMerchant(frame)
 
   local BuildRuleStatus = ns.BuildRuleStatus
   local IsRuleDisabled = ns.IsRuleDisabled
+  local GetStandingIDByFactionID = ns.GetStandingIDByFactionID
+
+  local function IsBlockedByExaltedSell(rule)
+    if type(rule) ~= "table" then return false end
+    if type(rule.rep) ~= "table" then return false end
+    if rule.rep.sellWhenExalted ~= true then return false end
+    local factionID = tonumber(rule.rep.factionID)
+    if not factionID or factionID <= 0 then return false end
+    if type(GetStandingIDByFactionID) ~= "function" then return false end
+    local standingID = GetStandingIDByFactionID(factionID)
+    return (standingID and standingID >= 8) and true or false
+  end
 
   local wantByItemID = {}
   local wantCheapestGroups = {}
@@ -326,9 +338,16 @@ local function AutoBuyItemsAtMerchant(frame)
 
   for _, rule in ipairs(rules) do
     if type(rule) == "table" and type(IsRuleDisabled) == "function" and not IsRuleDisabled(rule) then
+      local blockedByExaltedSell = IsBlockedByExaltedSell(rule)
+      local ruleCompleted = false
+      if (not blockedByExaltedSell) and type(BuildRuleStatus) == "function" then
+        local status = BuildRuleStatus(rule, nil, { forceNormalVisibility = true })
+        ruleCompleted = (type(status) == "table" and status.completed == true)
+      end
+
       if type(rule.item) == "table" then
         local buy = rule.item.buy
-        if type(buy) == "table" and buy.enabled == true then
+        if type(buy) == "table" and buy.enabled == true and not blockedByExaltedSell and not ruleCompleted then
           local itemID = tonumber(rule.item.itemID)
           local maxQty = tonumber(buy.max) or 0
           local minQty = tonumber(buy.min) or 0
