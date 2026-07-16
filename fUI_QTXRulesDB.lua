@@ -182,7 +182,7 @@ SetZone("Timewalking, Event")
 		KQuest(89223, "08 Battle TKN H")                            --	Token H		Player			
     --	Timewalking	 09  Shadowlands
 		KQuest(92647, "09 Shadowlands LVL")							--  Weekly		Player LVL			
-		KQuest(92649, "09 Shadowlands MAX")					    	--  Weekly		Player MAX		
+		KQuest(93628, "09 Shadowlands MAX")					    	--  Weekly		Player MAX		
 		KQuest(92650, "09 Shadowlands TKN")							--  Token A		Player			
     --	Timewalking	 10  Dragonflight
 		KQuest(93495, "10 Dragonflight LVL")						--  Weekly		Player LVL			
@@ -201,7 +201,10 @@ SetZone("Darkmoon Island, Azeroth")
 --  12	Midnight
 
 SetZone("Silvermoon City, Quel'Thalas")
+	KQuest(93525, "Nulling Nullaeus")			            		--	Scheduled	Player		
 	KQuest(93595, "A Call to Delves")			            		--	Scheduled	Player		
+	KQuest(94385, "Void Assaults: Eversong Woods")	           		--	Scheduled	Player		
+	KQuest(94836, "Late Night Training: Week 1 of 3")          		--	Scheduled	Player		
 
 --  11	War Within
 

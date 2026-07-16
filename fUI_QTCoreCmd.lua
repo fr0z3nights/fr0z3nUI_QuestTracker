@@ -60,6 +60,61 @@ local function HasSkillLineID(id)
   return false
 end
 
+local function PlayerIsOnQuestID(questID)
+  questID = tonumber(questID)
+  if not questID or questID <= 0 then return false end
+
+  if C_QuestLog and type(C_QuestLog.IsOnQuest) == "function" then
+    local ok, on = pcall(C_QuestLog.IsOnQuest, questID)
+    if ok then return on and true or false end
+  end
+
+  if C_QuestLog and type(C_QuestLog.GetLogIndexForQuestID) == "function" then
+    local ok, idx = pcall(C_QuestLog.GetLogIndexForQuestID, questID)
+    if ok and type(idx) == "number" and idx > 0 then
+      return true
+    end
+  end
+
+  if type(GetQuestLogIndexByID) == "function" then
+    local ok, idx = pcall(GetQuestLogIndexByID, questID)
+    if ok and type(idx) == "number" and idx > 0 then
+      return true
+    end
+  end
+
+  return false
+end
+
+local function QuestIsCompleted(questID)
+  questID = tonumber(questID)
+  if not questID or questID <= 0 then return false end
+
+  if C_QuestLog and type(C_QuestLog.IsQuestFlaggedCompleted) == "function" then
+    local ok, done = pcall(C_QuestLog.IsQuestFlaggedCompleted, questID)
+    if ok then return done and true or false end
+  end
+
+  if type(IsQuestFlaggedCompleted) == "function" then
+    local ok, done = pcall(IsQuestFlaggedCompleted, questID)
+    if ok then return done and true or false end
+  end
+
+  return false
+end
+
+local function QuestReadyForTurnIn(questID)
+  questID = tonumber(questID)
+  if not questID or questID <= 0 then return false end
+
+  if C_QuestLog and type(C_QuestLog.ReadyForTurnIn) == "function" then
+    local ok, ready = pcall(C_QuestLog.ReadyForTurnIn, questID)
+    if ok then return ready and true or false end
+  end
+
+  return false
+end
+
 local function PrintProfStatusFallback()
   NormalizeSV()
   local c = _G.fr0z3nUI_QuestTracker_Char and _G.fr0z3nUI_QuestTracker_Char.cache or nil
@@ -692,6 +747,33 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
     cmd = tostring(cmd or ""):lower()
     rest = tostring(rest or "")
 
+    do
+      local qid = nil
+      if cmd == "qc" then
+        qid = tonumber((rest:match("^(%d+)")))
+        if not qid then
+          Say("Usage: /fqt qc12345")
+          return
+        end
+      else
+        qid = tonumber((cmd:match("^qc(%d+)$")))
+      end
+
+      if qid then
+        local done = QuestIsCompleted(qid)
+        local ready = QuestReadyForTurnIn(qid)
+        local onQuest = PlayerIsOnQuestID(qid)
+        Say(string.format(
+          "Quest %d: %s (onQuest=%s, readyForTurnIn=%s)",
+          qid,
+          done and "Complete" or "Not complete",
+          onQuest and "yes" or "no",
+          ready and "yes" or "no"
+        ))
+        return
+      end
+    end
+
     if cmd == "" then
       if ns and ns.ShowOptions then
         ns.ShowOptions()
@@ -1006,6 +1088,6 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
       end
     end
 
-    Say("CoreCmd: /fqt (options), /fqt status, /fqt prof ..., /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug ..., /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
+    Say("CoreCmd: /fqt (options), /fqt status, /fqt qc12345, /fqt prof ..., /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug ..., /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
   end)
 end
