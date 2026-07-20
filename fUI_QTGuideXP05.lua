@@ -54,7 +54,7 @@ questID = 30515, prereq = { 29822, }, hideWhenCompleted = true, faction = "Horde
 questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      Until \"Challenge Accepted\" \n ",},
 
 {label = "SU  05  Kun-Lai  Sprite's Cloth Chest", frameID = "list1", key = "custom:q:31412:list1:XP05017",
-questID = 31412, prereq = { 29562, }, hideWhenCompleted = true,
+questID = 31412, prereq = { 29562, }, hideWhenCompleted = true, locationID = {371, 376, 379, 388, 390, 391, 393, 418, 422,},
 questInfo = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n ", },
 
   -- Shows During MoP Timewalking or on Timeless Isle

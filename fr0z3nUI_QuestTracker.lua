@@ -1180,7 +1180,7 @@ GetItemCountSafe = function(itemID, includeBank, opts)
   itemID = tonumber(itemID)
   if not itemID then return 0 end
 
-  includeBank = (includeBank == true)
+  includeBank = (includeBank == true) or (type(opts) == "table" and opts.inBank == true)
 
   local function ApplyPurchasedCache(raw)
     if type(opts) == "table" and opts.cachePurchased == true then
@@ -1578,13 +1578,13 @@ end
 local function EvaluateRuleCondition(node)
   if type(node) ~= "table" then return false end
 
-  local includeBank = (node.includeBank == true)
+  local includeBank = (node.includeBank == true) or (node.inBank == true)
 
   local function EvalChild(child)
-    if includeBank and type(child) == "table" and child.includeBank == nil then
+    if includeBank and type(child) == "table" and child.includeBank == nil and child.inBank == nil then
       local t = {}
       for k, v in pairs(child) do t[k] = v end
-      t.includeBank = true
+      t.inBank = true
       return EvaluateRuleCondition(t)
     end
     return EvaluateRuleCondition(child)
@@ -1744,7 +1744,7 @@ local function EvaluateRuleCondition(node)
     hadCondition = true
     local itemID = tonumber(node.item.itemID)
     local need = tonumber(node.item.count) or tonumber(node.item.required) or 1
-    local inc = (node.item.includeBank == true) or includeBank
+    local inc = (node.item.includeBank == true) or (node.item.inBank == true) or includeBank
     if GetItemCountSafe(itemID, inc, node.item) < need then
       return false
     end
@@ -2138,7 +2138,7 @@ local function BuildRuleStatus(rule, ctx, opts)
         tested = true
         local itemID = tonumber(complete.item.itemID)
         local need = tonumber(complete.item.count) or tonumber(complete.item.required) or 1
-        local have = GetItemCountSafe(itemID)
+        local have = GetItemCountSafe(itemID, (complete.item.includeBank == true) or (complete.item.inBank == true), complete.item)
         ok = ok and (have >= need)
       end
       if complete.rep ~= nil or complete.factionID ~= nil or complete.minStanding ~= nil or complete.maxStanding ~= nil then
@@ -2720,7 +2720,7 @@ local function BuildRuleStatus(rule, ctx, opts)
       end
     end
 
-    local count = GetItemCountSafe(itemID, (rule.item.includeBank == true), rule.item)
+    local count = GetItemCountSafe(itemID, (rule.item.includeBank == true) or (rule.item.inBank == true), rule.item)
 
     if applyGates then
       local showBelow = tonumber(rule.item.showWhenBelow)
@@ -2825,7 +2825,7 @@ local function BuildRuleStatus(rule, ctx, opts)
           local itemID = tonumber(it.itemID or it.id)
           local need = tonumber(it.required or it.count or it.need)
           if itemID and itemID > 0 and need and need > 0 then
-            local have = GetItemCountSafe(itemID, (it.includeBank == true))
+            local have = GetItemCountSafe(itemID, (it.includeBank == true) or (it.inBank == true), it)
             if have < 0 then have = 0 end
             local name = GetItemNameSafe(itemID)
             if not name or name == "" then

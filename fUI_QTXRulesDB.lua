@@ -201,10 +201,11 @@ SetZone("Darkmoon Island, Azeroth")
 --  12	Midnight
 
 SetZone("Silvermoon City, Quel'Thalas")
-	KQuest(93525, "Nulling Nullaeus")			            		--	Scheduled	Player		
-	KQuest(93595, "A Call to Delves")			            		--	Scheduled	Player		
-	KQuest(94385, "Void Assaults: Eversong Woods")	           		--	Scheduled	Player		
 	KQuest(94836, "Late Night Training: Week 1 of 3")          		--	Scheduled	Player		
+	KQuest(94386, "Void Assaults: Zul'Aman")	           			--	Scheduled	Player		
+	KQuest(94385, "Void Assaults: Eversong Woods")	           		--	Scheduled	Player		
+	KQuest(93595, "A Call to Delves")			            		--	Scheduled	Player		
+	KQuest(93525, "Nulling Nullaeus")			            		--	Scheduled	Player		
 
 --  11	War Within
 
