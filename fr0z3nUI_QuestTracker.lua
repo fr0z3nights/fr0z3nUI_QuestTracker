@@ -1266,6 +1266,7 @@ local HasRememberedWeeklyTimewalkingKind = Calendar.HasRememberedWeeklyTimewalki
 local ClearRememberedTimewalkingKind = Calendar.ClearRememberedTimewalkingKind or function(...) end
 local ClearRememberedEventState = Calendar.ClearRememberedEventState or function(...) end
 local MaybeAutoResetEventsOncePerDay = Calendar.MaybeAutoResetEventsOncePerDay or function(...) end
+local MaybeAutoClearTimewalkingKindOncePerWeek = Calendar.MaybeAutoClearTimewalkingKindOncePerWeek or function(...) end
 
 local function ColorHex(r, g, b)
   local function Normalize01(v)
@@ -4666,6 +4667,7 @@ local function FQT_OnEvent(_, event, ...)
 
   if event == "PLAYER_LOGIN" then
     NormalizeSV()
+    MaybeAutoClearTimewalkingKindOncePerWeek()
     MaybeAutoResetEventsOncePerDay()
     if ns and ns.RequestWarbandCurrencyData then
       ns.RequestWarbandCurrencyData()

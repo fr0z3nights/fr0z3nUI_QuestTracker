@@ -125,8 +125,8 @@ ns.rules = {
   aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true }, hideWhenCompleted = false,
   --                            CLASSIC        OUTLAND          WRATH         CATACLYSM        PANDARIA        DRAENOR          LEGION          BATTLE       SHADOWLANDS     DRGONFLIGHT
   --                         LVL  01  MAX    LVL  02  MAX    LVL  03  MAX    LVL  04  MAX    LVL  05  MAX    LVL  06  MAX    LVL  07  MAX    LVL  08  MAX    LVL  09  MAX    LVL  10  MAX
-  hideIfAnyQuestInLog =     {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497},
-  hideIfAnyQuestCompleted = {85947, 86731,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497}, },
+  hideIfAnyQuestInLog =     {85947, 93607,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497},
+  hideIfAnyQuestCompleted = {85947, 93607,   85948, 83363,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497}, },
 
 --  01  Classic              UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
@@ -134,7 +134,7 @@ ns.rules = {
   questID = 85947, questInfo = "Classic", requireInLog = true, twKind = "classic", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
   {label = "Timewalking Classic MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 86731, questInfo = "Classic", requireInLog = true, twKind = "classic", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
+  questID = 93607, questInfo = "Classic", requireInLog = true, twKind = "classic", hideWhenCompleted = false, showIfRememberedTimewalkingKind = true, },
 
   {label = "Timewalking Classic TKN", frameID = "bar1", key = "tw:token:classic", requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 83285 }, preferQuestInfoForTitle = true, twKind = "classic", hideWhenCompleted = false,

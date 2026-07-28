@@ -159,32 +159,43 @@ local function RememberWeeklyTimewalkingKind(kind)
   end
 end
 
+local GetActiveTimewalkingKind
+
 local function HasRememberedWeeklyTimewalkingKind(kind)
   NormalizeSV()
   local now = GetServerTimeSafe()
   local cache = fr0z3nUI_QuestTracker_Acc.cache.twWeekly
-  if type(cache) ~= "table" then return false end
-  local exp = tonumber(cache.exp) or 0
-  -- If expiration is absurdly far in the future, treat as corrupt/stale.
-  -- Weekly resets should be within ~8 days.
-  if exp > (now + (60 * 60 * 24 * 8)) then
-    cache.kind = nil
-    cache.exp = nil
-    return false
-  end
-  if exp <= now then
-    if exp ~= 0 then
+  local rememberedKind = ""
+  if type(cache) == "table" then
+    local exp = tonumber(cache.exp) or 0
+    -- If expiration is absurdly far in the future, treat as corrupt/stale.
+    -- Weekly resets should be within ~8 days.
+    if exp > (now + (60 * 60 * 24 * 8)) then
       cache.kind = nil
       cache.exp = nil
+    elseif exp > now then
+      rememberedKind = tostring(cache.kind or "")
+    else
+      if exp ~= 0 then
+        cache.kind = nil
+        cache.exp = nil
+      end
     end
-    return false
   end
   if kind == nil then
-    return cache.kind ~= nil and tostring(cache.kind) ~= ""
+    if rememberedKind ~= "" then
+      return true
+    end
+    local liveKind = GetActiveTimewalkingKind and GetActiveTimewalkingKind(now) or nil
+    return type(liveKind) == "string" and liveKind ~= ""
   end
   kind = tostring(kind or "")
   if kind == "" then return false end
-  return tostring(cache.kind or "") == kind
+  if rememberedKind == kind then
+    return true
+  end
+  local liveKind = GetActiveTimewalkingKind and GetActiveTimewalkingKind(now) or nil
+  return tostring(liveKind or "") == kind
 end
 
 local function ClearRememberedTimewalkingKind()
@@ -256,6 +267,30 @@ local function MaybeAutoResetEventsOncePerDay()
   cache.eventAutoResetDailyStamp = dailyResetAt
 end
 
+-- First character per account to log in after weekly reset: clear remembered TW kind.
+-- Mirrors /fqt twclear behavior, but runs once automatically per weekly reset.
+local function MaybeAutoClearTimewalkingKindOncePerWeek()
+  NormalizeSV()
+  local acc = fr0z3nUI_QuestTracker_Acc
+  if not (type(acc) == "table" and type(acc.cache) == "table") then
+    return
+  end
+
+  local weeklyResetAt = tonumber(GetWeeklyResetAt()) or 0
+  if weeklyResetAt <= 0 then
+    return
+  end
+
+  local cache = acc.cache
+  local lastStamp = tonumber(cache.twAutoClearWeeklyStamp) or 0
+  if lastStamp == weeklyResetAt then
+    return
+  end
+
+  ClearRememberedTimewalkingKind()
+  cache.twAutoClearWeeklyStamp = weeklyResetAt
+end
+
 Cal.RememberWeeklyAura = RememberWeeklyAura
 Cal.HasRememberedWeeklyAura = HasRememberedWeeklyAura
 Cal.RememberDailyAura = RememberDailyAura
@@ -265,9 +300,11 @@ Cal.HasRememberedWeeklyTimewalkingKind = HasRememberedWeeklyTimewalkingKind
 Cal.ClearRememberedTimewalkingKind = ClearRememberedTimewalkingKind
 Cal.ClearRememberedEventState = ClearRememberedEventState
 Cal.MaybeAutoResetEventsOncePerDay = MaybeAutoResetEventsOncePerDay
+Cal.MaybeAutoClearTimewalkingKindOncePerWeek = MaybeAutoClearTimewalkingKindOncePerWeek
 
 ns.ClearRememberedTimewalkingKind = ClearRememberedTimewalkingKind
 ns.ClearRememberedEventState = ClearRememberedEventState
+ns.MaybeAutoClearTimewalkingKindOncePerWeek = MaybeAutoClearTimewalkingKindOncePerWeek
 
 local timewalkingSpellToKeywords = {
   [452307] = { "Classic" },
@@ -283,10 +320,37 @@ local timewalkingSpellToKeywords = {
 
 }
 
+local timewalkingSpellToKind = {
+  [452307] = "classic",
+  [335148] = "outland",
+  [335149] = "wrath",
+  [335150] = "cata",
+  [335151] = "pandaria",
+  [335152] = "draenor",
+  [359082] = "legion",
+  [1223878] = "bfa",
+  [1256081] = "shadowlands",
+  [1305981] = "dragonflight",
+}
+
+local timewalkingKindToLFGIDs = {
+  outland = 744,
+  wrath = 995,
+  cata = 1146,
+  pandaria = 1453,
+  draenor = 1971,
+  legion = 2274,
+  classic = 2634,
+  bfa = 2874,
+  shadowlands = 3076,
+  dragonflight = 3305,
+}
+
 local _calendarOpened = false
 local _twEventCache = { at = 0, active = {} }
 local _anyTWCache = { at = 0, active = false }
 local _calendarKeywordCache = { at = 0, active = {}, unknown = {} }
+local _twKindCache = { at = 0, kind = nil }
 
 local function EnsureCalendarOpened()
   if _calendarOpened then return end
@@ -478,6 +542,136 @@ local function GetCalendarHolidayText(monthOffset, day, index)
   return out
 end
 
+local function ResolveTimewalkingKindByDungeonID(dungeonID)
+  dungeonID = tonumber(dungeonID)
+  if not dungeonID then return nil end
+  for kind, id in pairs(timewalkingKindToLFGIDs) do
+    if tonumber(id) == dungeonID then
+      return kind
+    end
+  end
+  return nil
+end
+
+local function IsDungeonJoinableSafe(dungeonID)
+  if type(IsLFGDungeonJoinable) ~= "function" then
+    return nil
+  end
+  local ok, joinable = pcall(IsLFGDungeonJoinable, dungeonID)
+  if not ok then
+    return nil
+  end
+  return joinable and true or false
+end
+
+local function DetermineActiveTimewalkingKindFromLFGList()
+  if type(GetNumRandomDungeons) ~= "function" or type(GetLFGRandomDungeonInfo) ~= "function" then
+    return nil
+  end
+
+  local twCount = 0
+  local firstKind = nil
+  for i = 1, (GetNumRandomDungeons() or 0) do
+    local dungeonID, name = GetLFGRandomDungeonInfo(i)
+    local nameLower = SafeLowerString(name)
+    if dungeonID and type(nameLower) == "string" and string.find(nameLower, "timewalking", 1, true) then
+      twCount = twCount + 1
+      local kind = ResolveTimewalkingKindByDungeonID(dungeonID)
+      if kind and not firstKind then
+        firstKind = kind
+      end
+      if kind and IsDungeonJoinableSafe(dungeonID) then
+        return kind
+      end
+    end
+  end
+
+  if twCount == 1 then
+    return firstKind
+  end
+  return nil
+end
+
+local function DetermineActiveTimewalkingKindFromCalendar(nowEpoch)
+  EnsureCalendarOpened()
+  if not (C_Calendar and C_Calendar.GetNumDayEvents and C_Calendar.GetDayEvent) then
+    return nil
+  end
+
+  local today = GetCurrentCalendarDay()
+  if not today then
+    return nil
+  end
+
+  local keywordMap = {
+    classic = { "classic" },
+    outland = { "outland", "burning crusade", "tbc" },
+    wrath = { "northrend", "lich king", "wrath", "wotlk" },
+    cata = { "cataclysm", "cata" },
+    pandaria = { "pandaria", "mists" },
+    draenor = { "draenor", "warlords" },
+    legion = { "legion" },
+    bfa = { "azeroth", "battle for azeroth", "bfa" },
+    shadowlands = { "shadowlands" },
+    dragonflight = { "dragonflight" },
+  }
+
+  local isWednesday = false
+  if type(date) == "function" then
+    isWednesday = (tonumber(date("%w")) == 3)
+  end
+  local function IsWednesdayEndsTitle(titleLower)
+    if not isWednesday then return false end
+    return (type(titleLower) == "string") and (string.match(titleLower, "[%s]ends?%s*$") ~= nil)
+  end
+
+  local okNum, n = pcall(C_Calendar.GetNumDayEvents, 0, today)
+  n = okNum and tonumber(n) or 0
+
+  for i = 1, n do
+    local ev = GetDayEventSafe(0, today, i)
+    if IsDayEventActiveNow(ev, nowEpoch) then
+      local title = GetCalendarEventText(0, today, i) or ""
+      local holidayText = GetCalendarHolidayText(0, today, i) or ""
+      local hay = string.lower(title .. "\n" .. holidayText)
+
+      if not IsWednesdayEndsTitle(string.lower(title)) and not IsWednesdayEndsTitle(string.lower(holidayText)) then
+        if string.find(hay, "timewalking", 1, true) or string.find(hay, "turbulent timeways", 1, true) then
+          for kind, kws in pairs(keywordMap) do
+            for _, kw in ipairs(kws) do
+              if kw ~= "" and string.find(hay, kw, 1, true) then
+                return kind
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  return nil
+end
+
+GetActiveTimewalkingKind = function(nowEpoch)
+  nowEpoch = tonumber(nowEpoch) or 0
+  if nowEpoch <= 0 then
+    if GetServerTime then
+      nowEpoch = tonumber(GetServerTime()) or 0
+    elseif type(time) == "function" then
+      nowEpoch = tonumber(time()) or 0
+    end
+  end
+
+  if _twKindCache.at and nowEpoch > 0 and (nowEpoch - (_twKindCache.at or 0)) < 60 then
+    return _twKindCache.kind
+  end
+
+  local kind = DetermineActiveTimewalkingKindFromLFGList() or DetermineActiveTimewalkingKindFromCalendar(nowEpoch)
+  _twKindCache.at = nowEpoch
+  _twKindCache.kind = kind
+  return kind
+end
+
 local function IsAnyTimewalkingEventActive()
   local isWednesday = false
   if type(date) == "function" then
@@ -501,6 +695,13 @@ local function IsAnyTimewalkingEventActive()
   if GetServerTime then now = tonumber(GetServerTime()) or 0 end
   if _anyTWCache.at and (now - (_anyTWCache.at or 0)) < 60 then
     return _anyTWCache.active and true or false
+  end
+
+  local activeKind = GetActiveTimewalkingKind and GetActiveTimewalkingKind(now) or nil
+  if type(activeKind) == "string" and activeKind ~= "" then
+    _anyTWCache.at = now
+    _anyTWCache.active = true
+    return true
   end
 
   EnsureCalendarOpened()
@@ -774,6 +975,15 @@ local function IsTimewalkingBonusEventActive(spellID)
     return _twEventCache.active[cacheKey] and true or false
   end
 
+  local activeKind = GetActiveTimewalkingKind and GetActiveTimewalkingKind(now) or nil
+  local wantKind = timewalkingSpellToKind[spellID]
+  if type(activeKind) == "string" and activeKind ~= "" and type(wantKind) == "string" and wantKind ~= "" then
+    local matched = (activeKind == wantKind)
+    _twEventCache.at = now
+    _twEventCache.active[cacheKey] = matched
+    return matched
+  end
+
   if HasAuraSpellID(spellID) then
     _twEventCache.at = now
     _twEventCache.active[cacheKey] = true
@@ -849,6 +1059,7 @@ end
 ns.Calendar.IsAnyTimewalkingEventActive = IsAnyTimewalkingEventActive
 ns.Calendar.IsCalendarEventActiveByKeywords = IsCalendarEventActiveByKeywords
 ns.Calendar.IsTimewalkingBonusEventActive = IsTimewalkingBonusEventActive
+ns.Calendar.GetActiveTimewalkingKind = GetActiveTimewalkingKind
 ns.Calendar.CalendarKeywordCacheKey = CalendarKeywordCacheKey
 ns.Calendar.EnsureCalendarOpened = EnsureCalendarOpened
 ns.Calendar.OnCalendarUpdate = OnCalendarUpdate

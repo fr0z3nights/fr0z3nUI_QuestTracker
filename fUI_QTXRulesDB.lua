@@ -149,7 +149,7 @@ SetZone("Weekly, Event")
 SetZone("Timewalking, Event")
 	--	Timewalking	 01  Classic
 		KQuest(85947, "01 Classic LVL")                    			--	Weekly		Player LVL			
-		KQuest(86731, "01 Classic MAX")                      		--	Weekly		Player MAX		
+		KQuest(93607, "01 Classic MAX")                      		--	Weekly		Player MAX		
 		KQuest(83285, "01 Classic TKN")                             --	Token		Player			
 	--	Timewalking	 02  Outland
 		KQuest(85948, "02 Outland LVL")                   		 	--	Weekly		Player LVL			

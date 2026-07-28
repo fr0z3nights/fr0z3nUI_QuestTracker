@@ -255,6 +255,9 @@ local function DispatchDebugCommand(cmd, rest)
         rememberedAny = rememberedFn() and true or false
       end
 
+      local liveKindFn = (ns and ns.Calendar and ns.Calendar.GetActiveTimewalkingKind) or nil
+      local liveKind = (type(liveKindFn) == "function") and liveKindFn() or nil
+
       local kind = _G.fr0z3nUI_QuestTracker_Acc
         and _G.fr0z3nUI_QuestTracker_Acc.cache
         and _G.fr0z3nUI_QuestTracker_Acc.cache.twWeekly
@@ -265,10 +268,11 @@ local function DispatchDebugCommand(cmd, rest)
         and _G.fr0z3nUI_QuestTracker_Acc.cache.twWeekly.exp
 
       Say(string.format(
-        "twWeekly: rememberedAny=%s kind=%s exp=%s; eventActiveNow=%s",
+        "twWeekly: rememberedAny=%s kind=%s exp=%s liveKind=%s; eventActiveNow=%s",
         tostring(rememberedAny and true or false),
         tostring(kind or ""),
         tostring(exp or 0),
+        tostring(liveKind or ""),
         tostring(eventActive and true or false)
       ))
     end

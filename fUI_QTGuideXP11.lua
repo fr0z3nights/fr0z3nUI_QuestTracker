@@ -127,8 +127,8 @@ questID = 91030, prereq = { 91026, }, hideWhenCompleted = true, playerLevel = { 
 {label = "Belt4", frameID = "bar1", key = "custom:q:91031:list1:XP11Disc4", ["color"] = { 0.2, 0.6, 1, },
 questID = 91031, prereq = { 91030, }, hideWhenCompleted = true, playerLevel = { "=", 80, }, questInfo = "Belt4", },
 
-{label = "Reshii Wraps", frameID = "bar1", key = "custom:q:90938:bar1:XP11001", playerLevel = { ">=", 80, }, ["color"] = { 0.2, 0.6, 1, },
-questID = 90938, requireInLog = false, questInfo = "Reshii", showXWhenComplete = true, hideIfAnyQuestCompleted = { 90938, 84856, 84910 },},
+{label = "Reshii Wraps", frameID = "bar1", key = "custom:q:90938:bar1:XP11001", playerLevel = { ">", 79, }, ["color"] = { 0.2, 0.6, 1, },
+questID = 90938, requireInLog = false, questInfo = "Reshii", hideIfAnyQuestCompleted = { 90938, 84856, 84910 },},
 
 
 

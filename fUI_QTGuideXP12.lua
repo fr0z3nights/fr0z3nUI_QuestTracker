@@ -46,7 +46,7 @@ local GREY = "bfbfbf"
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "Void Assault", frameID = "bar1", key = "XP12:94386", playerLevel = { ">=", 80, }, progress = { objectiveIndex = 1 },
+{label = "Void Assault", frameID = "bar1", key = "XP12:94386", playerLevel = { ">=", 80, }, progress = { merge = { { questID = 94386, objectiveIndex = 1 }, { questID = 94385, objectiveIndex = 1 }, }, sep = " | ", requireAll = false, },
 questID = 94386, requireInLog = false, questInfo = "Void Assault", showXWhenComplete = false, hideIfAnyQuestCompleted = { 94386, 94385, },},
 
 
