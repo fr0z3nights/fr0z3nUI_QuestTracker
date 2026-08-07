@@ -150,7 +150,7 @@ ns.rules = {
 
   {label = "Timewalking Outland TKN", frameID = "bar1", key = "tw:token:outland", requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 40168 }, preferQuestInfoForTitle = true, twKind = "outland", hideWhenCompleted = false,
-  indicators = { { questID = 40168, shape = "square", overlay = { itemIDs = { 39744 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+  indicators = { { questID = 40168, shape = "square", overlay = { itemIDs = { 129747 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  03  Wrath               UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 

@@ -47,10 +47,6 @@ local GREY = "bfbfbf"
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "SU  10  Dragon Isles  34 Slot Bag", frameID = "list1", key = "custom:q:65646:list1:XP10084",
-questID = 65646, prereq = { 67700, }, hideWhenCompleted = true,
-questInfo = "+ 34 Bag in Dragon Isles\n   WS 58,53 %c\n07N", },
-
 {label = "SU  10  Dragon Isles  Q-67700  65445  Horde", frameID = "list1", key = "custom:q:67700:list1:XP10085",
 questID = 67700, prereq = { 30515, }, hideWhenCompleted = true,
 questInfo = "Dragon Isles  (H)\n + Use Dragon Scale\n    or Cata Portal Area\n + Do Initial Quests\n + Take Portal\n ",
@@ -60,6 +56,18 @@ faction = "Horde", },
 questID = 67700, prereq = { 30515, }, hideWhenCompleted = true,
 questInfo = "Dragon Isles\n + Use Dragon Scale\n    or Castle Balcony\n + Do Initial Quests\n + Take Portal\n ",
 faction = "Alliance", },
+
+{label = "SU  10  Dragon Isles  34 Slot Bag", frameID = "list1", key = "custom:q:65646:list1:XP10084",
+questID = 65646, hideWhenCompleted = true,
+questInfo = "Dragon Isles\n + 34 Slot Bag\n   - Waking Shore 58,53", rested = true , }, -- prereq = { 67700, }, 
+
+{label = "SU  11  N  01  Q-82819  AQ-  34 Slot Bag", frameID = "list1", key = "custom:q:82819:list1:XP11071",
+questID = 82819, prereq = { 65646, }, hideWhenCompleted = true,
+questInfo = "War Within\n + 34 Slot Bag (1)  3-4-1-2\n   - Camp Murroch, Ringing Deeps", rested = true , },
+
+{label = "SU  11  N  01  Q-81972  AQ-82819  34 Slot Bag", frameID = "list1", key = "custom:q:81972:list1:XP11070",
+questID = 81972, prereq = { 82819, }, hideWhenCompleted = true,
+questInfo = "The War Within\n + 34 Slot Bag (2)\n   - Priory, Hallowfall 30, 38", rested = true , }, --prereq = { 82819, }, 
 
 
 

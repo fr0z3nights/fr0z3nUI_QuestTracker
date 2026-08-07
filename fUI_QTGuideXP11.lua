@@ -55,14 +55,6 @@ questInfo = "+ Mind Slurp in Azj-Kahet\n    Memory Cache  30.23, 38.75", },
 questID = 84260, prereq = { 46957, 51341, 61874, }, hideWhenCompleted = true,
 questInfo = "+ Dornogal Crafting Order Reward", },
 
-{label = "SU  11  N  01  Q-81972  AQ-82819  34 Slot Bag", frameID = "list1", key = "custom:q:81972:list1:XP11070",
-questID = 81972, prereq = { 82819, }, hideWhenCompleted = true,
-questInfo = "The War Within\n + 34 Bag @ Priory, Hallowfall\n                        30.23, 38.75", },
-
-{label = "SU  11  N  01  Q-82819  AQ-  34 Slot Bag", frameID = "list1", key = "custom:q:82819:list1:XP11071",
-questID = 82819, prereq = { 46957, 51341, 61874, }, hideWhenCompleted = true,
-questInfo = "The War Within\n + 34 Slot Bag @ Camp Murroch, \n      3-4-1-2           Ringing Deeps", },
-
 {label = "TD 3.01  11  Q-82375  Coffer Key  Foundation Hall", frameID = "list1", key = "custom:q:82375:list1:XP11073",
 questID = 82375, prereq = { 46931, 51341, 61874, }, hideWhenCompleted = true,
 questInfo = "+ Key - Dornogal Hall\nNo", },
