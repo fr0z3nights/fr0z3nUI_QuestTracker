@@ -49,6 +49,15 @@ local bakedRules = {
 {label = "Void Assault", frameID = "bar1", key = "XP12:94386", playerLevel = { ">=", 80, }, progress = { merge = { { questID = 94386, objectiveIndex = 1 }, { questID = 94385, objectiveIndex = 1 }, }, sep = " | ", requireAll = false, },
 questID = 94386, requireInLog = false, questInfo = "Void Assault", showXWhenComplete = false, hideIfAnyQuestCompleted = { 94386, 94385, },},
 
+-- Delvers Call Quests
+{label = "DC  Silvermoon", questID = 93372, key = "XP12:93372", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
+{label = "DC  Silvermoon", questID = 93384, key = "XP12:93384", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
+{label = "DC  Silvermoon", questID = 93385, key = "XP12:93385", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
+{label = "DC  Silvermoon", questID = 93386, key = "XP12:93386", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
+{label = "DC  Zul'Aman",   questID = 93409, key = "XP12:93409", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
+{label = "DC  Zul'Aman",   questID = 93410, key = "XP12:93410", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
+
+
 
 --{label = "Cultist", frameID = "bar1", key = "12pxp:cultist:rare",
 --questID = 91795, requireInLog = false, hideWhenCompleted = false, showXWhenComplete = true,
