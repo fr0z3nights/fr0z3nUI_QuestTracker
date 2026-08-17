@@ -142,11 +142,11 @@ item = { itemID = 45584, required = { 1, Y, Y, 1 }, }, locationID = "85, ", rest
 complete = { any = { { item = { itemID = 45584, count = 1 } }, { rep = { factionID = 81, minStanding = 8 } }, }, }, },
 
 -- NEUTRAL ITEMS
-{group = "housing:vendor:lumberaxe", order = 1,
-label = "No Axe (Housing)", frameID = "bar1", key = "custom:item:253580:list1:0116",
-itemInfo = "Housing Axe", restedOnly = N,
+{group = "housing:vendor:lumberaxe", order = 1, label = "No Axe (Housing)", frameID = "bar1", key = "custom:item:253580:list1:0116", itemInfo = "Housing Axe", restedOnly = Y,
 item = { itemID = 253580, required = { 1, Y, Y, 1 }, cachePurchased = Y, cachePurchasedFromBag = N, knownTooltip = Y, },
 complete = { any = { { item = { itemID = 253580, count = 1, cachePurchased = Y, cachePurchasedFromBag = N } }, }, }, },
+--  
+--  
 
 {group = "classic:vendor:red-rider", order = 1,
 label = "Red Rider Air RIfle", frameID = "list1", key = "custom:item:46725:list1:0116",
