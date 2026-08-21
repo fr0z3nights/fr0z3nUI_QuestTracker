@@ -47,80 +47,30 @@ local GREY = "bfbfbf"
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "TD 3.01  11  Q-82520  Pet - Mind Slurp", frameID = "list1", key = "custom:q:82520:list1:XP11068",
-questID = 82520, prereq = { 46957, 51341, 61874, }, hideWhenCompleted = true,
-questInfo = "+ Mind Slurp in Azj-Kahet\n    Memory Cache  30.23, 38.75", },
 
-{label = "TD 3.01  11  Q-84260  Crafting Orders Starter", frameID = "list1", key = "custom:q:84260:list1:XP11069",
-questID = 84260, prereq = { 46957, 51341, 61874, }, hideWhenCompleted = true,
-questInfo = "+ Dornogal Crafting Order Reward", },
+  {key = "XP11:I230728",  item = {itemID = 230728, required = { 5, true, N, 0 },},  label = "Experimental Go-Pack",   hideWhenCompleted = false,  locationID = "2369",                          frameID = "list1",  itemInfo = "Experimental Go-Pack", },
+  {key = "XP11:I202046",  item = {itemID = 202046, required = { 1, true, N, 0 },},  label = "Lucky Tortollan Charm",  restedOnly = true,          locationID = {84,85,},                        frameID = "list1",  itemInfo = "Lucky Tortollan Charm\n - Near Azj-Kahet Portal", },
+  {key = "XP11:Q78713",   questID = 78713, prereq = { 67700, },                     label = "Isle of Dorn 01",        hideWhenCompleted = true,   locationID = {84,85,},                        frameID = "list1",  questInfo = "The War Within\nUse Teleportation Scroll", },
+  {key = "XP11:Q81966",   questID = 81966, prereq = { 78713, },                     label = "Isle of Dorn 02",        hideWhenCompleted = true,   locationID = {84,85,},                        frameID = "list1",  questInfo = "The War Within\n + Intro & Isle of Dorn (Zygor)", },
+  {key = "XP11:Q81972",   questID = 81972, prereq = {65646,82819,},                 label = "11  34 Slot Bag 2",      hideWhenCompleted = true,   rested = true ,                               frameID = "list1",  questInfo = "War Within Bag  \n - Priory, Hallowfall  30,38", },
+--{key = "XP11:Q82356",   questID = 82356, prereq = { 46931, 51341, 61874, },       label = "Coffer Key 82356",       hideWhenCompleted = true,                                                 frameID = "list1",  questInfo = " + Key - Dornogal Hall", },
+--{key = "XP11:Q82375",   questID = 82375, prereq = { 46931, 51341, 61874, },       label = "Coffer Key 82375",       hideWhenCompleted = true,                                                 frameID = "list1",  questInfo = " + Key - Dornogal Hall", },
+--{key = "XP11:Q82398",   questID = 82398, prereq = { 46931, 51341, 61874, },       label = "Coffer Key 82398",       hideWhenCompleted = true,                                                 frameID = "list1",  questInfo = " + Key - Mereldar Hallowfall", },
+--{key = "XP11:Q82434",   questID = 82434, prereq = { 46931, 51341, 61874, },       label = "Coffer Key 82434",       hideWhenCompleted = true,                                                 frameID = "list1",  questInfo = " + Key - Spiders (Portal)", },
+  {key = "XP11:Q82520",   questID = 82520, prereq = { 46957, 51341, 61874, },       label = "Pet Mind Slurp",         hideWhenCompleted = true,   locationID = {84,85,},                        frameID = "list1",  questInfo = " + Mind Slurp (Memory Cache)\n - Azj-Kahet 30.23, 38.75", },
+  {key = "XP11:Q82678",   questID = 82678,                                          label = "Archives: First Disc",   hideWhenCompleted = true,                       playerLevel = {"=",80,},  frameID = "bar1",   questInfo = "First Disc", },
+  {key = "XP11:Q82679",   questID = 82679, prereq = {82678,},                       label = "Archives",               hideWhenCompleted = true,                       playerLevel = {"=",80,},  frameID = "bar1",   questInfo = "Archive", progress = { objectiveIndex = 1 }, },
+  {key = "XP11:Q82706",   questID = 82706,                                          label = "Delve 11",               hideWhenCompleted = true,                       playerLevel = {"=",80,},  frameID = "bar1",   questInfo = "Delve 11", progress = { objectiveIndex = 1 }, },
+  {key = "XP11:Q82819",   questID = 82819, prereq = {65646,},                       label = "11  34 Slot Bag 1",      hideWhenCompleted = true,   rested = true ,                               frameID = "list1",  questInfo = "War Within Bag  \n - Murroch, Ringing Deep 3412", },
+  {key = "XP11:Q84260",   questID = 84260, prereq = { 46957, 51341, 61874, },       label = "Crafting Order",         hideWhenCompleted = true,   locationID = {84,85,},                        frameID = "list1",  questInfo = "+ Dornogal Crafting Order Reward", },
+--{key = "XP11:Q85573",   questID = 85573, prereq = { 45727, },                     label = "Isle of Dorn 03",        hideWhenCompleted = true,                                                 frameID = "list1",  questInfo = "The War Within\n + Siren Isle (Zygor)", },
+--{key = "XP11:Q90557",   questID = 90557, prereq = { 46931, 51341, 61874, },       label = "11 Coffer Key 90557",    hideWhenCompleted = true,                                                 frameID = "list1",  questInfo = "+ Key - Undermine", },
+  {key = "XP11:Q90938",   questID = 90938,                                          label = "Reshii Wraps",           hideIfAnyQuestCompleted = {90938,84856,84910,}, playerLevel = {">",79,},  frameID = "bar1",   questInfo = "Reshii", color = { 0.2, 0.6, 1, }, },
+  {key = "XP11:Q91009",   questID = 91009,                                          label = "Belt 1",                 hideWhenCompleted = true,                       playerLevel = {"=",80,},  frameID = "bar1",   questInfo = "Belt 1", color = { 0.2, 0.6, 1, }, },
+  {key = "XP11:Q91026",   questID = 91026, prereq = {91009,},                       label = "Belt 2",                 hideWhenCompleted = true,                       playerLevel = {"=",80,},  frameID = "bar1",   questInfo = "Belt 2", color = { 0.2, 0.6, 1, }, },
+  {key = "XP11:Q91030",   questID = 91030, prereq = {91026,},                       label = "Belt 3",                 hideWhenCompleted = true,                       playerLevel = {"=",80,},  frameID = "bar1",   questInfo = "Belt 3", color = { 0.2, 0.6, 1, }, },
+  {key = "XP11:Q91031",   questID = 91031, prereq = {91030,},                       label = "Belt 4",                 hideWhenCompleted = true,                       playerLevel = {"=",80,},  frameID = "bar1",   questInfo = "Belt 4", color = { 0.2, 0.6, 1, }, },
 
-{label = "TD 3.01  11  Q-82375  Coffer Key  Foundation Hall", frameID = "list1", key = "custom:q:82375:list1:XP11073",
-questID = 82375, prereq = { 46931, 51341, 61874, }, hideWhenCompleted = true,
-questInfo = "+ Key - Dornogal Hall\nNo", },
-
-{label = "TD 3.01  11  Q-82356  Coffer Key  Foundation Hall 2", frameID = "list1", key = "custom:q:82356:list1:XP11074",
-questID = 82356, prereq = { 46931, 51341, 61874, }, hideWhenCompleted = true,
-questInfo = "+ Key - Dornogal Hall\nNo", },
-
-{label = "TD 3.01  11  Q-82375  Coffer Key  Spiders", frameID = "list1", key = "custom:q:82434:list1:XP11075",
-questID = 82434, prereq = { 46931, 51341, 61874, }, hideWhenCompleted = true,
-questInfo = "+ Key - Spiders (Portal)\nNo", },
-
-{label = "TD 3.01  11  Q-82398  Coffer Key  Undermine", frameID = "list1", key = "custom:q:90557:list1:XP11076",
-questID = 90557, prereq = { 46931, 51341, 61874, }, hideWhenCompleted = true,
-questInfo = "+ Key - Undermine\nNo", },
-
-{label = "TD 3.01  11  Q-82398  Coffer Key  Mereldar Hallowfall", frameID = "list1", key = "custom:q:82398:list1:XP11077",
-questID = 82398, prereq = { 46931, 51341, 61874, }, hideWhenCompleted = true,
-questInfo = "+ Key - Mereldar Hallowfall\nNo", },
-
-{label = "SU  11  N  01  Intro & Isle of Dorn 01", frameID = "list1", key = "custom:q:78713:list1:XP11078",
-questID = 78713, prereq = { 67700, }, hideWhenCompleted = true,
-questInfo = "The War Within\nUse Teleportation Scroll", },
-
-{label = "SU  11  N  01  Intro & Isle of Dorn 02", frameID = "list1", key = "custom:q:81966:list1:XP11079",
-questID = 81966, prereq = { 78713, }, hideWhenCompleted = true,
-questInfo = "The War Within\nFollow Guide or Skip", },
-
---{label = "SU  11  N  01  Intro & Isle of Dorn 03", frameID = "list1", key = "custom:q:85573:list1:XP11080",
---questID = 85573, prereq = { 45727, }, hideWhenCompleted = true,
---questInfo = "The War Within\n + Siren Isle (Zygor)\n  - Follow Guide", },
-
-{frameID = "list1", key = "custom:item:230728:list1:129",
-hideWhenCompleted = false,
-locationID = "2369",
-item = { itemID = 230728, required = { 1, true, N, 0 }, },
-restedOnly = false, },
-
-
-{label = "Lucky Tortollan Charm\n      Near Azj-Kahet Portal", frameID = "list1", key = "custom:item:202046:list1:72",
-hideWhenCompleted = false, playerLevel = { ">", 70 }, faction = "Horde", restedOnly = true, item = { itemID = 202046, required = { 1, true, N, 0 }, }, },
-
-{label = "Delvez11", frameID = "bar1", key = "wk:delves:bran", progress = { objectiveIndex = 1 },
-questID = 82706, requireInLog = false, hideWhenCompleted = true, showXWhenComplete = true, playerLevel = { "=", 80, },},
-
-{label = "Archives: First Disc", frameID = "bar1", key = "11wk:archives:disc1",
-questID = 82678, hideWhenCompleted = true, playerLevel = { "=", 80, }, questInfo = "First Disc", },
-
-{label = "Archives", frameID = "bar1", key = "11wk:archives:disc2",
-questID = 82679, prereq = { 82678, }, requireInLog = false, hideWhenCompleted = true, showXWhenComplete = true,
-questInfo = "Archive", playerLevel = { "=", 80, }, ["progress"] = { ["objectiveIndex"] = 1 },},
-
-{label = "Belt1", frameID = "bar1", key = "custom:q:91009:list1:XP11Disc1", ["color"] = { 0.2, 0.6, 1, },
-questID = 91009, hideWhenCompleted = true,playerLevel = { "=", 80, }, questInfo = "Belt1", },
-
-{label = "Belt2", frameID = "bar1", key = "custom:q:91026:list1:XP11Disc2", ["color"] = { 0.2, 0.6, 1, },
-questID = 91026, prereq = { 91009, }, hideWhenCompleted = true, playerLevel = { "=", 80, }, questInfo = "Belt2", },
-
-{label = "Belt3", frameID = "bar1", key = "custom:q:91030:list1:XP11Disc3", ["color"] = { 0.2, 0.6, 1, },
-questID = 91030, prereq = { 91026, }, hideWhenCompleted = true, playerLevel = { "=", 80, }, questInfo = "Belt3", },
-
-{label = "Belt4", frameID = "bar1", key = "custom:q:91031:list1:XP11Disc4", ["color"] = { 0.2, 0.6, 1, },
-questID = 91031, prereq = { 91030, }, hideWhenCompleted = true, playerLevel = { "=", 80, }, questInfo = "Belt4", },
-
-{label = "Reshii Wraps", frameID = "bar1", key = "custom:q:90938:bar1:XP11001", playerLevel = { ">", 79, }, ["color"] = { 0.2, 0.6, 1, },
-questID = 90938, requireInLog = false, questInfo = "Reshii", hideIfAnyQuestCompleted = { 90938, 84856, 84910 },},
 
 
 

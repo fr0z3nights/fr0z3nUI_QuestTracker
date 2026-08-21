@@ -47,42 +47,17 @@ local GREY = "bfbfbf"
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "SU  06  Garrison 01 A", frameID = "list1", key = "custom:q:36941:list1:XP06017",
-questID = 36941, prereq = { 47189, }, hideWhenCompleted = true, faction = "Alliance",
-questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Dark Portal\n  - Talk to Battlemage\n  - Portal Tower Entrance\n  - After Port Abandom Quest",},
+  {key = "XP06:Q36941A", questID = 36941, prereq = { 47189, },  label = "06 A Garrison 1",    frameID = "list1", hideWhenCompleted = true, faction = "Alliance",  locationID = {84,17,}, questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Tanaan Jungle\n  - Portal Tower Entrance\n    - Talk to Battlemage\n    - Abandon Quest After Port",},
+  {key = "XP06:Q34586A", questID = 34586, prereq = { 36941, },  label = "06 A Garrison 2",    frameID = "list1", hideWhenCompleted = true, faction = "Alliance",  locationID = {84,17,}, questInfo = "Warlords of Draenor\n - Warboard: Tanaan Jungle\n  - Portal Tower Entrance\n    - Talk to Battlemage\n    - Abandon Quest After Port\n  - Take Red Portal (Draenor)\n    - If Green phase @ Sidormi",},
+  {key = "XP06:Q34775A", questID = 34775, prereq = { 34586, },  label = "06 A Garrison 3",    frameID = "list1", hideWhenCompleted = true, faction = "Alliance",  locationID = {84,17,}, questInfo = "Warlords of Draenor\n + Zygor: Shadowmoon Valley\n - Q2: 'Delegating on Draenor'",},
+  {key = "XP06:Q36615A", questID = 36615,                       label = "06 A Garrison 4",    frameID = "list2", hideWhenCompleted = true, faction = "Alliance",                         questInfo = "Level Garrison to 3", restedOnly = true, },
 
-{label = "SU  06  Garrison 02 A", frameID = "list1", key = "custom:q:34586:list1:XP06018",
-questID = 34586, prereq = { 36941, }, hideWhenCompleted = true, faction = "Alliance",
-questInfo = "Warlords of Draenor\n + Warboard: Dark Portal\n  - Talk to Battlemage\n  - In Portal Tower Entrance\n  - After Port Abandom Quest\n  - Take Red Portal (Draenor)",},
-
-{label = "SU  06  Garrison 03 A", frameID = "list1", key = "custom:q:34775:list1:XP06019",
-questID = 34775, prereq = { 34586, }, hideWhenCompleted = true, faction = "Alliance",
-questInfo = "Warlords of Draenor\n + Zygor: Shadowmoon Valley\n    01-31 \"Delegating on Draenor\"",},
-
-{label = "SU  06  Garrison 04 A", faction = "alliance", frameID = "list2", key = "custom:q:36615:list1:XP06021",
-questID = 36615, hideWhenCompleted = true, questInfo = "Level Garrison to 3", },             -- /dump C_Map.GetBestMapForUnit("player")        prereq = { 34775, }, locationID = {84, 582},
-
-{label = "SU  06  Garrison 01 H", frameID = "list1", key = "custom:q:36940:list1:XP06022",
-questID = 36940, prereq = { 47514, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Dark Portal\n  - Talk to Battlemage\n  - Lower Portal Room\n  - After Port Abandom Quest",},
-
-{label = "SU  06  Garrison 02 H", frameID = "list1", key = "custom:q:34586:list1:XP06023",
-questID = 34586, prereq = { 36940, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Warlords of Draenor\n  - Warboard: The Dark Portal\n  - Talk to Battlemage\n  - Lower Portal Room\n  - After Port Abandom Quest\n  - Take Red Portal (Draenor)",},
-
-{label = "SU  06  Garrison 03 H", frameID = "list1", key = "custom:q:34960:list1:XP06024",
-questID = 34960, prereq = { 34586, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Warlords of Draenor\n + Frostfire Ridge (Zygor)\n  - Quest Until Step 26\n  - 'The Land Provides'",},
-
-{label = "SU  06  Garrison 04 H", frameID = "list1", key = "custom:q:36567:list1:XP06025",
-questID = 36567, prereq = { 34960, }, hideWhenCompleted = true, faction = "Horde",
-questInfo = "Warlords of Draenor\n + Collect 200 Garrison Resources\n + Upgrade Garrison to Level 2\n           (Turn in Quest)",},
-
-{label = "SU  06  Garrison 05 H", faction = "horde", frameID = "list2", key = "custom:q:36615:list1:XP06026",
-questID = 36614, hideWhenCompleted = true, questInfo = "Level Garrison to 3", },            -- /dump C_Map.GetBestMapForUnit("player")      prereq = { 36567, }, locationID = {85, 590},
-
-{label = "SU  06  Wiggling Egg (Pet)", frameID = "list1", key = "custom:q:33505:list1:XP06027", locationID = 525,
-questID = 33505, prereq = { 34586, }, hideWhenCompleted = true, questInfo = "Frostfire Ridge\n + Wiggling Egg", },
+  {key = "XP06:Q36940H", questID = 36940, prereq = { 47514, },  label = "06 H Garrison 1",    frameID = "list1", hideWhenCompleted = true, faction = "Horde",     locationID = {85,17,}, questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Tanaan Jungle\n  - Lower Portal Room\n    - Talk to Battlemage\n    - After Port Abandon Quest",},
+  {key = "XP06:Q34586H", questID = 34586, prereq = { 36940, },  label = "06 H Garrison 2",    frameID = "list1", hideWhenCompleted = true, faction = "Horde",     locationID = {85,17,}, questInfo = "Warlords of Draenor\n - Warboard: Tanaan Jungle\n - Lower Portal Room\n - Talk to Battlemage\n - After Port Abandon Quest\n - Take Red Portal (Draenor)",},
+  {key = "XP06:Q34960H", questID = 34960, prereq = { 34586, },  label = "06 H Garrison 3",    frameID = "list1", hideWhenCompleted = true, faction = "Horde",     locationID = {85,17,}, questInfo = "Warlords of Draenor\n + Frostfire Ridge (Zygor)\n - Q2: 'The Land Provides'",},
+  {key = "XP06:Q36567H", questID = 36567, prereq = { 34960, },  label = "06 H Garrison 4",    frameID = "list1", hideWhenCompleted = true, faction = "Horde",     locationID = {85,17,}, questInfo = "Warlords of Draenor\n - 200 Garrison Resources\n - Upgrade Garrison to Level 2",},
+  {key = "XP06:Q36614H", questID = 36614,                       label = "06 H Garrison 5",    frameID = "list2", hideWhenCompleted = true, faction = "Horde",                            questInfo = "Level Garrison to 3", restedOnly = true, },
+  {key = "XP06:Q33505N", questID = 33505, prereq = { 34586, },  label = "06 N Wiggling Egg",  frameID = "list1", hideWhenCompleted = true,                        locationID = 525,      questInfo = "Frostfire Ridge\n + Wiggling Egg", },
 
 
 

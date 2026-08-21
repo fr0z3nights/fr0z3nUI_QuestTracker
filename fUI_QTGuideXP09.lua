@@ -47,21 +47,10 @@ local GREY = "bfbfbf"
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "SU  09  Open", faction = "alliance", frameID = "list1", key = "custom:q:60151:list1:XP09011a",
-questID = 60150, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 60151, 61874, 999999 },
-questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n  - Castle Entryway\n  - Skip Quests If Possible\n + Learn Professions\n ", },
---Warboard   (Accept if there)\n    - Chromie\n    - Legion\n    - Warlords\n    - Jade Forest\n\n
-{label = "SU  09  Open", faction = "horde", frameID = "list1", key = "custom:q:60151:list1:XP09011h",
-questID = 60150, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 60151, 61874, 999999 },
-questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n  - Valley of Strength\n  - Skip Quests If Possible\n + Learn Professions\n ", },
+  {key = "XP09:Q60150A", questID = 60150, label = "09 Shadowlands A", faction = "Alliance", frameID = "list1", questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Castle Entryway",     hideIfAnyQuestCompleted = { 60150, 60151, 61874 }, locationID = {84,85,}, },
+  {key = "XP09:Q60150H", questID = 60150, label = "09 Shadowlands H", faction = "Horde",    frameID = "list1", questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Valley of Strength",  hideIfAnyQuestCompleted = { 60150, 60151, 61874 }, locationID = {84,85,}, },
 
 
-
-
---{label = "Warboard   (Accept if there)\n    - Chromie\n    - Legion\n    - Warlords\n    - Jade Forest\n\nShadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n    - Skip Quests at Broker NPC\n    - Learn Professions", frameID = "list1", key = "custom:spell:list1:152",
---hideWhenCompleted = false,
---notInGroup = false,
---["notSpellKnown"] = 310542, },
 
 }
 

@@ -48,47 +48,47 @@ local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
 {label = "SU  07  Hearthstone Unlock", faction = "alliance", frameID = "list1", key = "custom:q:44184:list1:XP07011",
-questID = 44184, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 44184, 44659, },
+questID = 44184, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 44184, 44659, }, locationID = {84,85,},
 questInfo = "Legion\n + Warboard: Broken Shore\n + NPC in Stormwind Harbor\n + Skip Scenario if you can\n + Reach Legion Dalaran\n ", },
 --questID = 44659, prereq = { 60151, 60150, 61874, }, 
 {label = "SU  07  Hearthstone Unlock", faction = "horde", frameID = "list1", key = "custom:q:44184:list1:XP07011",
-questID = 44184, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 44184, 44659, },
+questID = 44184, hideWhenCompleted = true, hideIfAnyQuestCompleted = { 44184, 44659, }, locationID = {84,85,},
 questInfo = "Legion\n + Warboard: Broken Shore\n + NPC Outside Front Gate\n + Skip Scenario if you can\n + Reach Legion Dalaran\n ", },
 
 {label = "SU  07  Karazhan 01", frameID = "list1", key = "custom:q:45727:list1:XP07001",
-questID = 45727, prereq = { 60151, 60150, 46931, 30515, }, hideWhenCompleted = true,
+questID = 45727, prereq = { 60151, 60150, 46931, 30515, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion\n + Unlock Legion World Quests\n   - Khadgar \"Uniting the Isles\"", },
 
 {label = "SU  07  Karazhan 02", frameID = "list1", key = "custom:q:44733:list1:XP07002",
-questID = 44733, prereq = { 45727, 30515, }, hideWhenCompleted = true,
+questID = 44733, prereq = { 45727, 30515, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion\n + Karazhan Attunement (Zygor)\n      Skip to 12\n + Pickup !Waterlogged Journal", },
 
 {label = "SU  07  Karazhan 03", frameID = "list1", key = "custom:q:44735:list1:XP07003",
-questID = 44735, prereq = { 44733, }, hideWhenCompleted = true,
+questID = 44735, prereq = { 44733, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion\n + Karazhan Attunement (Zygor)\n + Quests: Fragments & Eye\n + Enter HEROIC Dungeon\n    - Turn off Instance Reset\n + Crystals & Full Clear\n ", },
 
 {label = "SU  07  Karazhan 04", frameID = "list1", key = "custom:q:45291:list1:XP07004",
-questID = 45291, prereq = { 44735, }, hideWhenCompleted = true,
+questID = 45291, prereq = { 44735, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion Return to Karazhan\n + Quest: Book Wyrms\n - Re-Enter HEROIC\n - Clear Library\n - Invite/Leave Group\n ", },
 
 {label = "SU  07  Karazhan 05", frameID = "list1", key = "custom:q:45292:list1:XP07005",
-questID = 45292, prereq = { 45291, }, hideWhenCompleted = true,
+questID = 45292, prereq = { 45291, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion Return to Karazhan\n + Quest: Rebooting Curator\n + Reset & Enter HEROIC\n + Kill Opera, Moroes, Curator\n - Pickup Item Off Curator\n - Create/Leave Group\n ", },
 
 {label = "SU  07  Karazhan 06", frameID = "list1", key = "custom:q:45293:list1:XP07006",
-questID = 45293, prereq = { 45292, }, hideWhenCompleted = true,
+questID = 45293, prereq = { 45292, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion Return to Karazhan\n + Quest: New Shoes\n - Pickup Item Off New Shoes\n - Re-Enter HEROIC\n - Deliver & Leave\n ", },
 
 {label = "SU  07  Karazhan 07", frameID = "list1", key = "custom:q:45294:list1:XP07007",
-questID = 45294, prereq = { 45293, }, hideWhenCompleted = true,
+questID = 45294, prereq = { 45293, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion Return to Karazhan\n + Quest: High Stress Hiatus\n - Re-Enter Kill Shade/Devourer\n - Cape Left Wall Chess Room\n - Create/Leave/Reset/Enter\n + Kill Opera/Trash/Moros\n + Create/Leave Group", },
 
 {label = "SU  07  Karazhan 08", frameID = "list1", key = "custom:q:45295:list1:XP07008",
-questID = 45295, prereq = { 45294, }, hideWhenCompleted = true,
+questID = 45295, prereq = { 45294, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion Return to Karazhan\n - Front of Karazhan Quests\n + Quest: Clearing Cobwebs\n + Re-Enter HEROIC\n + Kill Spiders\n ", },
 
 {label = "SU  07  Karazhan 09", frameID = "list1", key = "custom:q:45296:list1:XP07009",
-questID = 45296, prereq = { 45295, }, hideWhenCompleted = true,
+questID = 45296, prereq = { 45295, }, hideWhenCompleted = true, locationID = {84,85,},
 questInfo = "Legion Return to Karazhan\n - Change to MYTHIC & Enter\n - Get 5 CRYSTALS\n Opera, Maiden, Moroes (keys)\n Attuman, Spiders, Curator\n + Back Down Kill Nightbane", },
 
 

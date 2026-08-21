@@ -37,24 +37,24 @@ local Y, N = true, false
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "SU  05  Jade Forest  A", frameID = "list1", key = "custom:q:29562:list1:XP05013",
-questID = 29562, prereq = { 34775, }, hideWhenCompleted = true, faction = "Alliance",
+{label = "SU  05  Jade Forest  A", faction = "Alliance", locationID = {84,85,371,376,379,388,390,391,393,418,422,554,},
+questID = 29562, prereq = { 34775, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:29562:list1:XP05013",
 questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n      Until 'Jail Break'\n ",},
 
-{label = "SU  05  Jade Forest  H", frameID = "list1", key = "custom:q:29822:list1:XP05014",
-questID = 29822, prereq = { 34960, }, hideWhenCompleted = true, faction = "Horde",
+{label = "SU  05  Jade Forest  H", faction = "Horde", locationID = {84,85,371,376,379,388,390,391,393,418,422,554,},
+questID = 29822, prereq = { 34960, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:29822:list1:XP05014",
 questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n       Until \"Lay of the Land\"\n ",},
 
-{label = "SU  05  Kun-Lai  A", frameID = "list1", key = "custom:q:30515:list1:XP05015",
-questID = 30515, prereq = { 29562, }, hideWhenCompleted = true, faction = "Alliance",
+{label = "SU  05  Kun-Lai  A", faction = "Alliance", locationID = {84,85,371,376,379,388,390,391,393,418,422,554,},
+questID = 30515, prereq = { 29562, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:30515:list1:XP05015",
 questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      9  Do Village Quests\n    47  Complete\n      \"Challenge Accepted\"\n ",},
 
-{label = "SU  05  Kun-Lai  H", frameID = "list1", key = "custom:q:30515:list1:XP05016",
-questID = 30515, prereq = { 29822, }, hideWhenCompleted = true, faction = "Horde",
+{label = "SU  05  Kun-Lai  H", faction = "Horde", locationID = {84,85,371,376,379,388,390,391,393,418,422,554,},
+questID = 30515, prereq = { 29822, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:30515:list1:XP05016",
 questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      Until \"Challenge Accepted\" \n ",},
-
-{label = "SU  05  Kun-Lai  Sprite's Cloth Chest", frameID = "list1", key = "custom:q:31412:list1:XP05017",
-questID = 31412, prereq = { 29562, }, hideWhenCompleted = true, locationID = {371, 376, 379, 388, 390, 391, 393, 418, 422,},
+-- Chest Transmog missing, shows only when on Pandaria
+{label = "SU  05  Kun-Lai  Sprite's Cloth Chest", locationID = {371,376,379,388,390,391,393,418,422,554,},
+questID = 31412, prereq = { 29562, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:31412:list1:XP05017", 
 questInfo = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n ", },
 
   -- Shows During MoP Timewalking or on Timeless Isle
@@ -78,13 +78,11 @@ questInfo = "Timeless Chest Top", hideWhenCompleted = true, },
 questID = 33118, aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
 questInfo = "Timeless Ordos", hideWhenCompleted = true, },
 
+-- Shows when on Timeless Isle, Do during Pandaria Timewalking Week Only
 {label = "Time-Lost Artifact", frameID = "list2", key = "event:timewalking:pandaria:time-lost-artifact",
 aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
 textInfo = "Time-Lost Artifact\n - Timeless Coins: $hv / $rq\n - Emperor Shaohao: {rep:have}", currencyID = { 777, 7500, Y }, repDisplay = { factionID = 1492, minStanding = 6 },
 complete = { any = { { itemIDs = { 103678, 219222 }, includeBank = true }, }, }, },
-
-
-
 
 }
 

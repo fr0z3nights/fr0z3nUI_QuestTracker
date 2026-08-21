@@ -50,6 +50,7 @@ local bakedRules = {
 questID = 94386, requireInLog = false, questInfo = "Void Assault", showXWhenComplete = false, hideIfAnyQuestCompleted = { 94386, 94385, },},
 
 -- Delvers Call Quests
+{label = "D2  Silvermoon", questID = 97454, key = "XP12:97454", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = false,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
 {label = "DC  Silvermoon", questID = 93372, key = "XP12:93372", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
 {label = "DC  Silvermoon", questID = 93384, key = "XP12:93384", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },
 {label = "DC  Silvermoon", questID = 93385, key = "XP12:93385", playerLevel = { ">=", 80, }, frameID = "bar1", requireInLog = true,  hideWhenCompleted = true, progress = { objectiveIndex = 0 }, },

@@ -47,186 +47,50 @@ local GREY = "bfbfbf"
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
--- Alliance
-{label = "SU Tiragarde Sound", faction = "Alliance", frameID = "list1", key = "custom:q:47189:list1:XP08025",
-questID = 47189, prereq = { 44184, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + Tiragarde Sound (Zygor)", },
+  {key = "XP08:I166559",  item = {itemID = 166559, required = {1,true,N,0}, currencyID = {1716,300},},  label = "Commander's Signet of Battle", faction = "Horde", frameID = "list1", playerLevel = { "=", 90 }, restedOnly = Y,  locationID = {85,}, itemInfo = "Commander's Signet of Battle\n  - Docks Honorbound Vendor", },
 
-{label = "SU  The War Campaign 01", faction = "Alliance", frameID = "list1", key = "custom:q:52544:list1:XP08028",
-questID = 52544, prereq = { 47189, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   1: WBT 200 War Resources\n       Get Resources Chests", },
-
-{label = "SU The War Campaign 02", faction = "Alliance", frameID = "list1", key = "custom:q:53332:list1:XP08029",
-questID = 53332, prereq = { 52544, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   2: Return to Boralus Ship", },
-
-{label = "SU The War Campaign 03", faction = "Alliance", frameID = "list1", key = "custom:q:51714:list1:XP08030",
-questID = 51714, prereq = { 53332, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   3: Start Mission, Skip to 13", },
-
-{label = "SU The War Campaign 04", faction = "Alliance", frameID = "list1", key = "custom:q:51359:list1:XP08031",
-questID = 51359, prereq = { 51714, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   4: Open Zuldazar", },
-
-{label = "SU The War Campaign 05", faction = "Alliance", frameID = "list1", key = "custom:q:51177:list1:XP08032",
-questID = 51177, prereq = { 51359, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   5: Open Nazmir", },
-
-{label = "SU The War Campaign 06", faction = "Alliance", frameID = "list1", key = "custom:q:51402:list1:XP08033",
-questID = 51402, prereq = { 51359, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   6: Open Voldun", },
-
-{label = "SU The War Campaign 07", faction = "Alliance", frameID = "list1", key = "custom:q:52428:list1:XP08034",
-questID = 52428, prereq = { 51402, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   7: Complete A Dying World", },
-
-{label = "SU The War Campaign 08", faction = "Alliance", frameID = "list1", key = "custom:q:52450:list1:XP08035",
-questID = 52450, prereq = { 52428, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   8: Complete Uniting Kul Tiras", },
-
-{label = "SU The War Campaign 09", faction = "Alliance", frameID = "list1", key = "custom:q:65669:list1:XP08036",
-questID = 65669, prereq = { 52450, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\nReturn to Lordaeron", },
-
-{label = "SU  Nazjatar 01", faction = "Alliance", frameID = "list1", key = "custom:q:54972:list1:XP08048",
-questID = 54972, prereq = { 52450, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n + Quest Until Accepting\n       \"Essential Empowerment\"\n  + Port to Zuldazar", },
-
-{label = "SU  Nazjatar 02", faction = "Alliance", frameID = "list1", key = "custom:q:56162:list1:XP08048",
-questID = 56162, prereq = { 54972, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n + Equip Heart for Heart parts\n + Quest Until\n      \"Back Out to Sea\"\n  + Pad/Portals to Nazjatar", },
-
-{label = "SU  Nazjatar 03", faction = "Alliance", frameID = "list1", key = "custom:q:56156:list1:XP08049",
-questID = 56156, prereq = { 56162, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n + Use Red Rider Air Rifle\n + If Helper Kills, Remove Buff\n + If Hand in Not There, DeBuff\n + Quest Until A Tempered Blade\n ", },
-
-{label = "SU  Mechagon", faction = "Alliance", frameID = "list1", key = "custom:q:54992:list1:XP08050",
-questID = 54992, prereq = { 56156, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + Mechagon (Zygor)\n + Quest Until Turning In\n      \"Princely Visit\"", },
-
-{label = "SU  N'Zoth Invasions 01", faction = "Alliance", frameID = "list1", key = "custom:q:58506:list1:XP08061A",
-questID = 58506, prereq = { 56156, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\n  + PickUp Missive\n     A  Dockmasters Office\n  + Follow Guide\n    - Consoles Unnamed?, Relog", },
-
--- Horde
-{label = "SU  Zuldazar", faction = "Horde", frameID = "list1", key = "custom:q:47514:list1:XP08026",
-questID = 47514, prereq = { 60151, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + Zuldazar (Zygor)\n + Click Map Choose Zuldazar", },
-
-{label = "SU The War Campaign 01", faction = "Horde", frameID = "list1", key = "custom:q:52746:list1:XP08037",
-questID = 52746, prereq = { 46931, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   1: Take War Campaign Quest\n   Warband Transfer Resources\n   Port to Orgimmar & Back\n   2: Get Resources Chests/WBT", },
-
-{label = "SU The War Campaign 02", faction = "Horde", frameID = "list1", key = "custom:q:53333:list1:XP08038",
-questID = 53333, prereq = { 52746, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   3: Return to Ship", },
-
-{label = "SU The War Campaign 03", faction = "Horde", frameID = "list1", key = "custom:q:51800:list1:XP08039",
-questID = 51800, prereq = { 53333, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   4: Start Mission, Skip to 10\n   Table: Tiragarde", },
-
-{label = "SU The War Campaign 04", faction = "Horde", frameID = "list1", key = "custom:q:51438:list1:XP08040",
-questID = 51438, prereq = { 51800, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   5: Open Tiragarde Sound", },
-
-{label = "SU The War Campaign 05", faction = "Horde", frameID = "list1", key = "custom:q:51696:list1:XP08041",
-questID = 51696, prereq = { 51438, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   6: Stormsong Valley", },
-
-{label = "SU The War Campaign 06", faction = "Horde", frameID = "list1", key = "custom:q:51234:list1:XP08042",
-questID = 51234, prereq = { 51696, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   7: Open Drustvar", },
-
-{label = "SU The War Campaign 07", faction = "Horde", frameID = "list1", key = "custom:q:52428:list1:XP08043",
-questID = 52428, prereq = { 51234, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   8: Complete A Dying World", },
-
-{label = "SU The War Campaign 08", faction = "Horde", frameID = "list1", key = "custom:q:52451:list1:XP08044",
-questID = 52451, prereq = { 52428, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n   9: Complete Uniting Zuldazar", },
-
-{label = "SU The War Campaign 09", faction = "Horde", frameID = "list1", key = "custom:q:65788:list1:XP08045",
-questID = 65788, prereq = { 52451, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\nReturn to Lordaeron", },
-
-{label = "SU  Nazjatar 01", faction = "Horde",frameID = "list1", key = "custom:q:55053:list1:XP08053",
-questID = 55053, prereq = { 52451, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nNazjatar (Zygor)\n  1: Follow Guide Until\n       \"A Way Home\"", },
-
-{label = "SU  Nazjatar 02", faction = "Horde",frameID = "list1", key = "custom:q:55851:list1:XP08054",
-questID = 55851, prereq = { 55053, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nNazjatar (Zygor)\n  2: Port to Zuldazar\n         Then Silithus\n         Then Chamber of Heart", },
-
-{label = "SU  Nazjatar 03", faction = "Horde",frameID = "list1", key = "custom:q:55425:list1:XP08055",
-questID = 55425, prereq = { 55851, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nNazjatar (Zygor)\n  3: Follow Guide Until\n       \"Dominating the Indomitable\"", },
-
-{label = "SU  Nazjatar 04", faction = "Horde",frameID = "list1", key = "custom:q:55497:list1:XP08056",
-questID = 55497, prereq = { 55425, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nNazjatar (Zygor)\n  4: Hearth Out\n         Portal to Silithus/Chamber", },
-
-{label = "SU  Nazjatar 05", faction = "Horde",frameID = "list1", key = "custom:q:57010:list1:XP08057",
-questID = 57010, prereq = { 55497, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nNazjatar (Zygor)\n  5: Follow Guide Until\n       \"Back Out to Sea\"", },
-
-{label = "SU  Nazjatar 06", faction = "Horde",frameID = "list1", key = "custom:q:56161:list1:XP08058",
-questID = 56161, prereq = { 57010, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nNazjatar (Zygor)\n  6: Pad to Silithus\n        Portal to Zuldazar\n        Portal to Nazjatar", },
-
-{label = "SU  Nazjatar 07", faction = "Horde",frameID = "list1", key = "custom:q:55500:list1:XP08059",
-questID = 55500, prereq = { 56161, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nNazjatar (Zygor)\n  7: Follow Guide Until\n        \"Save a Friend\"", },
-
-{label = "SU  Nazjatar 08", faction = "Horde", frameID = "list1", key = "custom:q:55652:list1:XP08060",
-questID = 55652, prereq = { 55500, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMechagon (Zygor)\n    1: Follow Guide Until\n        \"We Come in Peace...\"",  },
-
-{label = "SU  N'Zoth Invasions 01", faction = "Horde", frameID = "list1", key = "custom:q:58506:list1:XP08061H",
-questID = 58506, prereq = { 55500, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\n  + PickUp Missive\n     On Ship at Dock\n  + Follow Guide\n    - Consoles Unnamed?, Relog", },
-
-{label = "Commander's Signet of Battle", faction = "Horde", frameID = "list1", key = "custom:item:166559:list1:46",
-playerLevel = { ">", 80 }, locationID = "999999", restedOnly = Y, 
-item = { itemID = 166559, required = { 1, true, N, 0 }, ["currencyID"] = { 1716, 300 }, }, 
-itemInfo = "Commander's Signet of Battle\n  - Docks Honorbound Vendor", },
-
--- Neautral
-{label = "AH  Very Unlucky Rock", frameID = "list1", key = "custom:q:49867:list1:XP08027",
-questID = 49867, prereq = { 46931, }, hideWhenCompleted = true, locationID = 1165862,
-questInfo = "- Nazmir - Lucky Horaces Chest\n      (AH - Very Unlucky Rock)", },
-
-{label = "PET Wicker Pup", frameID = "list1", key = "custom:q:53448:list1:XP08051",
-questID = 53448, prereq = { 51234, }, hideWhenCompleted = true,
-questInfo = "Wicker Pup (Zygor)", },
-
-{label = "PET Taptaf", frameID = "list1", key = "custom:q:52061:list1:XP08052",
-questID = 52061, prereq = { 53448, }, hideWhenCompleted = true,
-questInfo = "Taptaf (Zygor)", },
-
-{label = "SU  N'Zoth Invasions 02", frameID = "list1", key = "custom:q:56209:list1:XP08062",
-questID = 56209, prereq = { 58506, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\\n  - Leave Chamber, Fly to Uldum\\n  - Talk Magni, Possibly Skip", },
-
-{label = "SU  N'Zoth Invasions 03", frameID = "list1", key = "custom:q:56376:list1:XP08063",
-questID = 56376, prereq = { 56209, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\\n ULDUM OPEN\\n  - Do Dailies, Clear Mobs\\n  - Fish Gloop (Black Empire)", },
-
-{label = "SU  N'Zoth Invasions 04", frameID = "list1", key = "custom:q:56377:list1:XP08064",
-questID = 56377, prereq = { 56376, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\\n ULDUM OPEN\\n  - No Forging Onwad, Out & In\\n  - Return to Chamber of Heart", },
-
-{label = "SU  N'Zoth Invasions 05", frameID = "list1", key = "custom:q:56771:list1:XP08065",
-questID = 56771, prereq = { 56376, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\\n ULDUM OPEN\\n  - Exit Chamber, Go to Pandaria\\n  - Fish Gloop (Black Empire)\\n  - Return to Chamber of Heart", },
-
-{label = "SU  N'Zoth Invasions 06", frameID = "list1", key = "custom:q:56540:list1:XP08066",
-questID = 56540, prereq = { 56771, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\\n ULDUM/VALE OPEN\\n  - Do Dailies, Clear Mobs\\n  - Kill Boss\\n  - Fish Gloop (Black Empire)\\n BOTH OPEN", },
-
-{label = "SU  N'Zoth Invasions 07", frameID = "list1", key = "custom:q:57220:list1:XP08067",
-questID = 57220, prereq = { 56540, }, hideWhenCompleted = true,
-questInfo = "Battle For Azeroth\nMagnis Plan (Zygor)\\n ULDUM/VALE OPEN\\n  - Skip if Possible\\n  - Follow Guide", },
-
+  {key = "XP08:Q47189A",  questID = 47189, prereq = { 44184, }, faction = "Alliance",   label = "08 A Tiragarde Sound",   frameID = "list1", hideWhenCompleted = true, locationID = {84,895,1161,},                     questInfo = "Battle For Azeroth\n + Tiragarde Sound (Zygor)", },
+  {key = "XP08:Q54972A",  questID = 54972, prereq = { 52450, }, faction = "Alliance",   label = "08 A Nazjatar 1",        frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,1355,},                    questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Q2: Essential Empowerment\n + Port to Zuldazar", },
+  {key = "XP08:Q56162A",  questID = 56162, prereq = { 54972, }, faction = "Alliance",   label = "08 A Nazjatar 2",        frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,1355,},                    questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Q2: Back Out to Sea\n  + Pad/Portals to Nazjatar", },
+  {key = "XP08:Q56156A",  questID = 56156, prereq = { 56162, }, faction = "Alliance",   label = "08 A Nazjatar 3",        frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,1355,},                    questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Use Red Rider Air Rifle\n - Remove Assist Buff\n - Quest Until A Tempered Blade", },
+  {key = "XP08:Q54992A",  questID = 54992, prereq = { 56156, }, faction = "Alliance",   label = "08 A Mechagon",          frameID = "list1", hideWhenCompleted = true, locationID = {84,895,1161,1355,1462,},           questInfo = "Battle For Azeroth\n + Mechagon (Zygor)\n - Q2: Princely Visit", },
+  {key = "XP08:Q52544A",  questID = 52544, prereq = { 47189, }, faction = "Alliance",   label = "08 A War Campaign 1",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - WBT 200 War Resources", },
+  {key = "XP08:Q53332A",  questID = 53332, prereq = { 52544, }, faction = "Alliance",   label = "08 A War Campaign 2",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Return to Boralus Ship", },
+  {key = "XP08:Q51714A",  questID = 51714, prereq = { 53332, }, faction = "Alliance",   label = "08 A War Campaign 3",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Start Mission, Skip to 13", },
+  {key = "XP08:Q51359A",  questID = 51359, prereq = { 51714, }, faction = "Alliance",   label = "08 A War Campaign 4",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,862,},                     questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Open Zuldazar", },
+  {key = "XP08:Q51177A",  questID = 51177, prereq = { 51359, }, faction = "Alliance",   label = "08 A War Campaign 5",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,863,},                     questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Open Nazmir", },
+  {key = "XP08:Q51402A",  questID = 51402, prereq = { 51359, }, faction = "Alliance",   label = "08 A War Campaign 6",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,864,},                     questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Open Voldun", },
+  {key = "XP08:Q52428A",  questID = 52428, prereq = { 51402, }, faction = "Alliance",   label = "08 A War Campaign 7",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Complete A Dying World", },
+  {key = "XP08:Q52450A",  questID = 52450, prereq = { 52428, }, faction = "Alliance",   label = "08 A War Campaign 8",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Complete Uniting Kul Tiras", },
+  {key = "XP08:Q65669A",  questID = 65669, prereq = { 52450, }, faction = "Alliance",   label = "08 A War Campaign 9",    frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Return to Lordaeron", },
+  {key = "XP08:Q47514H",  questID = 47514, prereq = { 60151, }, faction = "Horde",      label = "08 H Zuldazar",          frameID = "list1", hideWhenCompleted = true, locationID = {85,},                              questInfo = "Battle For Azeroth\n + Zuldazar (Zygor)\n - Click Map Choose Zuldazar", },
+  {key = "XP08:Q55053H",  questID = 55053, prereq = { 52451, }, faction = "Horde",      label = "08 H Nazjatar 1",        frameID = "list1", hideWhenCompleted = true, locationID = {85,},                              questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Q2: A Way Home", },
+  {key = "XP08:Q55851H",  questID = 55851, prereq = { 55053, }, faction = "Horde",      label = "08 H Nazjatar 2",        frameID = "list1", hideWhenCompleted = true, locationID = {85,},                              questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Port: Zuldazar, Silithus\n         Chamber of Heart", },
+  {key = "XP08:Q55425H",  questID = 55425, prereq = { 55851, }, faction = "Horde",      label = "08 H Nazjatar 3",        frameID = "list1", hideWhenCompleted = true, locationID = {85,},                              questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Q2: Dominating the Indomitable", },
+  {key = "XP08:Q55497H",  questID = 55497, prereq = { 55425, }, faction = "Horde",      label = "08 H Nazjatar 4",        frameID = "list1", hideWhenCompleted = true, locationID = {85,},                              questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Hearth / Silithus / Chamber", },
+  {key = "XP08:Q57010H",  questID = 57010, prereq = { 55497, }, faction = "Horde",      label = "08 H Nazjatar 5",        frameID = "list1", hideWhenCompleted = true, locationID = {85,},                              questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Q2: Back Out to Sea", },
+  {key = "XP08:Q56161H",  questID = 56161, prereq = { 57010, }, faction = "Horde",      label = "08 H Nazjatar 6",        frameID = "list1", hideWhenCompleted = true, locationID = {85,},                              questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Silithus / Zuldazar / Nazjatar", },
+  {key = "XP08:Q55500H",  questID = 55500, prereq = { 56161, }, faction = "Horde",      label = "08 H Nazjatar 7",        frameID = "list1", hideWhenCompleted = true, locationID = {85,},                              questInfo = "Battle For Azeroth\n + Nazjatar (Zygor)\n - Q2: Save a Friend", },
+  {key = "XP08:Q55652H",  questID = 55652, prereq = { 55500, }, faction = "Horde",      label = "08 H Nazjatar 8",        frameID = "list1", hideWhenCompleted = true, locationID = {85,895,862,1163,1165,1355,1462,},  questInfo = "Battle For Azeroth\n + Mechagon (Zygor)\n - Q2: We Come in Peace...", },
+  {key = "XP08:Q52746H",  questID = 52746, prereq = { 46931, }, faction = "Horde",      label = "08 H War Campaign 1",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1163,1165,},                    questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - War Campaign Quest\n - Warband Trf 200\n - Port: Orgimmar & Back", },
+  {key = "XP08:Q53333H",  questID = 53333, prereq = { 52746, }, faction = "Horde",      label = "08 H War Campaign 2",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Return to Ship", },
+  {key = "XP08:Q51800H",  questID = 51800, prereq = { 53333, }, faction = "Horde",      label = "08 H War Campaign 3",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Start Mission, Skip to 10\n   Table: Tiragarde", },
+  {key = "XP08:Q51438H",  questID = 51438, prereq = { 51800, }, faction = "Horde",      label = "08 H War Campaign 4",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,895,},                     questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Open Tiragarde Sound", },
+  {key = "XP08:Q51696H",  questID = 51696, prereq = { 51438, }, faction = "Horde",      label = "08 H War Campaign 5",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,942,},                     questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Open Stormsong Valley", },
+  {key = "XP08:Q51234H",  questID = 51234, prereq = { 51696, }, faction = "Horde",      label = "08 H War Campaign 6",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,896,},                     questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Open Drustvar", },
+  {key = "XP08:Q52428H",  questID = 52428, prereq = { 51234, }, faction = "Horde",      label = "08 H War Campaign 7",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Complete A Dying World", },
+  {key = "XP08:Q52451H",  questID = 52451, prereq = { 52428, }, faction = "Horde",      label = "08 H War Campaign 8",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Complete Uniting Zuldazar", },
+  {key = "XP08:Q65788H",  questID = 65788, prereq = { 52451, }, faction = "Horde",      label = "08 H War Campaign 9",    frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,},                         questInfo = "Battle For Azeroth\n + War Campaign (Zygor)\n - Return to Lordaeron", },
+  {key = "XP08:Q58506A",  questID = 58506, prereq = { 56156, }, faction = "Alliance",   label = "08 A N'Zoth Invasion 1", frameID = "list1", hideWhenCompleted = true, locationID = {84,1161,},                         questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n  - Dockmasters Office\n - Pickup Missive", },
+  {key = "XP08:Q58506H",  questID = 58506, prereq = { 55500, }, faction = "Horde",      label = "08 H N'Zoth Invasion 1", frameID = "list1", hideWhenCompleted = true, locationID = {85,1165,},                         questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n  - On Ship at Docks  \n - PickUp Missive", },
+  {key = "XP08:Q56209N",  questID = 56209, prereq = { 58506, },                         label = "08 N N'Zoth Invasion 2", frameID = "list1", hideWhenCompleted = true, locationID = {84,85,},                           questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n  - Leave Chamber, Fly to Uldum\n  - Talk Magni, Possibly Skip", },
+  {key = "XP08:Q56376N",  questID = 56376, prereq = { 56209, },                         label = "08 N N'Zoth Invasion 3", frameID = "list1", hideWhenCompleted = true, locationID = {84,85,},                           questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n + ULDUM OPEN\n  - Do Dailies, Clear Mobs\n  - Fish Gloop (Black Empire)", },
+  {key = "XP08:Q56377N",  questID = 56377, prereq = { 56376, },                         label = "08 N N'Zoth Invasion 4", frameID = "list1", hideWhenCompleted = true, locationID = {84,85,},                           questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n + ULDUM OPEN\n  - No Forging Onwad, PortOI\n  - Return to Chamber of Heart", },
+  {key = "XP08:Q56771N",  questID = 56771, prereq = { 56376, },                         label = "08 N N'Zoth Invasion 5", frameID = "list1", hideWhenCompleted = true, locationID = {84,85,},                           questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n + ULDUM OPEN\n  - Exit Chamber, Go to Pandaria\n  - Fish Gloop (Black Empire)\n  - Return to Chamber of Heart", },
+  {key = "XP08:Q56540N",  questID = 56540, prereq = { 56771, },                         label = "08 N N'Zoth Invasion 6", frameID = "list1", hideWhenCompleted = true, locationID = {84,85,},                           questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n + ULDUM / VALE OPEN\n  - Do Dailies, Clear Mobs\n  - Kill Boss\n  - Fish Gloop (Black Empire)", },
+  {key = "XP08:Q57220N",  questID = 57220, prereq = { 56540, },                         label = "08 N N'Zoth Invasion 7", frameID = "list1", hideWhenCompleted = true, locationID = {84,85,},                           questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n + ULDUM / VALE OPEN\n  - Skip if Possible", },
+  {key = "XP08:Q53448N",  questID = 53448, prereq = { 51234, },                         label = "Pet Wicker Pup",         frameID = "list1", hideWhenCompleted = true, locationID = {896,1161,1163,1165,},              questInfo = "Battle For Azeroth\n + Wicker Pup (Zygor)", },
+  {key = "XP08:Q52061N",  questID = 52061, prereq = { 53448, },                         label = "Pet Taptaf",             frameID = "list1", hideWhenCompleted = true, locationID = {896,1161,1163,1165,},              questInfo = "Battle For Azeroth\n + Taptaf (Zygor)", },
 
 
 

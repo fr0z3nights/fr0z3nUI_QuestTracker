@@ -150,13 +150,13 @@ complete = { any = { { item = { itemID = 253580, count = 1, cachePurchased = Y, 
 
 {group = "classic:vendor:red-rider", order = 1,
 label = "Red Rider Air RIfle", frameID = "list1", key = "custom:item:46725:list1:0116",
-itemInfo = "Red Rider Air RIfle", locationID = "84, 85", restedOnly = Y,
+itemInfo = "Red Rider Air RIfle", locationID = {84,85}, restedOnly = Y,
 item = { itemID = 46725, required = { 1, Y, Y, 1 }, },
 complete = { any = { { item = { itemID = 46725, count = 1 } }, }, }, },
 
 {group = "classic:vendor:red-rider", order = 2,
 label = "Red Rider Air Ammo", frameID = "list1", key = "custom:item:48601:list1:01117",
-itemInfo = "Red Rider Air Ammo", locationID = "84, 85", restedOnly = Y,
+itemInfo = "Red Rider Air Ammo", locationID = {84,85}, restedOnly = Y,
 item = { itemID = 48601, required = { 1, Y, Y, 1 }, },
 complete = { any = { { item = { itemID = 48601, count = 1 } }, }, }, },
 
