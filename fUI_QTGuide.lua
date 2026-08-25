@@ -176,7 +176,7 @@ function G.FormatRuleText(r, opts)
 			return string.format("%s: %s%s", xy, tostring(base), LevelSuffix(r))
 		end
 		return string.format("Q: %s%s", tostring(base), LevelSuffix(r))
-	elseif type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup) then
+	elseif type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.mapID or r.class or r.notInGroup) then
 		local function PickSpellID(v)
 			if type(v) == "table" then
 				for _, x in ipairs(v) do

@@ -10,6 +10,7 @@ local EXPANSION_NAME = "Shadowlands"
 
 local Y, N = true, false
 
+
 local WHITE = "ffffff"
 local RED = "ff4040"
 local ORANGE = "ff8c1a"
@@ -46,13 +47,15 @@ local GREY = "bfbfbf"
 --   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
-
-  {key = "XP09:Q60150A", questID = 60150, label = "09 Shadowlands A", faction = "Alliance", frameID = "list1", questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Castle Entryway",     hideIfAnyQuestCompleted = { 60150, 60151, 61874 }, locationID = {84,85,}, },
-  {key = "XP09:Q60150H", questID = 60150, label = "09 Shadowlands H", faction = "Horde",    frameID = "list1", questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Valley of Strength",  hideIfAnyQuestCompleted = { 60150, 60151, 61874 }, locationID = {84,85,}, },
+--                                                                                                                                                                84 Stormwind, 85 Orgrimmar, 1670 Oribos
+--                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
+  {key = "XP09:Q60150A", questID = 60150, label = "09 Shadowlands A", faction = "A",  frameID = "list1", hideQID = {60150,60151,61874,}, mapID = {84,"SHD",}, questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Castle Entryway", },
+  {key = "XP09:Q60150H", questID = 60150, label = "09 Shadowlands H", faction = "H",  frameID = "list1", hideQID = {60150,60151,61874,}, mapID = {85,"SHD",}, questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Valley of Strength", },
 
 
 
 }
+
 
 for i = 1, #bakedRules do
   local r = bakedRules[i]
@@ -63,6 +66,7 @@ for i = 1, #bakedRules do
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end
+    r.mapID = ns.ExpandMapIDs(r.mapID)
     ns.rules[#ns.rules + 1] = r
   end
 end

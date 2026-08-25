@@ -35,54 +35,23 @@ local Y, N = true, false
 -- item.required tuple keys:
 --   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
+
 local bakedRules = {
 
-{label = "SU  05  Jade Forest  A", faction = "Alliance", locationID = {84,85,371,376,379,388,390,391,393,418,422,554,},
-questID = 29562, prereq = { 34775, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:29562:list1:XP05013",
-questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n      Until 'Jail Break'\n ",},
+  {key = "XP05:Q29562",   questID = 29562, prereq = {34775,}, label = "05 Jade Forest A", faction = "A",  mapID = {"MoP","SW","OR",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n      Until 'Jail Break'\n ",},
+  {key = "XP05:Q29822",   questID = 29822, prereq = {34960,}, label = "05 Jade Forest H", faction = "H",  mapID = {"MoP","SW","OR",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n       Until \"Lay of the Land\"\n ",},
+  {key = "XP05:Q30515A",  questID = 30515, prereq = {29562,}, label = "05 Kun-Lai A",     faction = "A",  mapID = {"MoP","SW","OR",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      9  Do Village Quests\n    47  Complete\n      \"Challenge Accepted\"\n ",},
+  {key = "XP05:Q30515H",  questID = 30515, prereq = {29822,}, label = "05 Kun-Lai H",     faction = "H",  mapID = {"MoP","SW","OR",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      Until \"Challenge Accepted\" \n ",},
+  {key = "XP05:Q31412",   questID = 31412, prereq = {29562,}, label = "05 Kun-Lai Chest",                 mapID = {"MoP",},           frameID = "list1", hideDone = true, questInfo = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n ", }, -- Chest Transmog missing, shows only when on Pandaria
+--                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
 
-{label = "SU  05  Jade Forest  H", faction = "Horde", locationID = {84,85,371,376,379,388,390,391,393,418,422,554,},
-questID = 29822, prereq = { 34960, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:29822:list1:XP05014",
-questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n       Until \"Lay of the Land\"\n ",},
+  {key = "XP05:Q33117",   questID = 33117,                    label = "Timeless Isle Celestial",          mapID = {"TI",},            frameID = "list2", hideDone = true, questInfo = "Timeless Celestials",                                                                  aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, },   -- Shows During MoP Timewalking or on Timeless Isle
+  {key = "XP05:Q33209",   questID = 33209,                    label = "Timeless Isle Chest Low",          mapID = {"TI",},            frameID = "list2", hideDone = true, questInfo = "Timeless Chest Low",                                                                   aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, },
+  {key = "XP05:Q33208",   questID = 33208,                    label = "Timeless Isle Chest Mid",          mapID = {"TI",},            frameID = "list2", hideDone = true, questInfo = "Timeless Chest Mid",                                                                   aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, },
+  {key = "XP05:Q33210",   questID = 33210,                    label = "Timeless Isle Chest Top",          mapID = {"TI",},            frameID = "list2", hideDone = true, questInfo = "Timeless Chest Top",                                                                   aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, },
+  {key = "XP05:Q33118",   questID = 33118,                    label = "Timeless Isle Ordos",              mapID = {"TI",},            frameID = "list2", hideDone = true, questInfo = "Timeless Ordos",                                                                       aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, },
+  {key = "XP05:I103678",                                      label = "Time-Lost Artifact",               mapID = {"TI",},            frameID = "list2", hideDone = true, textInfo  = "Time-Lost Artifact\n - Timeless Coins: $hv / $rq\n - Emperor Shaohao: {rep:have}",     aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, currencyID = { 777, 7500, Y }, repDisplay = { factionID = 1492, minStanding = 6 }, complete = { any = { { itemIDs = { 103678, 219222 }, includeBank = true }, }, }, }, -- Shows when on Timeless Isle, Do during Pandaria Timewalking Week Only
 
-{label = "SU  05  Kun-Lai  A", faction = "Alliance", locationID = {84,85,371,376,379,388,390,391,393,418,422,554,},
-questID = 30515, prereq = { 29562, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:30515:list1:XP05015",
-questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      9  Do Village Quests\n    47  Complete\n      \"Challenge Accepted\"\n ",},
-
-{label = "SU  05  Kun-Lai  H", faction = "Horde", locationID = {84,85,371,376,379,388,390,391,393,418,422,554,},
-questID = 30515, prereq = { 29822, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:30515:list1:XP05016",
-questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      Until \"Challenge Accepted\" \n ",},
--- Chest Transmog missing, shows only when on Pandaria
-{label = "SU  05  Kun-Lai  Sprite's Cloth Chest", locationID = {371,376,379,388,390,391,393,418,422,554,},
-questID = 31412, prereq = { 29562, }, frameID = "list1", hideWhenCompleted = true, key = "custom:q:31412:list1:XP05017", 
-questInfo = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n ", },
-
-  -- Shows During MoP Timewalking or on Timeless Isle
-{label = "Timeless Isle Celestial", frameID = "list2", key = "event:timewalking:pandaria:celestial",
-questID = 33117, aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
-questInfo = "Timeless Celestials", hideWhenCompleted = true, },
-
-{label = "Timeless Isle Chest Low", frameID = "list2", key = "event:timewalking:pandaria:chestlow",
-questID = 33209, aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
-questInfo = "Timeless Chest Low", hideWhenCompleted = true, },
-
-{label = "Timeless Isle Chest Mid", frameID = "list2", key = "event:timewalking:pandaria:chestmid",
-questID = 33208, aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
-questInfo = "Timeless Chest Mid", hideWhenCompleted = true, },
-
-{label = "Timeless Chest Top", frameID = "list2", key = "event:timewalking:pandaria:chesttop",
-questID = 33210, aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
-questInfo = "Timeless Chest Top", hideWhenCompleted = true, },
-
-{label = "Timeless Isle Ordos", frameID = "list2", key = "event:timewalking:pandaria:ordos",
-questID = 33118, aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
-questInfo = "Timeless Ordos", hideWhenCompleted = true, },
-
--- Shows when on Timeless Isle, Do during Pandaria Timewalking Week Only
-{label = "Time-Lost Artifact", frameID = "list2", key = "event:timewalking:pandaria:time-lost-artifact",
-aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, locationOverrideID = 554,
-textInfo = "Time-Lost Artifact\n - Timeless Coins: $hv / $rq\n - Emperor Shaohao: {rep:have}", currencyID = { 777, 7500, Y }, repDisplay = { factionID = 1492, minStanding = 6 },
-complete = { any = { { itemIDs = { 103678, 219222 }, includeBank = true }, }, }, },
 
 }
 
@@ -96,6 +65,7 @@ for i = 1, #bakedRules do
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end
+    r.mapID = ns.ExpandMapIDs(r.mapID)
     ns.rules[#ns.rules + 1] = r
   end
 end

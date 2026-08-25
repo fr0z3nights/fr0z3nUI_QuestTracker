@@ -47,18 +47,14 @@ local GREY = "bfbfbf"
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "Kirin Tor Ring", frameID = "list1", key = "custom:item:40586:list1:81",
-itemInfo = "Kirin Tor Ring\n + 8500 |TInterface\\MoneyFrame\\UI-GoldIcon:16:16:0:0|t", 
-playerLevel = { ">", 70, }, locationID = {84,85,125,}, restedOnly = true, item = { itemID = 40586, required = { 1, Y, Y, 1 }, }, },
-
-{label = "Argent Crusader's Tabard",
-itemInfo = "Argent Crusader's Tabard\n+ WBT $nm $cc / $rq ($wb)", frameID = "list1", key = "custom:item:46874:list1:128",
-playerLevel = { ">", 70, }, locationID = {84,85,125}, restedOnly = true, item = { itemID = 46874, required = { 1, Y, N, 0 }, currencyID = { 241, 50 }, }, },
+{label = "Kirin Tor Ring",            frameID = "list1", key = "XP03:Port:KirinTor",      playerLevel = { ">", 70, }, mapID = {84,85,125,}, restedOnly = true, showIf = { all = { { factionID = 1090, minStanding = 8 }, { itemIDs = { 40586 }, includeBank = true }, }, }, complete = { any = { { itemIDs = { 40586 }, includeBank = true }, }, },  itemInfo = "Kirin Tor Ring\n + 8500 |TInterface\\MoneyFrame\\UI-GoldIcon:16:16:0:0|t",  },
+{label = "Argent Crusader's Tabard",  frameID = "list1", key = "XP03:Port:ArgentTabard",  playerLevel = { ">", 70, }, mapID = {84,85,125,}, restedOnly = true, item = { itemID = 46874, required = { 1, Y, N, 0 }, currencyID = { 241, 50 }, },                                                                                                      itemInfo = "Argent Crusader's Tabard\n+ WBT $nm $cc / $rq ($wb)", },
 
 
 
 -- itemInfo = "Orgrimmar Tabard", 
--- locationID = "999999", 
+-- mapID = "999999", 
+--                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
 
 
 
@@ -74,6 +70,7 @@ playerLevel = { ">", 70, }, locationID = {84,85,125}, restedOnly = true, item = 
 
 }
 
+
 for i = 1, #bakedRules do
   local r = bakedRules[i]
   if type(r) == "table" then
@@ -83,6 +80,7 @@ for i = 1, #bakedRules do
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end
+    r.mapID = ns.ExpandMapIDs(r.mapID)
     ns.rules[#ns.rules + 1] = r
   end
 end

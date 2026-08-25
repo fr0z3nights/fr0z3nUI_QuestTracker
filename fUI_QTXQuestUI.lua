@@ -471,7 +471,7 @@ function ns.FQTOptionsPanels.BuildQuestX(ctx)
     if questXY ~= "Y" and questXY ~= "K" then questXY = "X" end
 
     local ruleTitle = nil
-    local locationID = nil
+    local mapID = nil
 
     local restedOnly = nil
     do
@@ -479,24 +479,24 @@ function ns.FQTOptionsPanels.BuildQuestX(ctx)
         local scopeMode = NormalizeScopeMode(p._questXScopeMode)
         if scopeMode == "RESTING" then
           restedOnly = true
-          locationID = nil
+          mapID = nil
         else
           restedOnly = nil
-          if locationID == nil then
+          if mapID == nil then
             local mapID = GetCurrentMapIDSafe()
             if mapID then
-              locationID = tostring(mapID)
+              mapID = tostring(mapID)
             end
           end
         end
       else
         -- QuestY and Keep List entries are always global (no location/resting gate)
-        locationID = nil
+        mapID = nil
         restedOnly = nil
       end
     end
 
-    local hideWhenCompleted = (questXY == "K") and false or true
+    local hideDone = (questXY == "K") and false or true
 
     local expID, expName = nil, nil
     if type(GetRuleCreateExpansion) == "function" then
@@ -525,11 +525,11 @@ function ns.FQTOptionsPanels.BuildQuestX(ctx)
       rule.targets = nil
       rule.display = nil
       rule.label = ruleTitle
-      rule.locationID = locationID
+      rule.mapID = mapID
       rule.restedOnly = restedOnly
       rule._expansionID = expID
       rule._expansionName = expName
-      rule.hideWhenCompleted = hideWhenCompleted
+      rule.hideDone = hideDone
 
       p._editingCustomIndex = nil
       p._editingCustomIsChar = nil
@@ -551,11 +551,11 @@ function ns.FQTOptionsPanels.BuildQuestX(ctx)
       rule.targets = nil
       rule.display = nil
       rule.label = ruleTitle
-      rule.locationID = locationID
+      rule.mapID = mapID
       rule.restedOnly = restedOnly
       rule._expansionID = expID
       rule._expansionName = expName
-      rule.hideWhenCompleted = hideWhenCompleted
+      rule.hideDone = hideDone
 
       if base and base.key ~= nil then rule.key = tostring(base.key) end
       edits[key] = rule
@@ -576,12 +576,12 @@ function ns.FQTOptionsPanels.BuildQuestX(ctx)
         questXY = questXY,
         frameID = nil,
         label = ruleTitle,
-        locationID = locationID,
+        mapID = mapID,
         restedOnly = restedOnly,
         display = nil,
         _expansionID = expID,
         _expansionName = expName,
-        hideWhenCompleted = hideWhenCompleted,
+        hideDone = hideDone,
       }
 
       Print(string.format("Added %s for quest %d", GetModeLabel(questXY), questID))
@@ -636,10 +636,10 @@ function ns.FQTOptionsPanels.BuildQuestX(ctx)
   local function GetDesiredQuestXGate()
     local scopeMode = NormalizeScopeMode(p._questXScopeMode)
     if scopeMode == "RESTING" then
-      return { restedOnly = true, locationID = nil }
+      return { restedOnly = true, mapID = nil }
     end
     local mapID = GetCurrentMapIDSafe()
-    return { restedOnly = nil, locationID = mapID and tostring(mapID) or nil }
+    return { restedOnly = nil, mapID = mapID and tostring(mapID) or nil }
   end
 
   local function GateMatches(rule, questXY)
@@ -648,9 +648,9 @@ function ns.FQTOptionsPanels.BuildQuestX(ctx)
     end
     local desired = GetDesiredQuestXGate()
     local rRested = (type(rule) == "table") and (rule.restedOnly == true) or false
-    local rLoc = (type(rule) == "table") and rule.locationID or nil
+    local rLoc = (type(rule) == "table") and rule.mapID or nil
     if rLoc ~= nil then rLoc = tostring(rLoc) end
-    local dLoc = desired.locationID
+    local dLoc = desired.mapID
     if dLoc ~= nil then dLoc = tostring(dLoc) end
 
     if desired.restedOnly == true then

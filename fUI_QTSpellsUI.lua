@@ -1024,7 +1024,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
     end
 
     local locText = tostring(locBox and locBox:GetText() or ""):gsub("%s+", "")
-    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
+    local mapID = (locText ~= "" and locText ~= "0") and locText or nil
 
     local fontKey = tostring(panels.spells._fontKey or "inherit")
     if fontKey == "" then fontKey = "inherit" end
@@ -1078,8 +1078,8 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       rule.size = fontSize
       rule.notInGroup = notInGroupCheck:GetChecked() and true or false
       rule.restedOnly = spellsRestedOnlyCheck:GetChecked() and true or false
-      rule.missingPrimaryProfessions = spellsMissingProfCheck:GetChecked() and true or false
-      rule.locationID = locationID
+      rule.xprofPRI = spellsMissingProfCheck:GetChecked() and true or false
+      rule.mapID = mapID
       rule.spellKnown = known
       rule.notSpellKnown = notKnown
 
@@ -1102,7 +1102,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
         rule.playerLevel = nil
       end
 
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
+      if rule.hideDone == nil then rule.hideDone = false end
 
       panels.spells._editingCustomIndex = nil
       panels.spells._editingDefaultBase = nil
@@ -1136,8 +1136,8 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
       rule.size = fontSize
       rule.notInGroup = notInGroupCheck:GetChecked() and true or false
       rule.restedOnly = spellsRestedOnlyCheck:GetChecked() and true or false
-      rule.missingPrimaryProfessions = spellsMissingProfCheck:GetChecked() and true or false
-      rule.locationID = locationID
+      rule.xprofPRI = spellsMissingProfCheck:GetChecked() and true or false
+      rule.mapID = mapID
       rule.spellKnown = known
       rule.notSpellKnown = notKnown
 
@@ -1160,7 +1160,7 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
         rule.playerLevel = nil
       end
 
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
+      if rule.hideDone == nil then rule.hideDone = false end
       if base and base.key ~= nil then rule.key = tostring(base.key) end
       edits[key] = rule
 
@@ -1190,10 +1190,10 @@ function ns.FQTOptionsPanels.BuildSpells(ctx)
         size = fontSize,
         notInGroup = notInGroupCheck:GetChecked() and true or false,
         restedOnly = spellsRestedOnlyCheck:GetChecked() and true or false,
-        missingPrimaryProfessions = spellsMissingProfCheck:GetChecked() and true or false,
-        locationID = locationID,
+        xprofPRI = spellsMissingProfCheck:GetChecked() and true or false,
+        mapID = mapID,
         playerLevel = (op and lvl) and { op, lvl } or nil,
-        hideWhenCompleted = false,
+        hideDone = false,
       }
       do
         local sel = GetSelectedSpellClasses()

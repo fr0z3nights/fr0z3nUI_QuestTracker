@@ -36,19 +36,21 @@ local Y, N = true, false
 --   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
+--                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
 
 {label = "SU  04  H1  Q-25929  Vashj'ir  Unlock Portal", frameID = "list1", key = "custom:q:25929:list1:XP04001",
-questID = 25929, prereq = { 46931, 51341, 61874, }, hideWhenCompleted = true, faction = "Horde", locationID = {84,85,},
+questID = 25929, prereq = { 46931, 51341, 61874, }, hideDone = true, faction = "H", mapID = {84,85,},
 questInfo = "Cataclysm\n+ Vashj'ir (Zygor)\n+ Complete Quest\n      \"Sea Legs\"",},
 
 {label = "SU  04  A1  Q-24432  Vashj'ir  Unlock Portal", frameID = "list1", key = "custom:q:24432:list1:XP04002",
-questID = 24432, prereq = { 46931, 51341, 61874, }, hideWhenCompleted = true, faction = "Alliance", locationID = {84,85,},
+questID = 24432, prereq = { 46931, 51341, 61874, }, hideDone = true, faction = "A", mapID = {84,85,},
 questInfo = "Cataclysm\n+ Vashj'ir (Zygor)\n+ Complete Quest\n      \"Sea Legs\"",},
 
 
 
 
 }
+
 
 for i = 1, #bakedRules do
   local r = bakedRules[i]
@@ -59,6 +61,7 @@ for i = 1, #bakedRules do
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end
+    r.mapID = ns.ExpandMapIDs(r.mapID)
     ns.rules[#ns.rules + 1] = r
   end
 end

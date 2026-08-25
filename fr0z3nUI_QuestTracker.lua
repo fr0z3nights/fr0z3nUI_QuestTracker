@@ -1,4 +1,4 @@
-﻿local addonName, ns = ...
+local addonName, ns = ...
 
 local PREFIX = "|cff00ccff[FQT]|r "
 local function Print(msg)
@@ -449,8 +449,8 @@ RuleKey = function(rule)
     end
   end
 
-  if rule.locationID ~= nil then
-    local loc = tostring(rule.locationID)
+  if rule.mapID ~= nil then
+    local loc = tostring(rule.mapID)
     if loc ~= "" then
       return "loc:" .. loc
     end
@@ -2106,12 +2106,12 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
   end
 
-  local hideWhenCompleted
-  if type(rule) == "table" and rule.hideWhenCompleted ~= nil then
-    hideWhenCompleted = rule.hideWhenCompleted and true or false
+  local hideDone
+  if type(rule) == "table" and rule.hideDone ~= nil then
+    hideDone = rule.hideDone and true or false
   else
     -- default: hide completed quests / completed tasks
-    hideWhenCompleted = true
+    hideDone = true
   end
 
 
@@ -2119,6 +2119,12 @@ local function BuildRuleStatus(rule, ctx, opts)
   local completed = false
   if questID and IsQuestCompleted(questID) then
     completed = true
+  end
+
+  local forceShowWhileQuestInLog = applyGates and type(rule) == "table"
+    and rule.qilID ~= nil and IsQuestInLog(rule.qilID) or false
+  if forceShowWhileQuestInLog then
+    hideDone = false
   end
 
   -- Optional additional completion criteria (for non-quest tasks or stricter completion).
@@ -2269,8 +2275,8 @@ local function BuildRuleStatus(rule, ctx, opts)
   end
 
   -- Hide if any quest is completed (useful when quests drop from log on completion)
-  if applyGates and type(rule) == "table" and type(rule.hideIfAnyQuestCompleted) == "table" then
-    for _, q in ipairs(rule.hideIfAnyQuestCompleted) do
+  if applyGates and not forceShowWhileQuestInLog and type(rule) == "table" and type(rule.hideQID) == "table" then
+    for _, q in ipairs(rule.hideQID) do
       local qid = tonumber(q)
       if qid and qid > 0 and IsQuestCompleted(qid) then
         return nil
@@ -2327,16 +2333,16 @@ local function BuildRuleStatus(rule, ctx, opts)
 
   -- Profession skillLine gate (optional): checks any profession returned by GetProfessions().
   -- Useful for cases where spellKnown is unreliable (e.g. Mining across expansion variants).
-  if applyGates and type(rule) == "table" and rule.professionSkillLineID ~= nil then
-    if not HasProfessionSkillLineID(rule.professionSkillLineID) then
+  if applyGates and type(rule) == "table" and rule.profSID ~= nil then
+    if not HasProfessionSkillLineID(rule.profSID) then
       return nil
     end
   end
 
   -- Missing profession skillLine gate (optional): show only if the player does NOT have this skillLineID.
   -- Intended for "you are missing this profession" reminders where spell-based gates are unreliable.
-  if applyGates and type(rule) == "table" and rule.missingProfessionSkillLineID ~= nil then
-    if HasExactProfessionSkillLineID(rule.missingProfessionSkillLineID) then
+  if applyGates and type(rule) == "table" and rule.xprofSID ~= nil then
+    if HasExactProfessionSkillLineID(rule.xprofSID) then
       return nil
     end
   end
@@ -2358,7 +2364,7 @@ local function BuildRuleStatus(rule, ctx, opts)
   end
 
   -- Primary-professions-missing gate (optional)
-  if applyGates and type(rule) == "table" and rule.missingPrimaryProfessions == true then
+  if applyGates and type(rule) == "table" and rule.xprofPRI == true then
     if not (IsPrimaryProfessionSlotMissing(1) or IsPrimaryProfessionSlotMissing(2)) then
       return nil
     end
@@ -2372,8 +2378,8 @@ local function BuildRuleStatus(rule, ctx, opts)
   end
 
   -- Location gate (optional; uiMapID)
-  if applyGates and type(rule) == "table" and rule.locationID ~= nil then
-    local wants = ParseLocationIDs(rule.locationID)
+  if applyGates and type(rule) == "table" and rule.mapID ~= nil then
+    local wants = ParseLocationIDs(rule.mapID)
     if wants and wants[1] then
       local have = (ctx and ctx.mapID) or GetBestMapIDSafe()
       if have then
@@ -2459,7 +2465,8 @@ local function BuildRuleStatus(rule, ctx, opts)
   if applyGates and type(rule) == "table" and rule.faction ~= nil then
     local wantRaw = tostring(rule.faction)
     local wantLower = wantRaw:lower()
-    local want = (wantLower == "alliance") and "Alliance" or (wantLower == "horde") and "Horde" or nil
+    local want = (wantLower == "alliance" or wantLower == "a") and "Alliance"
+      or (wantLower == "horde" or wantLower == "h") and "Horde" or nil
     if want then
       local have = (ctx and ctx.faction) or GetPlayerFaction()
       if have and tostring(have) ~= want then
@@ -2490,7 +2497,7 @@ local function BuildRuleStatus(rule, ctx, opts)
   -- keep showing when completed, allow it to remain visible even if it drops
   -- out of the quest log (Timewalking weeklies commonly do this).
   if applyGates and questID and rule.requireInLog == true and not IsQuestInLog(questID) then
-    if not (completed and hideWhenCompleted == false) then
+    if not (completed and hideDone == false) then
       -- Special-case for Timewalking: token rows and other indicators intentionally
       -- appear on alts once the weekly kind is known. Allow specific TW quest rows
       -- to bypass requireInLog when the current TW kind has been remembered.
@@ -2566,7 +2573,7 @@ local function BuildRuleStatus(rule, ctx, opts)
         end
       end
       if rule.aura.mustHave and not has then
-        local overrideMapID = tonumber(rule.locationOverrideID or rule.locationOverrideMapID)
+        local overrideMapID = tonumber(rule.mapIO or rule.locationOverrideMapID)
         if overrideMapID and overrideMapID > 0 then
           local haveMapID = (ctx and ctx.mapID) or (GetBestMapIDSafe and GetBestMapIDSafe()) or nil
           if haveMapID and haveMapID == overrideMapID then
@@ -3253,7 +3260,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     if qid and qid > 0 then
       return "Q"
     end
-    if type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.SpellKnown or r.NotSpellKnown or r.locationID or r.class or r.notInGroup) then
+    if type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.SpellKnown or r.NotSpellKnown or r.mapID or r.class or r.notInGroup) then
       return "S"
     end
     return "T"
@@ -3304,7 +3311,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     editText = editText,
     extra = extra,
     completed = completed,
-    hideWhenCompleted = hideWhenCompleted,
+    hideDone = hideDone,
     indicators = indicators,
     rule = rule,
     disabled = disabled,
@@ -3898,7 +3905,7 @@ RefreshAll = function()
   local function IsHiddenByCompletion(status)
     if not status then return false end
     if status.completed ~= true then return false end
-    return status.hideWhenCompleted == true
+    return status.hideDone == true
   end
 
   for _, rule in ipairs(rules) do

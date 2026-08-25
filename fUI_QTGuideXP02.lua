@@ -45,7 +45,14 @@ local GREY = "bfbfbf"
 --   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
+
+--                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
+
+
+
+
 }
+
 
 for i = 1, #bakedRules do
   local r = bakedRules[i]
@@ -56,6 +63,7 @@ for i = 1, #bakedRules do
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end
+    r.mapID = ns.ExpandMapIDs(r.mapID)
     ns.rules[#ns.rules + 1] = r
   end
 end

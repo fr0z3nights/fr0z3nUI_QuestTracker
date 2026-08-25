@@ -1227,7 +1227,7 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
     end
 
     local locText = tostring(itemsLocBox:GetText() or ""):gsub("%s+", "")
-    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
+    local mapID = (locText ~= "" and locText ~= "0") and locText or nil
 
     local fontKey = tostring(pItems._fontKey or "inherit")
     if fontKey == "" then fontKey = "inherit" end
@@ -1254,7 +1254,7 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       rule.label = label
       rule.itemInfo = itemInfo
       rule.rep = rep
-      rule.locationID = locationID
+      rule.mapID = mapID
       rule._expansionID = expID
       rule._expansionName = expName
 
@@ -1283,7 +1283,7 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       rule.item.currencyRequired = nil
       rule.item.showWhenBelow = showWhenBelow
       rule.item.buy = buyCfg
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
+      if rule.hideDone == nil then rule.hideDone = false end
 
       pItems._editingCustomIndex = nil
       pItems._editingDefaultBase = nil
@@ -1307,7 +1307,7 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       rule.label = label
       rule.itemInfo = itemInfo
       rule.rep = rep
-      rule.locationID = locationID
+      rule.mapID = mapID
       rule._expansionID = expID
       rule._expansionName = expName
 
@@ -1336,7 +1336,7 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
       rule.item.currencyRequired = nil
       rule.item.showWhenBelow = showWhenBelow
       rule.item.buy = buyCfg
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
+      if rule.hideDone == nil then rule.hideDone = false end
 
       if base and base.key ~= nil then rule.key = tostring(base.key) end
       edits[key] = rule
@@ -1364,7 +1364,7 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
         label = label,
         itemInfo = itemInfo,
         rep = rep,
-        locationID = locationID,
+        mapID = mapID,
         _expansionID = expID,
         _expansionName = expName,
         playerLevel = (op and lvl) and { op, lvl } or nil,
@@ -1377,7 +1377,7 @@ function ns.FQTOptionsPanels.BuildItems(ctx)
           showWhenBelow = showWhenBelow,
           buy = buyCfg,
         },
-        hideWhenCompleted = false,
+        hideDone = false,
       }
 
       Print("Added item entry for item " .. itemID .. " -> " .. targetFrameLabel)

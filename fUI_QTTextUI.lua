@@ -1008,7 +1008,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
     end
 
     local locText = tostring(textLocBox:GetText() or ""):gsub("%s+", "")
-    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
+    local mapID = (locText ~= "" and locText ~= "0") and locText or nil
 
     local fontKey = NormalizeFontKey(panels.text._fontKey)
     local fontSize = (textSizeBox and tonumber(textSizeBox:GetText() or "")) or 0
@@ -1036,7 +1036,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       rule.size = fontSize
       rule.rep = rep
       rule.restedOnly = textRestedOnly:GetChecked() and true or false
-      rule.locationID = locationID
+      rule.mapID = mapID
 
       if expID then
         rule._expansionID = expID
@@ -1057,7 +1057,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
         rule.playerLevel = nil
       end
 
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
+      if rule.hideDone == nil then rule.hideDone = false end
 
       panels.text._editingCustomIndex = nil
       panels.text._editingDefaultBase = nil
@@ -1081,7 +1081,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
       rule.size = fontSize
       rule.rep = rep
       rule.restedOnly = textRestedOnly:GetChecked() and true or false
-      rule.locationID = locationID
+      rule.mapID = mapID
 
       if expID then
         rule._expansionID = expID
@@ -1102,7 +1102,7 @@ function ns.FQTOptionsPanels.BuildText(ctx)
         rule.playerLevel = nil
       end
 
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = false end
+      if rule.hideDone == nil then rule.hideDone = false end
       if base and base.key ~= nil then rule.key = tostring(base.key) end
       edits[key] = rule
 
@@ -1129,9 +1129,9 @@ function ns.FQTOptionsPanels.BuildText(ctx)
         size = fontSize,
         rep = rep,
         restedOnly = textRestedOnly:GetChecked() and true or false,
-        locationID = locationID,
+        mapID = mapID,
         playerLevel = (op and lvl) and { op, lvl } or nil,
-        hideWhenCompleted = false,
+        hideDone = false,
       }
 
       if expID then

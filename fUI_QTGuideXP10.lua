@@ -10,6 +10,7 @@ local EXPANSION_NAME = "Dragonflight"
 
 local Y, N = true, false
 
+
 local WHITE = "ffffff"
 local RED = "ff4040"
 local ORANGE = "ff8c1a"
@@ -52,14 +53,16 @@ local bakedRules = {
 --  2022  The Waking Shores
 --  2112  Valdrakken (Dragon Isles Capital)
 
-  {key = "XP10:Q67700A",  questID = 67700, prereq = {30515,}, faction = "Alliance", label = "10  Dragon Isles A",     frameID = "list1",  questInfo = "Dragon Isles    \n + The Waking Shores (Zygor)\n + Cata Portal Balcony\n + Do Initial Quests\n + Take Portal",   hideWhenCompleted = true, locationID = {84,85,2022,2112,}, },
-  {key = "XP10:Q67700H",  questID = 67700, prereq = {30515,}, faction = "Horde",    label = "10  Dragon Isles H",     frameID = "list1",  questInfo = "Dragon Isles    \n + The Waking Shores (Zygor)\n + Cata Portal Area   \n + Do Initial Quests\n + Take Portal",   hideWhenCompleted = true, locationID = {84,85,2022,2112,}, },
-  {key = "XP10:Q65646",   questID = 65646,                                          label = "10  34 Slot Bag",        frameID = "list1",  questInfo = "Dragon Isles Bag\n - Waking Shores @ 58,53",                                                                     hideWhenCompleted = true, rested = true , },
+--                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
+  {key = "XP10:Q67700A",  questID = 67700, prereq = {30515,}, faction = "A",  label = "10  Dragon Isles A", frameID = "list1",  hideDone = true, mapID = {84,85,2022,2112,},  questInfo = "Dragon Isles    \n + The Waking Shores (Zygor)\n + Cata Portal Balcony\n + Do Initial Quests\n + Take Portal", },
+  {key = "XP10:Q67700H",  questID = 67700, prereq = {30515,}, faction = "H",  label = "10  Dragon Isles H", frameID = "list1",  hideDone = true, mapID = {84,85,2022,2112,},  questInfo = "Dragon Isles    \n + The Waking Shores (Zygor)\n + Cata Portal Area   \n + Do Initial Quests\n + Take Portal", },
+  {key = "XP10:Q65646",   questID = 65646,                                    label = "10  34 Slot Bag",    frameID = "list1",  hideDone = true, rested = true,               questInfo = "Dragon Isles Bag\n - Waking Shores @ 58,53", },
 
 
 
 
 }
+
 
 for i = 1, #bakedRules do
   local r = bakedRules[i]
@@ -70,6 +73,7 @@ for i = 1, #bakedRules do
     if type(r.key) == "string" then
       r.key = r.key:gsub("^custom:", "db:")
     end
+    r.mapID = ns.ExpandMapIDs(r.mapID)
     ns.rules[#ns.rules + 1] = r
   end
 end

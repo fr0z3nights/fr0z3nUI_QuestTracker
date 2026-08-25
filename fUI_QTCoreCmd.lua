@@ -630,14 +630,14 @@ local function DispatchDebugCommand(cmd, rest)
     local status = deps.BuildRuleStatus(found, deps.BuildEvalContext(), { forceNormalVisibility = true })
     if not status then
       Say("BuildRuleStatus: nil (gated/disabled/prereq/etc)")
-      if found.professionSkillLineID ~= nil then
-        Say("  professionSkillLineID=" .. tostring(found.professionSkillLineID) .. "; has=" .. tostring(HasSkillLineID(found.professionSkillLineID)))
+      if found.profSID ~= nil then
+        Say("  profSID=" .. tostring(found.profSID) .. "; has=" .. tostring(HasSkillLineID(found.profSID)))
       end
       return true
     end
 
     Say("Rule debug key='" .. key .. "':")
-    Say("  completed=" .. tostring(status.completed and true or false) .. "; hideWhenCompleted=" .. tostring(status.hideWhenCompleted and true or false))
+    Say("  completed=" .. tostring(status.completed and true or false) .. "; hideDone=" .. tostring(status.hideDone and true or false))
     Say("  title=" .. tostring((status.rawTitle or status.title) or ""))
     return true
   end

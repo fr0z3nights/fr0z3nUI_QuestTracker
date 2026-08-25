@@ -1,4 +1,4 @@
-﻿# fr0z3nUI_QuestTracker — Changelog
+# fr0z3nUI_QuestTracker — Changelog
 
 Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
@@ -14,7 +14,7 @@ Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stay
 
 ## 2026.04.10.03
 - Files: `fUI_QTGuideXP09.lua`, `fr0z3nUI_QuestTracker.toc`.
-- Guide DB (Shadowlands): profession reminders now use profession skillLineID gates (`professionSkillLineID` + `missingProfessionSkillLineID`) instead of `spellKnown`/`notSpellKnown`.
+- Guide DB (Shadowlands): profession reminders now use profession skillLineID gates (`profSID` + `xprofSID`) instead of `spellKnown`/`notSpellKnown`.
 
 ## 2026.04.10.04
 - Files: `fUI_QTGuideXP09.lua`, `fr0z3nUI_QuestTracker.toc`.
@@ -296,12 +296,12 @@ Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stay
 
 # 2026.04.08.19
 - Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideProfs.lua`, `fr0z3nUI_QuestTracker.toc`.
-- Professions: fix `GetProfessionInfo()` skillLineID reads when called via `pcall` (the `pcall` success flag shifts return positions). This restores correct `professionSkillLineID` detection for primaries like Mining/Tailoring when `GetProfessions()` shows them.
+- Professions: fix `GetProfessionInfo()` skillLineID reads when called via `pcall` (the `pcall` success flag shifts return positions). This restores correct `profSID` detection for primaries like Mining/Tailoring when `GetProfessions()` shows them.
 - Bumped TOC version to 2026.04.08.19.
 
 # 2026.04.08.18
 - Files: `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`.
-- Professions: fix `professionSkillLineID` gating so a transient cache-backed `false` no longer blocks the authoritative `GetProfessions()` fallback (also avoids nil-hole truncation when scanning indices).
+- Professions: fix `profSID` gating so a transient cache-backed `false` no longer blocks the authoritative `GetProfessions()` fallback (also avoids nil-hole truncation when scanning indices).
 - Bumped TOC version to 2026.04.08.18.
 
 # 2026.04.08.17
@@ -352,40 +352,40 @@ Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stay
 
 # 2026.04.08.08
 - Files: `fUI_QTGuideXP08.lua`, `fr0z3nUI_QuestTracker.toc`.
-- Battle for Azeroth reminders (XP08): Archaeology now uses `missingProfessionSkillLineID = 794` (missing profession) instead of the current tier spell check.
+- Battle for Azeroth reminders (XP08): Archaeology now uses `xprofSID = 794` (missing profession) instead of the current tier spell check.
 - Bumped TOC version to 2026.04.08.08.
 
 # 2026.04.08.07
 - Files: `fUI_QTGuideXP08.lua`, `fr0z3nUI_QuestTracker.toc`.
-- Battle for Azeroth reminders (XP08): convert Kul Tiran/Zandalari profession tier checks to `professionSkillLineID` + tier `missingProfessionSkillLineID` (faction-split), leaving Archaeology as a spell-based missing-tier check gated by `professionSkillLineID`.
+- Battle for Azeroth reminders (XP08): convert Kul Tiran/Zandalari profession tier checks to `profSID` + tier `xprofSID` (faction-split), leaving Archaeology as a spell-based missing-tier check gated by `profSID`.
 - Bumped TOC version to 2026.04.08.07.
 
 # 2026.04.08.04
 - Files: `fUI_QTGuideXP05.lua`, `fr0z3nUI_QuestTracker.toc`.
-- Pandaria reminders (XP05): add tier reminders for the remaining professions (crafting + cooking/fishing) using base `professionSkillLineID` plus tier `missingProfessionSkillLineID`.
+- Pandaria reminders (XP05): add tier reminders for the remaining professions (crafting + cooking/fishing) using base `profSID` plus tier `xprofSID`.
 
 # 2026.04.08.06
-- Added XP07 (Legion) profession tier reminders using `professionSkillLineID` + `missingProfessionSkillLineID`.
+- Added XP07 (Legion) profession tier reminders using `profSID` + `xprofSID`.
 - Bumped TOC version to 2026.04.08.06.
 
 # 2026.04.08.05
-- Added XP06 (Draenor) profession tier reminders using `professionSkillLineID` + `missingProfessionSkillLineID`.
+- Added XP06 (Draenor) profession tier reminders using `profSID` + `xprofSID`.
 - Bumped TOC version to 2026.04.08.05.
 
 # 2026.04.08.04
 - Files: `fUI_QTGuideProfs.lua`, `fUI_QTGuideXP05.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Professions: expand cached skillLine detection to include TradeSkillUI skillLineIDs (covers expansion tiers when available).
-- Pandaria reminders (XP05): tier gating now uses `missingProfessionSkillLineID` (Zygor skillLine IDs) instead of spell-based `notSpellKnown` checks.
+- Pandaria reminders (XP05): tier gating now uses `xprofSID` (Zygor skillLine IDs) instead of spell-based `notSpellKnown` checks.
 
 # 2026.04.08.02
 - Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP04.lua`, `fUI_QTGuideXP05.lua`, `fr0z3nUI_QuestTracker.toc`.
-- Profession reminders: add `missingProfessionSkillLineID` gate and use it for XP04 “missing profession” entries.
-- Pandaria reminders (XP05): base-profession checks now use `professionSkillLineID` (cache-backed), while keeping the Pandaria-specific `notSpellKnown` checks.
+- Profession reminders: add `xprofSID` gate and use it for XP04 “missing profession” entries.
+- Pandaria reminders (XP05): base-profession checks now use `profSID` (cache-backed), while keeping the Pandaria-specific `notSpellKnown` checks.
 
 # 2026.04.08.01
 - Files: `fUI_QTGuideProfs.lua`, `fr0z3nUI_QuestTracker.lua`, `fr0z3nUI_QuestTracker.toc`, `fUI_QTGuideXPEV.lua`.
-- Professions: add a lightweight “known professions” cache (FGO-style) and prefer it for `professionSkillLineID` gating.
-- Darkmoon Faire: weekly profession quests now gate by `professionSkillLineID` instead of `spellKnownAny` spell lists (more reliable across expansions and profession spell variants).
+- Professions: add a lightweight “known professions” cache (FGO-style) and prefer it for `profSID` gating.
+- Darkmoon Faire: weekly profession quests now gate by `profSID` instead of `spellKnownAny` spell lists (more reliable across expansions and profession spell variants).
 
 # 2026.04.07.03
 - Files: `fUI_QTGuideXPEV.lua`, `fr0z3nUI_QuestTracker.toc`.

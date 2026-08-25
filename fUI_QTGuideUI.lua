@@ -640,7 +640,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         return string.format("%s: %s%s", xy, tostring(base), LevelSuffix(r))
       end
       return string.format("Q: %s%s", tostring(base), LevelSuffix(r))
-    elseif type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup) then
+    elseif type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.mapID or r.class or r.notInGroup) then
       local function PickSpellID(v)
         if type(v) == "table" then
           for _, x in ipairs(v) do
@@ -782,7 +782,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         if rule.aura.eventKind ~= nil or rule.aura.keywords ~= nil then return "Event" end
         return "Aura"
       end
-      if rule.locationID ~= nil then return "Location" end
+      if rule.mapID ~= nil then return "Location" end
       return "Other"
     end
 
@@ -866,7 +866,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         if type(rr.item) == "table" and rr.item.itemID ~= nil then parts[#parts + 1] = tostring(rr.item.itemID) end
         if rr.spellKnown ~= nil then parts[#parts + 1] = tostring(rr.spellKnown) end
         if rr.notSpellKnown ~= nil then parts[#parts + 1] = tostring(rr.notSpellKnown) end
-        if rr.locationID ~= nil then parts[#parts + 1] = tostring(rr.locationID) end
+        if rr.mapID ~= nil then parts[#parts + 1] = tostring(rr.mapID) end
         if rr.group ~= nil then parts[#parts + 1] = tostring(rr.group) end
         if type(rr.aura) == "table" then
           if rr.aura.spellID ~= nil then parts[#parts + 1] = tostring(rr.aura.spellID) end

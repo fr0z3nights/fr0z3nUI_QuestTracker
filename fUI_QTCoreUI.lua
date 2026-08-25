@@ -1291,7 +1291,7 @@ local function EnsureOptionsFrame()
     if r.questXY == "X" or r.questXY == "Y" or r.questXY == "K" then return "questx" end
     if tonumber(r.questID) and tonumber(r.questID) > 0 then return "quest" end
     if type(r.item) == "table" and tonumber(r.item.itemID) and tonumber(r.item.itemID) > 0 then return "item" end
-    if r.spellKnown or r.notSpellKnown or r.SpellKnown or r.NotSpellKnown or r.locationID or r.class or r.notInGroup or r.restedOnly or r.missingPrimaryProfessions then return "spell" end
+    if r.spellKnown or r.notSpellKnown or r.SpellKnown or r.NotSpellKnown or r.mapID or r.class or r.notInGroup or r.restedOnly or r.xprofPRI then return "spell" end
     return "text"
   end
 
@@ -1324,7 +1324,7 @@ local function EnsureOptionsFrame()
       if panels.questx._questXY ~= "Y" then
         if rule.restedOnly == true then
           panels.questx._questXScopeMode = "RESTING"
-        elseif rule.locationID ~= nil then
+        elseif rule.mapID ~= nil then
           panels.questx._questXScopeMode = "MAP"
         end
         if panels.questx._updateScopeButton then pcall(panels.questx._updateScopeButton) end
@@ -1347,7 +1347,7 @@ local function EnsureOptionsFrame()
         if n and n > 0 then after = n end
       end
       if panels.quest._questAfterBox then panels.quest._questAfterBox:SetText(tostring(after)) end
-      if panels.quest._locBox then panels.quest._locBox:SetText(tostring(rule.locationID or "0")) end
+      if panels.quest._locBox then panels.quest._locBox:SetText(tostring(rule.mapID or "0")) end
 
       panels.quest._qXept = (tostring(rule.qXept or "N"):upper():gsub("%s+", "") == "Y") and "Y" or "N"
       if panels.quest._syncAcceptUI then pcall(panels.quest._syncAcceptUI, panels.quest) end
@@ -1526,7 +1526,7 @@ local function EnsureOptionsFrame()
       end
 
       if panels.items._restedOnly then panels.items._restedOnly:SetChecked(rule.restedOnly and true or false) end
-      if panels.items._locBox then panels.items._locBox:SetText(tostring(rule.locationID or "0")) end
+      if panels.items._locBox then panels.items._locBox:SetText(tostring(rule.mapID or "0")) end
       if panels.items._hideAcquired and type(rule.item) == "table" then
         local hide = false
         if type(ns) == "table" and type(ns.GetItemRequiredGate) == "function" then
@@ -1612,7 +1612,7 @@ local function EnsureOptionsFrame()
       end
       if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown or rule.SpellKnown) or 0)) end
       if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown or rule.NotSpellKnown) or 0)) end
-      if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.locationID or "0")) end
+      if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.mapID or "0")) end
       if panels.spells._notInGroup then panels.spells._notInGroup:SetChecked(rule.notInGroup and true or false) end
 
       if panels.spells._setClassesFromRule then panels.spells._setClassesFromRule(rule.class) end
@@ -1651,7 +1651,7 @@ local function EnsureOptionsFrame()
       end
 
       if panels.spells._restedOnly then panels.spells._restedOnly:SetChecked(rule.restedOnly and true or false) end
-      if panels.spells._missingPrimaryProf then panels.spells._missingPrimaryProf:SetChecked(rule.missingPrimaryProfessions and true or false) end
+      if panels.spells._missingPrimaryProf then panels.spells._missingPrimaryProf:SetChecked(rule.xprofPRI and true or false) end
       return
     end
 
@@ -1706,7 +1706,7 @@ local function EnsureOptionsFrame()
     panels.text._repMinStanding = repMin
     if UDDM_SetText and panels.text._repMinDrop then UDDM_SetText(panels.text._repMinDrop, RepStandingLabelLite(repMin)) end
     if panels.text._restedOnly then panels.text._restedOnly:SetChecked(rule.restedOnly and true or false) end
-    if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.locationID or "0")) end
+    if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.mapID or "0")) end
 
     do
       local op, lvl = GetPlayerLevelGateFromRule(rule)
@@ -1745,7 +1745,7 @@ local function EnsureOptionsFrame()
         if panels.questx._questXY == "X" then
           if rule.restedOnly == true then
             panels.questx._questXScopeMode = "RESTING"
-          elseif rule.locationID ~= nil then
+          elseif rule.mapID ~= nil then
             panels.questx._questXScopeMode = "MAP"
           end
           if panels.questx._updateScopeButton then pcall(panels.questx._updateScopeButton) end
@@ -1797,7 +1797,7 @@ local function EnsureOptionsFrame()
       if panels.questx._questXY ~= "Y" then
         if rule.restedOnly == true then
           panels.questx._questXScopeMode = "RESTING"
-        elseif rule.locationID ~= nil then
+        elseif rule.mapID ~= nil then
           panels.questx._questXScopeMode = "MAP"
         end
         if panels.questx._updateScopeButton then pcall(panels.questx._updateScopeButton) end
@@ -1821,7 +1821,7 @@ local function EnsureOptionsFrame()
         if n and n > 0 then after = n end
       end
       if panels.quest._questAfterBox then panels.quest._questAfterBox:SetText(tostring(after)) end
-      if panels.quest._locBox then panels.quest._locBox:SetText(tostring(rule.locationID or "0")) end
+      if panels.quest._locBox then panels.quest._locBox:SetText(tostring(rule.mapID or "0")) end
 
       panels.quest._qXept = (tostring(rule.qXept or "N"):upper():gsub("%s+", "") == "Y") and "Y" or "N"
       if panels.quest._syncAcceptUI then pcall(panels.quest._syncAcceptUI, panels.quest) end
@@ -2001,7 +2001,7 @@ local function EnsureOptionsFrame()
       end
 
       if panels.items._restedOnly then panels.items._restedOnly:SetChecked(rule.restedOnly and true or false) end
-      if panels.items._locBox then panels.items._locBox:SetText(tostring(rule.locationID or "0")) end
+      if panels.items._locBox then panels.items._locBox:SetText(tostring(rule.mapID or "0")) end
       if panels.items._hideAcquired and type(rule.item) == "table" then
         local hide2 = false
         if type(ns) == "table" and type(ns.GetItemRequiredGate) == "function" then
@@ -2088,7 +2088,7 @@ local function EnsureOptionsFrame()
       end
       if panels.spells._knownBox then panels.spells._knownBox:SetText(tostring(tonumber(rule.spellKnown or rule.SpellKnown) or 0)) end
       if panels.spells._notKnownBox then panels.spells._notKnownBox:SetText(tostring(tonumber(rule.notSpellKnown or rule.NotSpellKnown) or 0)) end
-      if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.locationID or "0")) end
+      if panels.spells._locBox then panels.spells._locBox:SetText(tostring(rule.mapID or "0")) end
       if panels.spells._notInGroup then panels.spells._notInGroup:SetChecked(rule.notInGroup and true or false) end
 
       if panels.spells._setClassesFromRule then panels.spells._setClassesFromRule(rule.class) end
@@ -2127,7 +2127,7 @@ local function EnsureOptionsFrame()
       end
 
       if panels.spells._restedOnly then panels.spells._restedOnly:SetChecked(rule.restedOnly and true or false) end
-      if panels.spells._missingPrimaryProf then panels.spells._missingPrimaryProf:SetChecked(rule.missingPrimaryProfessions and true or false) end
+      if panels.spells._missingPrimaryProf then panels.spells._missingPrimaryProf:SetChecked(rule.xprofPRI and true or false) end
       return
     end
 
@@ -2183,7 +2183,7 @@ local function EnsureOptionsFrame()
     panels.text._repMinStanding = repMin
     if UDDM_SetText and panels.text._repMinDrop then UDDM_SetText(panels.text._repMinDrop, RepStandingLabelLite(repMin)) end
     if panels.text._restedOnly then panels.text._restedOnly:SetChecked(rule.restedOnly and true or false) end
-    if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.locationID or "0")) end
+    if panels.text._locBox then panels.text._locBox:SetText(tostring(rule.mapID or "0")) end
 
     do
       local op, lvl = GetPlayerLevelGateFromRule(rule)
@@ -2405,7 +2405,7 @@ local function EnsureOptionsFrame()
           end
         end
         return string.format("Q: %s%s", tostring(base), LevelSuffix(r))
-      elseif type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.locationID or r.class or r.notInGroup) then
+      elseif type(r) == "table" and (r.spellKnown or r.notSpellKnown or r.mapID or r.class or r.notInGroup) then
         local function PickSpellID(v)
           if type(v) == "table" then
             for _, x in ipairs(v) do

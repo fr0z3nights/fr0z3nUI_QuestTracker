@@ -3,6 +3,37 @@ local _, ns = ...
 -- Usage (feature)
 -- UI is in fUI_QTUsageUI.lua
 
+-- Shared map-group expansion for DB rule packs.
+-- Keep this near the top so map aliases are easy to edit in one place.
+ns.MAP_GROUPS = ns.MAP_GROUPS or {
+	CAP = {84, 85}, STW = {84}, ORG = {85},
+	CAT = {84, 85},
+	MoP = {371, 376, 379, 388, 390, 391, 393, 418, 422, 554}, TI = {554},
+	WoD = {525, 539, 540, 582, 590},
+	LGN = {627, 630, 634, 641, 646, 650, 680, 733, 750, 751, 754, 755, 756, 757, 758, 759, 760, 761},
+	BFA = {862, 863, 864, 895, 896, 942, 1161, 1163, 1165, 1355, 1462},
+	SHD = {1670},
+	DRG = {1978},
+	TWW = {2339},
+	MDN = {2393},
+}
+
+function ns.ExpandMapIDs(value)
+	if type(value) ~= "table" then return value end
+	local expanded = {}
+	for _, mapID in ipairs(value) do
+		local group = type(mapID) == "string" and ns.MAP_GROUPS[mapID] or nil
+		if group then
+			for _, groupedMapID in ipairs(group) do
+				expanded[#expanded + 1] = groupedMapID
+			end
+		else
+			expanded[#expanded + 1] = mapID
+		end
+	end
+	return expanded
+end
+
 ns.Usage = ns.Usage or {}
 local U = ns.Usage
 

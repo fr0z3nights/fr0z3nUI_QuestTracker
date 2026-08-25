@@ -916,7 +916,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
     end
 
     local locText = tostring(qLocBox:GetText() or ""):gsub("%s+", "")
-    local locationID = (locText ~= "" and locText ~= "0") and locText or nil
+    local mapID = (locText ~= "" and locText ~= "0") and locText or nil
 
     local fontKey = tostring(pQuest._fontKey or "inherit")
     if fontKey == "" then fontKey = "inherit" end
@@ -944,7 +944,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       rule.prereq = prereq
       rule.faction = pQuest._questFaction
       rule.color = pQuest._questColor
-      rule.locationID = locationID
+      rule.mapID = mapID
       rule.font = fontKey
       rule.size = fontSize
       rule.qXept = (pQuest._qXept == "Y") and "Y" or "N"
@@ -961,7 +961,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
         rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = true end
+      if rule.hideDone == nil then rule.hideDone = true end
 
       pQuest._editingCustomIndex = nil
       pQuest._editingDefaultBase = nil
@@ -983,7 +983,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
       rule.prereq = prereq
       rule.faction = pQuest._questFaction
       rule.color = pQuest._questColor
-      rule.locationID = locationID
+      rule.mapID = mapID
       rule.font = fontKey
       rule.size = fontSize
       rule.qXept = (pQuest._qXept == "Y") and "Y" or "N"
@@ -1000,7 +1000,7 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
         rule.playerLevelOp = nil
         rule.playerLevel = nil
       end
-      if rule.hideWhenCompleted == nil then rule.hideWhenCompleted = true end
+      if rule.hideDone == nil then rule.hideDone = true end
 
       if base and base.key ~= nil then rule.key = tostring(base.key) end
       edits[key] = rule
@@ -1029,14 +1029,14 @@ function ns.FQTOptionsPanels.BuildQuest(ctx)
         prereq = prereq,
         faction = pQuest._questFaction,
         color = pQuest._questColor,
-        locationID = locationID,
+        mapID = mapID,
         font = fontKey,
         size = fontSize,
         qXept = (pQuest._qXept == "Y") and "Y" or "N",
         _expansionID = expID,
         _expansionName = expName,
         playerLevel = (op and lvl) and { op, lvl } or nil,
-        hideWhenCompleted = true,
+        hideDone = true,
       }
 
       local targetLabel = (targetFrame ~= nil) and tostring(targetFrame) or "Bar/List"

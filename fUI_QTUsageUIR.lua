@@ -71,6 +71,20 @@ local function RuleKey(rule)
   return nil
 end
 
+local function GetRuleTextAlign(rule)
+  if type(rule) ~= "table" then return nil end
+  local v = rule.align
+  if v == nil then v = rule.textAlign end
+  if v == nil then v = rule.justifyH end
+  if v == nil then return nil end
+
+  v = tostring(v):lower():gsub("%s+", "")
+  if v == "center" or v == "centre" or v == "middle" then return "CENTER" end
+  if v == "right" or v == "end" then return "RIGHT" end
+  if v == "left" or v == "start" then return "LEFT" end
+  return nil
+end
+
 local function GetEffectiveFrames()
   if type(deps.GetEffectiveFrames) == "function" then
     return deps.GetEffectiveFrames()
@@ -781,6 +795,12 @@ function ns.Render.RenderList(frameDef, frame, entries)
     if e then
       if e.rule and GetRuleFontDef and ApplyFontStyle then
         ApplyFontStyle(fs, GetRuleFontDef(e.rule))
+      end
+      do
+        local ruleAlign = GetRuleTextAlign(e.rule)
+        if ruleAlign and fs.SetJustifyH then
+          fs:SetJustifyH(ruleAlign)
+        end
       end
 
       local isDMFHeader = false

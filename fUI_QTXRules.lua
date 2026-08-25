@@ -57,8 +57,8 @@ function XR.GetMapInfoSafe(mapID)
 end
 
 function XR.ExtractFirstMapID(rule)
-	if type(rule) ~= "table" or rule.locationID == nil then return nil end
-	local s = tostring(rule.locationID or "")
+	if type(rule) ~= "table" or rule.mapID == nil then return nil end
+	local s = tostring(rule.mapID or "")
 	local n = tonumber((s:match("%d+")))
 	return (n and n > 0) and n or nil
 end

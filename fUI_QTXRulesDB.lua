@@ -77,8 +77,8 @@ function ns.db.xquest.XQuest(questID, questName, opts)
 
 		local restedOnly = true
 		if type(opts) == "table" then
-			if opts.locationID ~= nil and tostring(opts.locationID) ~= "" then
-				entry.__meta.locationID = tostring(opts.locationID)
+			if opts.mapID ~= nil and tostring(opts.mapID) ~= "" then
+				entry.__meta.mapID = tostring(opts.mapID)
 			end
 			if opts.restedOnly ~= nil then
 				restedOnly = (opts.restedOnly == true)
@@ -90,15 +90,15 @@ function ns.db.xquest.XQuest(questID, questName, opts)
 	return entry
 end
 
-function ns.db.xquest.LQuest(questID, questName, locationID, restedOnly)
+function ns.db.xquest.LQuest(questID, questName, mapID, restedOnly)
 	local entry = ns.db.xquest.Quest(questID, questName)
 	MarkQuestXY("X", questID)
 
 	-- LQuest = LOCATION-gated XQuest.
 	if type(entry) == "table" then
 		entry.__meta = entry.__meta or {}
-		if locationID ~= nil and tostring(locationID) ~= "" then
-			entry.__meta.locationID = tostring(locationID)
+		if mapID ~= nil and tostring(mapID) ~= "" then
+			entry.__meta.mapID = tostring(mapID)
 		end
 		if restedOnly ~= nil then
 			entry.__meta.restedOnly = (restedOnly == true)
@@ -130,7 +130,7 @@ local YQuest = ns.db.xquest.YQuest
 -- XQuest (X): auto-abandon candidate (optionally gated by map/resting)
 --   SetZone("Stormwind, 00 Event")
 --   XQuest(12345, "Some Quest To Auto-Abandon")			-- restedOnly: true to require resting (inn/city)
---   LQuest(12345, "Some Quest To Auto-Abandon", 84)		-- locationID: mapID (number or string)
+--   LQuest(12345, "Some Quest To Auto-Abandon", 84)		-- mapID: mapID (number or string)
 --																/dump C_Map.GetBestMapForUnit("player")
 -- YQuest (Y): auto-accept candidate
 --   SetZone("Weekly, 00 Event")
@@ -271,7 +271,11 @@ SetZone("RAID, Dragon Isles")
 --  07	Legion
 
 SetZone("Dalaran, Broken Isles")
-	KQuest(44100, "Proper Introduction")							--	Startup		Player		Priest
+	KQuest(44100, "Proper Introduction")							--	Startup		Player		Priest				No annoying NPC in Dalaran
+	KQuest(40705, "Priestly Matters")								--	Startup		Player		Priest				No annoying NPC in Dalaran
+	KQuest(40643, "A Summons From Moonglade")						--	Startup		Player		Druid				No annoying NPC in Dalaran
+	KQuest(38710, "An Urgent Gathering")							--	Startup		Player		Paladin/Warrior		No annoying NPC in Dalaran
+	KQuest(12103, "Before the Storm")								--	Startup		Player		Monk				No annoying NPC in Dalaran
 SetZone("Pet Battles, Broken Isles")				
 	KQuest(47895, "Bert - Gnomeregan")								--	Legion 		Daily		Warband
 	KQuest(45083, "Crysa - Barrens")								--	Northern	Daily		Warband
@@ -330,6 +334,9 @@ SetZone("Shadowmoon Valley, Draenor")
 
 SetZone("Pet Battles, Pandaria")
 	KQuest(63435, "")												--					Daily		Warband		
+	KQuest(32869, "Beasts of Fable Book III")			    		--	Eternal			Daily		Warband
+	KQuest(32868, "Beasts of Fable Book II")			    		--	Eternal			Daily		Warband
+	KQuest(32604, "Beasts of Fable Book I")			    			--	Eternal			Daily		Warband
 	KQuest(32441, "Thundering Spirit")								--  Kun-Lai Summit	Daily		Warband
 	KQuest(32440, "Whispering Spirit")								--	Jade Forest		Daily		Warband
 	KQuest(32439, "Flowing Spirit")									--	Dread Wastes	Daily		Warband
@@ -365,7 +372,7 @@ do
 						questID = qid,
 						questXY = xy,
 						-- Keep entries should remain visible even when completed.
-						hideWhenCompleted = (xy == "K") and false or true,
+						hideDone = (xy == "K") and false or true,
 					}
 
 					-- Optional XQuest gating (MAP/RESTING) driven from DB meta.
@@ -373,8 +380,8 @@ do
 						local entry = qdb[qid]
 						local meta = (type(entry) == "table") and entry.__meta or nil
 						if type(meta) == "table" then
-							if meta.locationID ~= nil and tostring(meta.locationID) ~= "" then
-								rule.locationID = tostring(meta.locationID)
+							if meta.mapID ~= nil and tostring(meta.mapID) ~= "" then
+								rule.mapID = tostring(meta.mapID)
 							end
 							if meta.restedOnly == true then
 								rule.restedOnly = true
