@@ -587,6 +587,9 @@ local function GetEffectiveDefaultRules()
   for _, base in ipairs(ns.rules or {}) do
     local key = RuleKey and RuleKey(base) or nil
     local edited = key and edits[key] or nil
+    if type(edited) ~= "table" and key and type(base) == "table" and base.questID ~= nil then
+      edited = edits["q:" .. tostring(tonumber(base.questID) or base.questID)]
+    end
     if type(edited) == "table" then
       out[#out + 1] = edited
     else

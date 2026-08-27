@@ -984,11 +984,74 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       end
       local orig = {}
       for i = 1, #list do orig[list[i]] = i end
+
+      local sortGroups = {}
+      for i = 1, #list do
+        local rule = list[i]
+        local group = type(rule) == "table" and rule.sortGroup or nil
+        if group ~= nil and tostring(group) ~= "" then
+          group = tostring(group)
+          local groupData = sortGroups[group]
+          if not groupData then
+            groupData = { first = i, rank = nil }
+            sortGroups[group] = groupData
+          elseif i < groupData.first then
+            groupData.first = i
+          end
+
+          local key = RuleKey(rule)
+          local position = key and orderIndex[tostring(key)] or nil
+          if position and (not groupData.rank or position < groupData.rank) then
+            groupData.rank = position
+          end
+        end
+      end
+
+      local blockData = {}
+      local nextBlock = 0
+      for i = 1, #list do
+        local rule = list[i]
+        local group = type(rule) == "table" and rule.sortGroup or nil
+        local blockKey = (group ~= nil and tostring(group) ~= "") and ("group:" .. tostring(group)) or ("rule:" .. tostring(i))
+        if not blockData[blockKey] then
+          nextBlock = nextBlock + 1
+          local groupData = (group ~= nil and sortGroups[tostring(group)]) or nil
+          blockData[blockKey] = {
+            rank = (groupData and groupData.rank) or (groupData and groupData.first) or (orderIndex[tostring(RuleKey(rule) or "")] or i),
+            source = i,
+            sequence = nextBlock,
+          }
+        end
+      end
+
+      local function GetBlockData(rule, sourceIndex)
+        local group = type(rule) == "table" and rule.sortGroup or nil
+        local blockKey = (group ~= nil and tostring(group) ~= "") and ("group:" .. tostring(group)) or ("rule:" .. tostring(sourceIndex))
+        return blockData[blockKey]
+      end
+
       table.sort(list, function(a, b)
         local ka = RuleKey(a)
         local kb = RuleKey(b)
         local pa = ka and orderIndex[tostring(ka)] or nil
         local pb = kb and orderIndex[tostring(kb)] or nil
+
+        local aBlock = GetBlockData(a, orig[a] or 0)
+        local bBlock = GetBlockData(b, orig[b] or 0)
+        if aBlock and bBlock and aBlock ~= bBlock then
+          if aBlock.rank ~= bBlock.rank then return aBlock.rank < bBlock.rank end
+          if aBlock.source ~= bBlock.source then return aBlock.source < bBlock.source end
+          return aBlock.sequence < bBlock.sequence
+        end
+
+        local aGroup = type(a) == "table" and a.sortGroup or nil
+        local bGroup = type(b) == "table" and b.sortGroup or nil
+        if aGroup and bGroup and tostring(aGroup) == tostring(bGroup) then
+          local ao = tonumber(a.sortOrder) or 0
+          local bo = tonumber(b.sortOrder) or 0
+          if ao ~= bo then return ao < bo end
+        end
+
         if pa and pb and pa ~= pb then return pa < pb end
         if pa and not pb then return true end
         if pb and not pa then return false end

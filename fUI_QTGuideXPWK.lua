@@ -120,131 +120,131 @@ ns.rules = {
   -- Keep showing after completion, and show "X" when complete.
   -- Append a red/green marker for the token quest completion.
 
-  {label = "Timewalking Reminder", frameID = "bar1", key = "tw:reminder", 
+  {label = "TW Reminder", frameID = "bar1", key = "tw:reminder", 
   questInfo = "Timewalking", preferQuestInfoForTitle = true, hideIfRememberedTimewalkingKind = true,
   aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true }, hideDone = false,
   --                            CLASSIC        OUTLAND          WRATH         CATACLYSM        PANDARIA        DRAENOR          LEGION          BATTLE       SHADOWLANDS     DRGONFLIGHT
   --                         LVL  01  MAX    LVL  02  MAX    LVL  03  MAX    LVL  04  MAX    LVL  05  MAX    LVL  06  MAX    LVL  07  MAX    LVL  08  MAX    LVL  09  MAX    LVL  10  MAX
-  hideIfAnyQuestInLog =     {85947, 93607,   85948, 93608,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497},
-  hideQID = {85947, 93607,   85948, 93608,   85949, 83365,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497}, },
+  hideIfAnyQuestInLog =     {85947, 93607,   85948, 93608,   85949, 93610,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497},
+  hideQID =                 {85947, 93607,   85948, 93608,   85949, 93610,   86556, 83359,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497}, },
 
 --  01  Classic              UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
-  {label = "Timewalking Classic LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Classic LVL", frameID = "bar1", key = "XP01:TW:LVL", sortGroup = "XP01:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 85947, questInfo = "Classic", requireInLog = true, twKind = "classic", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Classic MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Classic MAX", frameID = "bar1", key = "XP01:TW:MAX", sortGroup = "XP01:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93607, questInfo = "Classic", requireInLog = true, twKind = "classic", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Classic TKN", frameID = "bar1", key = "tw:token:classic", requireRememberedTimewalkingKind = true,
+  {label = "TW Classic TKN", frameID = "bar1", key = "XP01:TW:TKN", sortGroup = "XP01:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 83285 }, preferQuestInfoForTitle = true, twKind = "classic", hideDone = false,
   indicators = { { questID = 83285, shape = "square", overlay = { itemIDs = { 225348 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  02  Outland             UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
-  {label = "Timewalking Outland LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Outland LVL", frameID = "bar1", key = "XP02:TW:LVL", sortGroup = "XP02:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 85948, questInfo = "Outland", requireInLog = true, twKind = "outland", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Outland MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Outland MAX", frameID = "bar1", key = "XP02:TW:MAX", sortGroup = "XP02:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93608, questInfo = "Outland", requireInLog = true, twKind = "outland", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Outland TKN", frameID = "bar1", key = "tw:token:outland", requireRememberedTimewalkingKind = true,
+  {label = "TW Outland TKN", frameID = "bar1", key = "XP02:TW:TKN", sortGroup = "XP02:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 40168 }, preferQuestInfoForTitle = true, twKind = "outland", hideDone = false,
   indicators = { { questID = 40168, shape = "square", overlay = { itemIDs = { 129747 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  03  Wrath               UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
-  {label = "Timewalking Wrath LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Wrath LVL", frameID = "bar1", key = "XP03:TW:LVL", sortGroup = "XP03:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 85949, questInfo = "Wrath", requireInLog = true, twKind = "wrath", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Wrath MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 83365, questInfo = "Wrath", requireInLog = true, twKind = "wrath", hideDone = false, showIfRememberedTimewalkingKind = true, },
+  {label = "TW Wrath MAX", frameID = "bar1", key = "XP03:TW:MAX", sortGroup = "XP03:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  questID = 93610, questInfo = "Wrath", requireInLog = true, twKind = "wrath", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Wrath TKN", frameID = "bar1", key = "tw:token:wrath", requireRememberedTimewalkingKind = true,
+  {label = "TW Wrath TKN", frameID = "bar1", key = "XP03:TW:TKN", sortGroup = "XP03:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 40173 }, preferQuestInfoForTitle = true, twKind = "wrath", hideDone = false,
   indicators = { { questID = 40173, shape = "square", overlay = { itemIDs = { 129928 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  04  Cataclysm           UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
-  {label = "Timewalking Cataclysm LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Cataclysm LVL", frameID = "bar1", key = "XP04:TW:LVL", sortGroup = "XP04:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 86556, questInfo = "Cataclysm", requireInLog = true, twKind = "cata", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Cataclysm MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Cataclysm MAX", frameID = "bar1", key = "XP04:TW:MAX", sortGroup = "XP04:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 83359, questInfo = "Cataclysm", requireInLog = true, twKind = "cata", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Cataclysm TKN", frameID = "bar1", key = "tw:token:cata", requireRememberedTimewalkingKind = true,
+  {label = "TW Cataclysm TKN", frameID = "bar1", key = "XP04:TW:TKN", sortGroup = "XP04:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 40787, 40786 }, preferQuestInfoForTitle = true, twKind = "cata", hideDone = false,
   indicators = { { questIDs = { 40787, 40786 }, shape = "square", overlay = { itemIDs = { 133377 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  05  Pandaria           UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
-  {label = "Timewalking Pandaria LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Pandaria LVL", frameID = "bar1", key = "XP05:TW:LVL", sortGroup = "XP05:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 86560, questInfo = "Pandaria", requireInLog = true, twKind = "pandaria", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Pandaria MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Pandaria MAX", frameID = "bar1", key = "XP05:TW:MAX", sortGroup = "XP05:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93612, questInfo = "Pandaria", requireInLog = true, twKind = "pandaria", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Pandaria TKN", frameID = "bar1", key = "tw:token:pandaria", requireRememberedTimewalkingKind = true,
+  {label = "TW Pandaria TKN", frameID = "bar1", key = "XP05:TW:TKN", sortGroup = "XP05:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 45563 }, preferQuestInfoForTitle = true, twKind = "pandaria", hideDone = false,
   indicators = { { questID = 45563, shape = "square", overlay = { itemIDs = { 143776 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  06  Draenor            UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
-  {label = "Timewalking Draenor LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Draenor LVL", frameID = "bar1", key = "XP06:TW:LVL", sortGroup = "XP06:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 86563, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Draenor MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Draenor MAX", frameID = "bar1", key = "XP06:TW:MAX", sortGroup = "XP06:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93613, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Draenor TKN", frameID = "bar1", key = "tw:token:draenor", requireRememberedTimewalkingKind = true,
+  {label = "TW Draenor TKN", frameID = "bar1", key = "XP06:TW:TKN", sortGroup = "XP06:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 55498, 55499 }, preferQuestInfoForTitle = true, twKind = "draenor", hideDone = false,
   indicators = { { questIDs = { 55498, 55499 }, shape = "square", overlay = { itemIDs = { 167921, 167922 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  07  Legion            UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
-  {label = "Timewalking Legion LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Legion LVL", frameID = "bar1", key = "XP07:TW:LVL", sortGroup = "XP07:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 86564, questInfo = "Legion", requireInLog = true, twKind = "legion", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Legion MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Legion MAX", frameID = "bar1", key = "XP07:TW:MAX", sortGroup = "XP07:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93614, questInfo = "Legion", requireInLog = true, twKind = "legion", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Legion TKN", frameID = "bar1", key = "tw:token:legion", requireRememberedTimewalkingKind = true,
+  {label = "TW Legion TKN", frameID = "bar1", key = "XP07:TW:TKN", sortGroup = "XP07:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 64710 }, preferQuestInfoForTitle = true, twKind = "legion", hideDone = false,
   indicators = { { questID = 64710, shape = "square", overlay = { itemIDs = { 187611 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  08  Battle             UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
 
-  {label = "Timewalking Battle LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Battle LVL", frameID = "bar1", key = "XP08:TW:LVL", sortGroup = "XP08:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 88808, questInfo = "Battle", requireInLog = true, twKind = "bfa", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Battle MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Battle MAX", frameID = "bar1", key = "XP08:TW:MAX", sortGroup = "XP08:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93627, questInfo = "Battle", requireInLog = true, twKind = "bfa", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Battle TKN", frameID = "bar1", key = "tw:token:bfa", requireRememberedTimewalkingKind = true,
+  {label = "TW Battle TKN", frameID = "bar1", key = "XP08:TW:TKN", sortGroup = "XP08:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 89222, 89223 }, preferQuestInfoForTitle = true, twKind = "bfa", hideDone = false,
   indicators = { { questIDs = { 89222, 89223 }, shape = "square", overlay = { itemIDs = { 238790, 238791 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  09  Shadowlands        UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING LVL/MAX QUESTID
 
-  {label = "Timewalking Shadowlands LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Shadowlands LVL", frameID = "bar1", key = "XP09:TW:LVL", sortGroup = "XP09:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 92647, questInfo = "Shadowlands", requireInLog = true, twKind = "shadowlands", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Shadowlands MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Shadowlands MAX", frameID = "bar1", key = "XP09:TW:MAX", sortGroup = "XP09:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93628, questInfo = "Shadowlands", requireInLog = true, twKind = "shadowlands", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Shadowlands TKN", frameID = "bar1", key = "tw:token:shadowlands", requireRememberedTimewalkingKind = true,
+  {label = "TW Shadowlands TKN", frameID = "bar1", key = "XP09:TW:TKN", sortGroup = "XP09:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 92650 }, preferQuestInfoForTitle = true, twKind = "shadowlands", hideDone = false,
   indicators = { { questID = 92650, shape = "square", overlay = { itemIDs = { 253517 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 --  10  Dragonflight        UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING LVL/MAX QUESTID
 
-  {label = "Timewalking Dragonflight LVL", frameID = "bar1", levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Dragonflight LVL", frameID = "bar1", key = "XP10:TW:LVL", sortGroup = "XP10:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93495, questInfo = "Dragonflight", requireInLog = true, twKind = "dragonflight", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Dragonflight MAX", frameID = "bar1", levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
+  {label = "TW Dragonflight MAX", frameID = "bar1", key = "XP10:TW:MAX", sortGroup = "XP10:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
   questID = 93497, questInfo = "Dragonflight", requireInLog = true, twKind = "dragonflight", hideDone = false, showIfRememberedTimewalkingKind = true, },
 
-  {label = "Timewalking Dragonflight TKN", frameID = "bar1", key = "tw:token:dragonflight", requireRememberedTimewalkingKind = true,
+  {label = "TW Dragonflight TKN", frameID = "bar1", key = "XP10:TW:TKN", sortGroup = "XP10:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
   questInfo = "\194\160", fallbackQuestInLog = { 93852 }, preferQuestInfoForTitle = true, twKind = "dragonflight", hideDone = false,
   indicators = { { questID = 93852, shape = "square", overlay = { itemIDs = { 262918 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 

@@ -49,8 +49,8 @@ local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 --                                                                                                                                                                84 Stormwind, 85 Orgrimmar, 1670 Oribos
 --                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
-  {key = "XP09:Q60150A", questID = 60150, label = "09 Shadowlands A", faction = "A",  frameID = "list1", hideQID = {60150,60151,61874,}, mapID = {84,"SHD",}, questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Castle Entryway", },
-  {key = "XP09:Q60150H", questID = 60150, label = "09 Shadowlands H", faction = "H",  frameID = "list1", hideQID = {60150,60151,61874,}, mapID = {85,"SHD",}, questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Valley of Strength", },
+	{key = "XP09:Q60150A", questID = 60150, label = "09 Shadowlands A", faction = "A",  frameID = "list1", hideQID = {60150,60151,61874,}, mapID = {84,"SHD",}, questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Castle Entryway", },
+	{key = "XP09:Q60150H", questID = 60150, label = "09 Shadowlands H", faction = "H",  frameID = "list1", hideQID = {60150,60151,61874,}, mapID = {85,"SHD",}, questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Valley of Strength", },
 
 
 
