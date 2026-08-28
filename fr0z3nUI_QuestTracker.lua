@@ -2450,6 +2450,14 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
   end
 
+  -- Gold gate (optional): rule.gold is entered in gold, compared against GetMoney() (copper).
+  if applyGates and type(rule) == "table" and tonumber(rule.gold) then
+    local haveCopper = (type(GetMoney) == "function") and (tonumber(GetMoney()) or 0) or 0
+    if haveCopper < (tonumber(rule.gold) * 10000) then
+      return nil
+    end
+  end
+
   -- Reputation gate (optional)
   if applyGates and type(rule) == "table" and type(rule.rep) == "table" and rule.rep.factionID then
     local standingID = GetStandingIDByFactionID(rule.rep.factionID)
