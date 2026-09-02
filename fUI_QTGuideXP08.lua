@@ -91,8 +91,8 @@ local bakedRules = {
 	{key = "XP08:Q56771N",  questID = 56771, prereq = {56376,},                 label = "08 N N'Zoth Invasion 5", frameID = "list1", hideDone = true, mapID = {"CAP","BFA",},   questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n + ULDUM OPEN\n  - Exit Chamber, Go to Pandaria\n  - Fish Gloop (Black Empire)\n  - Return to Chamber of Heart", },
 	{key = "XP08:Q56540N",  questID = 56540, prereq = {56771,},                 label = "08 N N'Zoth Invasion 6", frameID = "list1", hideDone = true, mapID = {"CAP","BFA",},   questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n + ULDUM / VALE OPEN\n  - Do Dailies, Clear Mobs\n  - Kill Boss\n  - Fish Gloop (Black Empire)", },
 	{key = "XP08:Q57220N",  questID = 57220, prereq = {56540,},                 label = "08 N N'Zoth Invasion 7", frameID = "list1", hideDone = true, mapID = {"CAP","BFA",},   questInfo = "Battle For Azeroth\n + Magnis Plan (Zygor)\n + ULDUM / VALE OPEN\n  - Skip if Possible", },
-	{key = "XP08:Q53448N",  questID = 53448, prereq = {51234,},                 label = "Pet Wicker Pup",         frameID = "list1", hideDone = true, mapID = {"CAP","BFA",},   questInfo = "Battle For Azeroth\n + Wicker Pup (Zygor)", },
-	{key = "XP08:Q52061N",  questID = 52061, prereq = {53448,},                 label = "Pet Taptaf",             frameID = "list1", hideDone = true, mapID = {"CAP","BFA",},   questInfo = "Battle For Azeroth\n + Taptaf (Zygor)", },
+	{key = "XP08:Q53448N",  questID = 53448, prereq = {51234,},                 label = "Pet Wicker Pup",         frameID = "list1", hideDone = true, mapID = {"BFA",},   		questInfo = "Battle For Azeroth\n + Wicker Pup (Zygor)", },
+	{key = "XP08:Q52061N",  questID = 52061, prereq = {53448,},                 label = "Pet Taptaf",             frameID = "list1", hideDone = true, mapID = {"BFA",},   		questInfo = "Battle For Azeroth\n + Taptaf (Zygor)", },
 
 }
 

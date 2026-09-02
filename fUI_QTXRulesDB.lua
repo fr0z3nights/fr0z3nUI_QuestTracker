@@ -140,12 +140,6 @@ local YQuest = ns.db.xquest.YQuest
 -- - zone grouping comes from SetZone() and is used by the XRules browser tree.
 -- - XQuest is the only mode that uses map/resting gates; Keep/Y are always global.
 
-SetZone("Weekly, Event")
-	KQuest(83366, "World Quest Week")                    			--  Weekly		Player MAX		
-	KQuest(83347, "Dungeon Week")                     				--	Weekly		Player MAX		
-	KQuest(83345, "PvP Week")                    					--	Weekly		Player MAX			
-	KQuest(83357, "Battle Pet Week")    							--	Weekly		Warband		
-
 SetZone("Timewalking, Event")
 	--	Timewalking	 01  Classic
 		KQuest(85947, "01 Classic LVL")                    			--	Weekly		Player LVL			
@@ -204,8 +198,14 @@ SetZone("Silvermoon City, Quel'Thalas")
 	KQuest(94836, "Late Night Training: Week 1 of 3")          		--	Scheduled	Player		
 	KQuest(94386, "Void Assaults: Zul'Aman")	           			--	Scheduled	Player		
 	KQuest(94385, "Void Assaults: Eversong Woods")	           		--	Scheduled	Player		
-	KQuest(93595, "A Call to Delves")			            		--	Scheduled	Player		
 	KQuest(93525, "Nulling Nullaeus")			            		--	Scheduled	Player		
+	KQuest(97616, "Corrosive Gifts: Corrosive Power")          		--	Scheduled	Player		
+	-- Weekly Events
+	KQuest(93595, "Delve Week")                  		  			--  Weekly		Player MAX		
+	KQuest(83366, "World Quest Week")                    			--  Weekly		Player MAX		
+	KQuest(83347, "Dungeon Week")                     				--	Weekly		Player MAX		
+	KQuest(83345, "PvP Week")                    					--	Weekly		Player MAX			
+	KQuest(83357, "Battle Pet Week")    							--	Weekly		Warband		
 
 --  11	War Within
 
