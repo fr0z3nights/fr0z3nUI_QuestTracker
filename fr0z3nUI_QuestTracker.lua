@@ -613,6 +613,29 @@ end
 
 ns.GetEffectiveRules = GetEffectiveRules
 
+-- Tag Blizzard quest tooltips with the matching Keep/Abandon rule (if any).
+if TooltipDataProcessor and Enum and Enum.TooltipDataType and Enum.TooltipDataType.Quest then
+  local function OnQuestTooltip(tooltip, data)
+    local qid = data and tonumber(data.id)
+    if not (tooltip and tooltip.AddLine and qid) then return end
+
+    local rules = GetEffectiveRules()
+    for _, rule in ipairs(rules) do
+      if type(rule) == "table" and tonumber(rule.questID) == qid then
+        local xy = tostring(rule.questXY or ""):upper()
+        if xy == "K" then
+          tooltip:AddLine("|cff00ccff[FQT]|r |cffffd100Keep|r")
+          return
+        elseif xy == "X" then
+          tooltip:AddLine("|cff00ccff[FQT]|r |cffff9900Abandon|r")
+          return
+        end
+      end
+    end
+  end
+  TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Quest, OnQuestTooltip)
+end
+
 local function GetEffectiveFrames()
   -- Merge defaults + custom frames (custom overrides defaults if id matches).
   local base = ns.frames or {}

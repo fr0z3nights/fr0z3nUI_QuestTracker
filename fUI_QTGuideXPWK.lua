@@ -99,16 +99,16 @@ ns.rules = {
 
 
 
-  {label = "Event: Pet Battle", frameID = "bar1", playerLevel = { ">=", 20 }, hideDone = false, key = "event:pet-battle-bonus-event",
+  {label = "Event: Pet Battle", frameID = "bar1", playerLevel = { ">=", 20 }, hideDone = false, requireInLog = false, showXWhenComplete = true, key = "event:pet-battle-bonus-event",
   questInfo = "Pet XP", aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true }, },
 
-  {label = "Event: Delves", frameID = "bar1", playerLevel = { ">=", 80 }, hideDone = false, key = "event:delves-bonus-event",
+  {label = "Event: Delves", frameID = "bar1", playerLevel = { ">=", 80 }, hideDone = true, requireInLog = false, showXWhenComplete = true, key = "event:delves-bonus-event",
   questInfo = "Delves", questID = 93595, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true }, },
 
-  {label = "Event: World Quest", frameID = "bar1", playerLevel = { ">=", 90 }, hideDone = false, requireInLog = false, showXWhenComplete = true,
+  {label = "Event: World Quest", frameID = "bar1", playerLevel = { ">=", 90 }, hideDone = true, requireInLog = false, showXWhenComplete = true, key = "event:world-quest-bonus-event",
   questInfo = "WQ", questID = 93605, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true }, },
 
-  {label = "Event: Battleground", frameID = "bar1", playerLevel = { ">=", 80 }, hideDone = false, requireInLog = false, showXWhenComplete = true,
+  {label = "Event: Battleground", frameID = "bar1", playerLevel = { ">=", 80 }, hideDone = true, requireInLog = false, showXWhenComplete = true,
   questInfo = "BG", questID = 93605, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "Battleground Bonus Event" }, mustHave = true, rememberWeekly = true }, },
 
 
