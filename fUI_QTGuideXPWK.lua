@@ -278,11 +278,8 @@ do
     for i = 1, #ns.rules do
       local r = ns.rules[i]
           if type(r) == "table" then
-            r.mapID = ns.ExpandMapIDs(r.mapID)
-        if r._expansionID == nil then r._expansionID = EXPANSION_ID end
-        if r._expansionName == nil then r._expansionName = EXPANSION_NAME end
-        if r.questXY == nil and tonumber(r.questID) and r.qXept == nil then r.qXept = "N" end
-      end
+            ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
+          end
     end
   end
 end

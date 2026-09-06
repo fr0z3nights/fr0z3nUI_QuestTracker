@@ -47,18 +47,23 @@ local GREY = "bfbfbf"
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
 
-{label = "Void Assault", frameID = "bar1", key = "XP12:94386", playerLevel = { ">=", 80, }, progress = { merge = { { questID = 94386, objectiveIndex = 1 }, { questID = 94385, objectiveIndex = 1 }, }, sep = " | ", requireAll = false, },
-questID = 94386, requireInLog = false, questInfo = "Void Assault", showXWhenComplete = false, hideQID = { 94386, 94385, },},
+	{key = "XP12:94386",	questID = 94386,	requireInLog = false,	playerLevel = {">=",80,},	label = "Void Assault",		frameID = "bar1",	progress = { merge = { { questID = 94386, objectiveIndex = 1 }, { questID = 94385, objectiveIndex = 1 }, }, sep = " | ", requireAll = false, }, questInfo = "Void Assault", hideQID = {94386,94385,},},
 
--- Delvers Call Quests                                                                                        -- mapIDs: fUI_QTUsage.lua
-{label = "Soridormi Skips", questID = 93012, key = "XP12:93010", playerLevel = { "=", 90, },  frameID = "list2", mapID = {2393},      hideDone = true, progress = { objectiveIndex = 0 }, size = 22, color = "ffe633", align = "center", },
-{label = "DQ S2",           questID = 97454, key = "XP12:97454", playerLevel = { ">=", 80, }, frameID = "bar1",  mapID = {2393},      hideDone = true, progress = { objectiveIndex = 0 }, },
-{label = "DQ Silvermoon",   questID = 93372, key = "XP12:93372", playerLevel = { ">=", 80, }, frameID = "bar1",  requireInLog = true, hideDone = true, progress = { objectiveIndex = 0 }, },
-{label = "DQ Silvermoon",   questID = 93384, key = "XP12:93384", playerLevel = { ">=", 80, }, frameID = "bar1",  requireInLog = true, hideDone = true, progress = { objectiveIndex = 0 }, },
-{label = "DQ Silvermoon",   questID = 93385, key = "XP12:93385", playerLevel = { ">=", 80, }, frameID = "bar1",  requireInLog = true, hideDone = true, progress = { objectiveIndex = 0 }, },
-{label = "DQ Silvermoon",   questID = 93386, key = "XP12:93386", playerLevel = { ">=", 80, }, frameID = "bar1",  requireInLog = true, hideDone = true, progress = { objectiveIndex = 0 }, },
-{label = "DQ Zul'Aman",     questID = 93409, key = "XP12:93409", playerLevel = { ">=", 80, }, frameID = "bar1",  requireInLog = true, hideDone = true, progress = { objectiveIndex = 0 }, },
-{label = "DQ Zul'Aman",     questID = 93410, key = "XP12:93410", playerLevel = { ">=", 80, }, frameID = "bar1",  requireInLog = true, hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93010",	questID = 93012,	requireInLog = false, 	playerLevel = { "=",90,},	label = "Soridormi Skips",	frameID = "list2",	hideDone = true, progress = { objectiveIndex = 0 }, mapID = {2393},	size = 22, color = "ffe633", align = "center", },
+--	Delvers Call Quests                                                                                        										-- mapIDs: fUI_QTUsage.lua
+	{key = "XP12:Q97454",	questID = 97454,	requireInLog = false,	playerLevel = {">=",80,},	label = "DQ S2",			frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, mapID = {2393}, },
+	{key = "XP12:Q93372",	questID = 93372,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Silvermoon",	frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93384",	questID = 93384,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Silvermoon",	frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93385",	questID = 93385,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Silvermoon",	frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93386",	questID = 93386,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Silvermoon",	frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93409",	questID = 93409,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Zul'Aman",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93410",	questID = 93410,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Zul'Aman",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93421",	questID = 93421,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Harandar",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93428",	questID = 93428,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Voidstorm",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+--	Shows if item is in the player's inventory
+	{key = "XP12:I273000",  item = { itemID = 273000, mustHave = true, showCount = false, },		label = "XC Undercoin",		frameID = "list2",	resting = true, itemInfo = "Corrosive Soul in Bags\n + Deposit in Warbank\n  - Altar of Corrosion (8)\n  - Don't Exchange for Undercoins" },
+	{key = "XP12:I255826",  item = { itemID = 255826, mustHave = true, showCount = false, },		label = "XC Undercoin",		frameID = "list2",	resting = true, itemInfo = "Mysterious Skyshards in Bags\n + Deposit in Warbank\n  - Mount? (500)" },
+
 
 
 
@@ -76,13 +81,7 @@ questID = 94386, requireInLog = false, questInfo = "Void Assault", showXWhenComp
 for i = 1, #bakedRules do
   local r = bakedRules[i]
   if type(r) == "table" then
-    if r._expansionID == nil then r._expansionID = EXPANSION_ID end
-    if r._expansionName == nil then r._expansionName = EXPANSION_NAME end
-    if r.questXY == nil and tonumber(r.questID) and r.qXept == nil then r.qXept = "N" end
-    if type(r.key) == "string" then
-      r.key = r.key:gsub("^custom:", "db:")
-    end
-    r.mapID = ns.ExpandMapIDs(r.mapID)
+    ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
     ns.rules[#ns.rules + 1] = r
   end
 end

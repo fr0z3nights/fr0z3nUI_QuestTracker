@@ -207,6 +207,9 @@ local bakedRules = {
 	{key = "XP08:PZDarkshore",  questID = 52758,						label = "Darkshore Phaze BFA",     frameID = "list2",   mapID = 62,         questInfo = "BATTLE PHAZED",		size = 22,	color = "a335ee",	align = "center", },
 --{label = "Phaze Blasted Cata", textInfo = "|cffa335eeCATACLYSM PHAZED|r", mapID = 17, frameID = "list2", questID = 66560, showIf = { completedQuestID = 66560 }, key = "zone:blastedlands:cataclysm", },
 
+--	Lumberaxe (Housing)
+	{key = "XP12:I253580",	group = "housing:vendor:lumberaxe", order = 1, label = "No Axe (Housing)", frameID = "bar1", itemInfo = "Housing Axe", restedOnly = Y, item = { itemID = 253580, required = { 1, Y, Y, 1 }, cachePurchased = Y, cachePurchasedFromBag = N, knownTooltip = Y, }, complete = { any = { { item = { itemID = 253580, count = 1, cachePurchased = Y, cachePurchasedFromBag = N } }, }, }, },
+
 
 
 }
@@ -215,13 +218,7 @@ local bakedRules = {
 for i = 1, #bakedRules do
   local r = bakedRules[i]
   if type(r) == "table" then
-    if r._expansionID == nil then r._expansionID = EXPANSION_ID end
-    if r._expansionName == nil then r._expansionName = EXPANSION_NAME end
-    if r.questXY == nil and tonumber(r.questID) and r.qXept == nil then r.qXept = "N" end
-    if type(r.key) == "string" then
-      r.key = r.key:gsub("^custom:", "db:")
-    end
-    r.mapID = ns.ExpandMapIDs(r.mapID)
+		ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
     ns.rules[#ns.rules + 1] = r
   end
 end

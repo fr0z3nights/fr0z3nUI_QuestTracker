@@ -143,72 +143,16 @@ item = { itemID = 45584, required = { 1, Y, Y, 1 }, }, mapID = "85, ", restedOnl
 complete = { any = { { item = { itemID = 45584, count = 1 } }, { rep = { factionID = 81, minStanding = 8 } }, }, }, },
 
 -- NEUTRAL ITEMS
-{group = "housing:vendor:lumberaxe", order = 1, label = "No Axe (Housing)", frameID = "bar1", key = "custom:item:253580:list1:0116", itemInfo = "Housing Axe", restedOnly = Y,
-item = { itemID = 253580, required = { 1, Y, Y, 1 }, cachePurchased = Y, cachePurchasedFromBag = N, knownTooltip = Y, },
-complete = { any = { { item = { itemID = 253580, count = 1, cachePurchased = Y, cachePurchasedFromBag = N } }, }, }, },
---  
---  
-
-{group = "classic:vendor:red-rider", order = 1,
-label = "Red Rider Air RIfle", frameID = "list1", key = "custom:item:46725:list1:0116",
-itemInfo = "Red Rider Air RIfle", mapID = {84,85}, restedOnly = Y,
-item = { itemID = 46725, required = { 1, Y, Y, 1 }, },
-complete = { any = { { item = { itemID = 46725, count = 1 } }, }, }, },
-
-{group = "classic:vendor:red-rider", order = 2,
-label = "Red Rider Air Ammo", frameID = "list1", key = "custom:item:48601:list1:01117",
-itemInfo = "Red Rider Air Ammo", mapID = {84,85}, restedOnly = Y,
-item = { itemID = 48601, required = { 1, Y, Y, 1 }, },
-complete = { any = { { item = { itemID = 48601, count = 1 } }, }, }, },
-
-{label = "Goblin Gliders", frameID = "list1", key = "custom:item:109076:list1:0118",
-itemInfo = "Goblin Gliders", hideDone = N, restedOnly = Y,
-item = { itemID = 109076, required = { 5, Y, N, 0 }, }, },
-
+	{key = "XP01:I46725",	item = {itemID =  46725, required = {1,Y,Y,1},},	label = "Red Rider Air RIfle",	mapID = {84,85},			frameID = "list1",	itemInfo = "Red Rider Air RIfle",								complete = {any={{item={itemID= 46725,count=1}},},},	group = "XP01:RedRider", order = 1, },
+	{key = "XP01:I48601",	item = {itemID =  48601, required = {1,Y,Y,1},},	label = "Red Rider Air Ammo", 	mapID = {84,85},			frameID = "list1",	itemInfo = "Red Rider Air Ammo",								complete = {any={{item={itemID= 48601,count=1}},},},	group = "XP01:RedRider", order = 2, },
+	{key = "XP01:I109076",	item = {itemID = 109076, required = {5,Y,N,0},},	label = "Goblin Gliders", 		restedOnly = Y, 			frameID = "list1",	itemInfo = "Goblin Gliders"},
 }
 
 
 for i = 1, #bakedRules do
   local r = bakedRules[i]
   if type(r) == "table" then
-    if r._expansionID == nil then r._expansionID = EXPANSION_ID end
-    if r._expansionName == nil then r._expansionName = EXPANSION_NAME end
-    if r.questXY == nil and tonumber(r.questID) and r.qXept == nil then r.qXept = "N" end
-    if type(r.key) == "string" then
-      r.key = r.key:gsub("^custom:", "db:")
-    end
-
-    -- Ensure new fields exist on older baked rules.
-    -- item.buy is derived from item.required (keeps the DB visible without duplicating values in every rule).
-    if type(r.item) == "table" and r.item.itemID then
-      local req = r.item.required
-      local buyOn, buyMax = nil, nil
-      if type(req) == "table" then
-        buyOn = (req[REQ_BUY_ON] == Y) and Y or N
-        buyMax = tonumber(req[REQ_BUY_MAX]) or 0
-        if buyMax < 0 then buyMax = 0 end
-      end
-
-      if type(r.item.buy) ~= "table" then
-        r.item.buy = { enabled = N, max = 0 }
-      end
-
-      if buyOn ~= nil then
-        r.item.buy.enabled = buyOn
-        r.item.buy.max = buyMax or 0
-      else
-        if r.item.buy.enabled ~= Y then r.item.buy.enabled = N end
-        local m = tonumber(r.item.buy.max) or 0
-        if m < 0 then m = 0 end
-        r.item.buy.max = m
-      end
-    end
-
-    if type(r.mapID) == "table" then
-      local expandedMapIDs = ns.ExpandMapIDs(r.mapID)
-      for i = #r.mapID, 1, -1 do r.mapID[i] = nil end
-      for i, mapID in ipairs(expandedMapIDs) do r.mapID[i] = mapID end
-    end
+    ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
     ns.rules[#ns.rules + 1] = r
   end
 end

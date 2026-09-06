@@ -500,15 +500,16 @@ local function AutoBuyItemsAtMerchant(frame)
 
   do
     local missingWants = 0
+    local missingWantIDs = {}
     for itemID in pairs(wantByItemID) do
       if not merchantIndexByItemID[itemID] then
         missingWants = missingWants + 1
+        missingWantIDs[#missingWantIDs + 1] = tostring(itemID)
         if missingWants >= 3 then break end
       end
     end
     if missingWants > 0 then
-      Debug("merchant missing " .. tostring(missingWants) .. " wanted itemIDs; will retry")
-      ScheduleRetry(0.25, "wanted itemID not mapped")
+      Debug("merchant missing " .. tostring(missingWants) .. " wanted itemIDs (" .. table.concat(missingWantIDs, ", ") .. "); skipping unavailable items")
     end
   end
 

@@ -1,5 +1,9 @@
 local addonName, ns = ...
 
+if ns.GuideHelpers and type(ns.GuideHelpers.NormalizeRules) == "function" then
+  ns.GuideHelpers.NormalizeRules(ns.rules)
+end
+
 local PREFIX = "|cff00ccff[FQT]|r "
 local function Print(msg)
   print(PREFIX .. tostring(msg or ""))
@@ -2781,16 +2785,18 @@ local function BuildRuleStatus(rule, ctx, opts)
       end
     end
 
-    do
-      local req = tonumber((select(1, GetItemRequiredGate(rule.item))))
-      if req and req > 0 then
-        extra = string.format("%d/%d", count, req)
-      else
-        local showBelow = tonumber(rule.item.showWhenBelow)
-        if showBelow and showBelow > 0 then
-          extra = string.format("%d/%d", count, showBelow)
+    if rule.item.showCount ~= false then
+      do
+        local req = tonumber((select(1, GetItemRequiredGate(rule.item))))
+        if req and req > 0 then
+          extra = string.format("%d/%d", count, req)
         else
-          extra = tostring(count)
+          local showBelow = tonumber(rule.item.showWhenBelow)
+          if showBelow and showBelow > 0 then
+            extra = string.format("%d/%d", count, showBelow)
+          else
+            extra = tostring(count)
+          end
         end
       end
     end

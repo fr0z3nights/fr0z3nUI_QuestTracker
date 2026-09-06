@@ -12,6 +12,7 @@
 
 # Layout defaults - always load (kept with Usage feature)
 fUI_QTUsage.lua
+fUI_QTGuideHelper.lua
 
 # Built-in rule packs (optional)
 fUI_QTGuideXPWK.lua
