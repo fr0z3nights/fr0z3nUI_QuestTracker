@@ -58,6 +58,7 @@ local bakedRules = {
 	{key = "XP12:Q93386",	questID = 93386,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Silvermoon",	frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 	{key = "XP12:Q93409",	questID = 93409,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Zul'Aman",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 	{key = "XP12:Q93410",	questID = 93410,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Zul'Aman",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93416",	questID = 93416,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Harandar",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 	{key = "XP12:Q93421",	questID = 93421,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Harandar",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 	{key = "XP12:Q93428",	questID = 93428,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Voidstorm",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 --	Shows if item is in the player's inventory

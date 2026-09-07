@@ -254,8 +254,6 @@ local bakedRules = {
   label = "Children's Week", frameID = "list2", key = "event:childrens",
   questInfo = "Children's Week", questID = 99999999, hideDone = true, },
 
-  {label = "Blingtron", frameID = "list2", key = "custom:q:44184:list2:XPEVBT",
-  questInfo = "BLINGTRON", questID = 44184, hideDone = true, },
 
 
  

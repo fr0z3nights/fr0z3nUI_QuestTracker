@@ -143,9 +143,12 @@ item = { itemID = 45584, required = { 1, Y, Y, 1 }, }, mapID = "85, ", restedOnl
 complete = { any = { { item = { itemID = 45584, count = 1 } }, { rep = { factionID = 81, minStanding = 8 } }, }, }, },
 
 -- NEUTRAL ITEMS
-	{key = "XP01:I46725",	item = {itemID =  46725, required = {1,Y,Y,1},},	label = "Red Rider Air RIfle",	mapID = {84,85},			frameID = "list1",	itemInfo = "Red Rider Air RIfle",								complete = {any={{item={itemID= 46725,count=1}},},},	group = "XP01:RedRider", order = 1, },
-	{key = "XP01:I48601",	item = {itemID =  48601, required = {1,Y,Y,1},},	label = "Red Rider Air Ammo", 	mapID = {84,85},			frameID = "list1",	itemInfo = "Red Rider Air Ammo",								complete = {any={{item={itemID= 48601,count=1}},},},	group = "XP01:RedRider", order = 2, },
-	{key = "XP01:I109076",	item = {itemID = 109076, required = {5,Y,N,0},},	label = "Goblin Gliders", 		restedOnly = Y, 			frameID = "list1",	itemInfo = "Goblin Gliders"},
+	{key = "XP01:I46725",	item = {itemID =  46725, required = {1,Y,Y,1},},	label = "Red Rider Air RIfle",	mapID = {84,85},					frameID = "list1",	itemInfo = "Red Rider Air RIfle",								complete = {any={{item={itemID= 46725,count=1}},},},	group = "XP01:RedRider", order = 1, },
+	{key = "XP01:I48601",	item = {itemID =  48601, required = {1,Y,Y,1},},	label = "Red Rider Air Ammo", 	mapID = {84,85},					frameID = "list1",	itemInfo = "Red Rider Air Ammo",								complete = {any={{item={itemID= 48601,count=1}},},},	group = "XP01:RedRider", order = 2, },
+	{key = "XP01:I109076",	item = {itemID = 109076, required = {5,Y,N,0},},	label = "Goblin Gliders", 		restedOnly = Y, 					frameID = "list1",	itemInfo = "Goblin Gliders"},
+--	Lumber
+	{key = "XP01:I251768",	item = {itemID = 251768, required = {1000,N,N,0},},	label = "Lumber Darkpine", 		mapID = {"BFA"}, restedOnly = Y,	frameID = "list1",	itemInfo = "Lumber Darkpine"},	-- Full zone, remove restedOnly = Y,
+	{key = "XP01:I269010",	item = {itemID = 269010, required = {  50,N,N,0},},	label = "Lumber Essence ",		restedOnly = Y,						frameID = "list1",	itemInfo = "Lumber Essence "},
 }
 
 
