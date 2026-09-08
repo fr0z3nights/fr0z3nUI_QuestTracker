@@ -60,8 +60,10 @@ local bakedRules = {
 	{key = "XP12:Q93410",	questID = 93410,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Zul'Aman",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 	{key = "XP12:Q93416",	questID = 93416,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Harandar",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 	{key = "XP12:Q93421",	questID = 93421,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Harandar",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
+	{key = "XP12:Q93427",	questID = 93427,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Voidstorm",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 	{key = "XP12:Q93428",	questID = 93428,	requireInLog = true,	playerLevel = {">=",80,}, 	label = "DQ Voidstorm",		frameID = "bar1",	hideDone = true, progress = { objectiveIndex = 0 }, },
 --	Shows if item is in the player's inventory
+
 	{key = "XP12:I273000",  item = { itemID = 273000, mustHave = true, showCount = false, },		label = "XC Undercoin",		frameID = "list2",	resting = true, itemInfo = "Corrosive Soul in Bags\n + Deposit in Warbank\n  - Altar of Corrosion (8)\n  - Don't Exchange for Undercoins" },
 	{key = "XP12:I255826",  item = { itemID = 255826, mustHave = true, showCount = false, },		label = "XC Undercoin",		frameID = "list2",	resting = true, itemInfo = "Mysterious Skyshards in Bags\n + Deposit in Warbank\n  - Mount? (500)" },
 
