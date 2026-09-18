@@ -2534,6 +2534,26 @@ local function BuildRuleStatus(rule, ctx, opts)
   -- Exception: if the quest is already completed and the rule is configured to
   -- keep showing when completed, allow it to remain visible even if it drops
   -- out of the quest log (Timewalking weeklies commonly do this).
+  if applyGates and type(rule) == "table" and rule.hideIfAnyQuestInLog == true and type(rule.questIDs) == "table" then
+    if not completed then
+      for _, qid in ipairs(rule.questIDs) do
+        qid = tonumber(qid)
+        if qid and IsQuestInLog(qid) then
+          return nil
+        end
+      end
+    end
+  end
+
+  if applyGates and type(rule) == "table" and rule.hideIfAnyQuestCompleted == true and type(rule.questIDs) == "table" then
+    for _, qid in ipairs(rule.questIDs) do
+      qid = tonumber(qid)
+      if qid and IsQuestCompleted(qid) then
+        return nil
+      end
+    end
+  end
+
   if applyGates and questID and rule.requireInLog == true and not IsQuestInLog(questID) then
     if not (completed and hideDone == false) then
       -- Special-case for Timewalking: token rows and other indicators intentionally
@@ -2780,22 +2800,34 @@ local function BuildRuleStatus(rule, ctx, opts)
       if hideWhenAcquired == true and count > 0 then
         return nil
       end
-      if rule.item.mustHave and count <= 0 then
+      local mustHave = rule.item.mustHave
+      if type(rule.item.required) == "table" and rule.item.required[2] == "mustHave" then
+        mustHave = true
+      end
+      if mustHave and count <= 0 then
         return nil
       end
     end
 
     if rule.item.showCount ~= false then
       do
-        local req = tonumber((select(1, GetItemRequiredGate(rule.item))))
-        if req and req > 0 then
-          extra = string.format("%d/%d", count, req)
+        local showAmount = rule.item.showCount == "amount"
+        if type(rule.item.required) == "table" and rule.item.required[1] == false then
+          showAmount = true
+        end
+        if showAmount then
+          extra = tostring(count)
         else
-          local showBelow = tonumber(rule.item.showWhenBelow)
-          if showBelow and showBelow > 0 then
-            extra = string.format("%d/%d", count, showBelow)
+          local req = tonumber((select(1, GetItemRequiredGate(rule.item))))
+          if req and req > 0 then
+          extra = string.format("%d/%d", count, req)
           else
-            extra = tostring(count)
+            local showBelow = tonumber(rule.item.showWhenBelow)
+            if showBelow and showBelow > 0 then
+              extra = string.format("%d/%d", count, showBelow)
+            else
+              extra = tostring(count)
+            end
           end
         end
       end
@@ -4108,6 +4140,12 @@ RefreshAll = function()
             local rb = b and b.rule
             local ka = ra and (RuleKey and RuleKey(ra) or nil)
             local kb = rb and (RuleKey and RuleKey(rb) or nil)
+            local aTop = ra and tostring(ra.list or ""):lower() == "top"
+            local bTop = rb and tostring(rb.list or ""):lower() == "top"
+            if aTop ~= bTop then return aTop end
+            local aLast = ra and tostring(ra.list or ""):lower() == "last"
+            local bLast = rb and tostring(rb.list or ""):lower() == "last"
+            if aLast ~= bLast then return not aLast end
             local pa = ka and orderIndex[tostring(ka)] or nil
             local pb = kb and orderIndex[tostring(kb)] or nil
             if pa and pb and pa ~= pb then return pa < pb end
@@ -4120,6 +4158,28 @@ RefreshAll = function()
         SortFrameEntries(entriesByFrameID[id])
         if entriesByFrameIDActive then
           SortFrameEntries(entriesByFrameIDActive[id])
+        end
+      elseif id ~= "" then
+        local function SortTopEntries(list)
+          if type(list) ~= "table" or not list[1] then return end
+          local orig = {}
+          for i = 1, #list do orig[list[i]] = i end
+          table.sort(list, function(a, b)
+            local ra = a and a.rule
+            local rb = b and b.rule
+            local aTop = ra and tostring(ra.list or ""):lower() == "top"
+            local bTop = rb and tostring(rb.list or ""):lower() == "top"
+            if aTop ~= bTop then return aTop end
+            local aLast = ra and tostring(ra.list or ""):lower() == "last"
+            local bLast = rb and tostring(rb.list or ""):lower() == "last"
+            if aLast ~= bLast then return not aLast end
+            return (orig[a] or 0) < (orig[b] or 0)
+          end)
+        end
+
+        SortTopEntries(entriesByFrameID[id])
+        if entriesByFrameIDActive then
+          SortTopEntries(entriesByFrameIDActive[id])
         end
       end
     end
@@ -4383,7 +4443,7 @@ local function AbandonQuestByLogIndex(i, qid)
       StaticPopup_OnClick(StaticPopup1, 1)
     end
 
-    Print(tostring(qTitle) .. " Abandoned")
+    Print("|cff00ccffAbandoned|r " .. tostring(qTitle))
     return true
   end
 

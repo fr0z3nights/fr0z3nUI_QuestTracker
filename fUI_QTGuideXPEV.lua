@@ -9,6 +9,7 @@ local EXPANSION_ID = -2
 local EXPANSION_NAME = "Events"
 
 local Y, N = true, false
+local M = "mustHave"
 
 
 local WHITE = "ffffff"
@@ -53,25 +54,25 @@ local bakedRules = {
 
   {aura = { eventKind = "calendar", keywords = { "PvP Brawl: Southshore vs. Tarren Mill" }, mustHave = true, rememberWeekly = true },
   label = "PvP: Southshore vs Tarren Mill", frameID = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:southshore-tarren-mill",
-  questInfo = "PvP: SS vs TM", noAutoDisplay = true, },
+  questInfo = "PvP: SS vs TM", size = 18, color = "E0115F", align = "center", noAutoDisplay = true, },
 
   {aura = { eventKind = "calendar", keywords = { "PvP Brawl: Classic Ashran" }, mustHave = true, rememberWeekly = true },
   label = "PvP Brawl: Classic Ashran", frameID = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:classic-ashran",
-  questInfo = "PvP: Ashran", noAutoDisplay = true, },
+  questInfo = "PvP: Ashran", size = 18, color = "E0115F", align = "center", noAutoDisplay = true, },
 
   {aura = { eventKind = "calendar", keywords = { "PvP Brawl: Packed House" }, mustHave = true, rememberWeekly = true },
   label = "PvP Brawl: Packed House", frameID = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:packed-house",
-  questInfo = "PvP: Packed House", noAutoDisplay = true, },
+  questInfo = "PvP: Packed House", size = 18, color = "E0115F", align = "center", noAutoDisplay = true, },
 
   {aura = { eventKind = "calendar", keywords = { "PvP Brawl: Deep Six" }, mustHave = true, rememberWeekly = true },
   label = "PvP Brawl: Deep Six", frameID = "list2", playerLevel = { ">=", 20 }, key = "event:pvp-brawl:deep-six",
-  questInfo = "PvP: Deep Six", noAutoDisplay = true, },
+  questInfo = "PvP: Deep Six", size = 18, color = "E0115F", align = "center", noAutoDisplay = true, },
 
 -- Levelling Events
 
   {aura = { eventKind = "calendar", keywords = { "Winds of Mysterious Fortune" }, mustHave = true, rememberWeekly = true },
   label = "Winds of Mysterious Fortune", frameID = "list2", key = "event:winds-of-mysterious-fortune",
-  questInfo = "Level Up Bonus", levelGate = "leveling", hideDone = false, },
+  textInfo = "Winds Mysterious Fortune\nGear & 20% Level Boost", size = 18, color = "1eff00", align = "center", levelGate = "leveling", hideDone = false, },
 
 -- Darkmoon Faire
 
@@ -254,6 +255,10 @@ local bakedRules = {
   label = "Children's Week", frameID = "list2", key = "event:childrens",
   questInfo = "Children's Week", questID = 99999999, hideDone = true, },
 
+--	Lumber
+	{key = "XP01:I251768",	item = {itemID = 251768, required = {N,M,N,0},},	label = "Lumber 08", 		    mapID = {"BFA"},    frameID = "list2",	itemInfo = "Lumber Darkpine"},	-- Full zone, remove restedOnly = Y,
+	{key = "XP01:I245586",	item = {itemID = 245586, required = {N,M,N,0},},	label = "Lumber 01",		    mapID = {"CLS"},    frameID = "list2",	itemInfo = "Lumber Ironwood"},
+	{key = "XP01:I269010",	item = {itemID = 269010, required = {N,M,N,0},},	label = "Lumber 00",		    restedOnly = Y,     frameID = "list2",	itemInfo = "Lumber Token   "},
 
 
  

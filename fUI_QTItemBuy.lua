@@ -260,6 +260,9 @@ local function AutoBuyItemsAtMerchant(frame)
   Debug("rules=" .. tostring(#rules))
 
   local BuildRuleStatus = ns.BuildRuleStatus
+  if type(BuildRuleStatus) ~= "function" and type(ns._FQTSlash) == "table" and type(ns._FQTSlash.deps) == "table" then
+    BuildRuleStatus = ns._FQTSlash.deps.BuildRuleStatus
+  end
   local IsRuleDisabled = ns.IsRuleDisabled
   local GetStandingIDByFactionID = ns.GetStandingIDByFactionID
 
@@ -276,6 +279,16 @@ local function AutoBuyItemsAtMerchant(frame)
 
   local wantByItemID = {}
   local wantCheapestGroups = {}
+  local wantOrder = {}
+  local wantOrderSeen = {}
+
+  local function AddWantedItem(itemID)
+    itemID = tonumber(itemID)
+    if itemID and itemID > 0 and not wantOrderSeen[itemID] then
+      wantOrderSeen[itemID] = true
+      wantOrder[#wantOrder + 1] = itemID
+    end
+  end
 
   local function MergeBuySpec(dst, src)
     if type(dst) ~= "table" then dst = {} end
@@ -337,15 +350,18 @@ local function AutoBuyItemsAtMerchant(frame)
   end
 
   for _, rule in ipairs(rules) do
-    if type(rule) == "table" and type(IsRuleDisabled) == "function" and not IsRuleDisabled(rule) then
+    local disabled = (type(rule) == "table" and type(IsRuleDisabled) == "function") and IsRuleDisabled(rule) or false
+    if type(rule) == "table" and type(IsRuleDisabled) == "function" and not disabled then
       local blockedByExaltedSell = IsBlockedByExaltedSell(rule)
       local ruleCompleted = false
+      local ruleVisible = true
       if (not blockedByExaltedSell) and type(BuildRuleStatus) == "function" then
         local status = BuildRuleStatus(rule, nil, { forceNormalVisibility = true })
+        ruleVisible = (status ~= nil)
         ruleCompleted = (type(status) == "table" and status.completed == true)
       end
 
-      if type(rule.item) == "table" then
+      if type(rule.item) == "table" and ruleVisible then
         local buy = rule.item.buy
         if type(buy) == "table" and buy.enabled == true and not blockedByExaltedSell and not ruleCompleted then
           local itemID = tonumber(rule.item.itemID)
@@ -357,6 +373,7 @@ local function AutoBuyItemsAtMerchant(frame)
           local yieldCount = tonumber(buy.yieldCount)
 
           if itemID and itemID > 0 and maxQty and maxQty > 0 then
+            AddWantedItem(itemID)
             local spec = {
               max = maxQty,
               min = minQty,
@@ -385,7 +402,7 @@ local function AutoBuyItemsAtMerchant(frame)
         end
       end
 
-      if rule.autoBuyShopping == true and type(rule.shopping) == "table" and rule.shopping[1] ~= nil and rule.questID ~= nil then
+      if ruleVisible and rule.autoBuyShopping == true and type(rule.shopping) == "table" and rule.shopping[1] ~= nil and rule.questID ~= nil then
         if type(BuildRuleStatus) == "function" then
           local status = BuildRuleStatus(rule, nil, { forceNormalVisibility = true })
           if status and status.completed ~= true then
@@ -394,6 +411,7 @@ local function AutoBuyItemsAtMerchant(frame)
                 local itemID = tonumber(it.itemID or it.id)
                 local req = tonumber(it.required or it.count or it.need)
                 if itemID and itemID > 0 and req and req > 0 then
+                  AddWantedItem(itemID)
                   wantByItemID[itemID] = MergeBuySpec(wantByItemID[itemID], { max = req, target = req, min = 0 })
                 end
               end
@@ -516,8 +534,7 @@ local function AutoBuyItemsAtMerchant(frame)
   local function CanBuyFromMerchantInfo(info)
     if type(info) ~= "table" then return false end
     local isPurchasable = (info["isPurchasable"] ~= false)
-    local extendedCost = (info["extendedCost"] == true) or (info["hasExtendedCost"] == true)
-    return (isPurchasable and not extendedCost) and true or false
+    return isPurchasable and true or false
   end
 
   local function GetRawHaveCount(itemID)
@@ -794,7 +811,8 @@ local function AutoBuyItemsAtMerchant(frame)
     end
   end
 
-  for itemID, spec in pairs(wantByItemID) do
+  for _, itemID in ipairs(wantOrder) do
+    local spec = wantByItemID[itemID]
     local merchantIndex = merchantIndexByItemID[itemID]
     if merchantIndex then
       local info = merchantInfoByIndex[merchantIndex]

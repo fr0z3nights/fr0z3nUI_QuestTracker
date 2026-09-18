@@ -9,6 +9,7 @@ local EXPANSION_ID = 5
 local EXPANSION_NAME = "Mists of Pandaria"
 
 local Y, N = true, false
+local M = "mustHave"
 
 -- Currency gates (optional):
 --   item.currencyID = { currencyID, required }
@@ -38,11 +39,11 @@ local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 
 local bakedRules = {
 
-	{key = "XP05:Q29562",   questID = 29562, prereq = {34775,}, label = "05 Jade Forest A", faction = "A",  mapID = {"MoP","SW","OR",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n      Until 'Jail Break'\n ",},
-	{key = "XP05:Q29822",   questID = 29822, prereq = {34960,}, label = "05 Jade Forest H", faction = "H",  mapID = {"MoP","SW","OR",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n       Until \"Lay of the Land\"\n ",},
-	{key = "XP05:Q30515A",  questID = 30515, prereq = {29562,}, label = "05 Kun-Lai A",     faction = "A",  mapID = {"MoP","SW","OR",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      9  Do Village Quests\n    47  Complete\n      \"Challenge Accepted\"\n ",},
-	{key = "XP05:Q30515H",  questID = 30515, prereq = {29822,}, label = "05 Kun-Lai H",     faction = "H",  mapID = {"MoP","SW","OR",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      Until \"Challenge Accepted\" \n ",},
-	{key = "XP05:Q31412",   questID = 31412, prereq = {29562,}, label = "05 Kun-Lai Chest",                 mapID = {"MoP",},           frameID = "list1", hideDone = true, questInfo = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n ", }, -- Chest Transmog missing, shows only when on Pandaria
+	{key = "XP05:Q29562",   questID = 29562, prereq = {47189,}, label = "05 Jade Forest A", faction = "A",  mapID = {"MoP","CAP",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n      Until 'Jail Break'\n ",},
+	{key = "XP05:Q29822",   questID = 29822, prereq = {47514,}, label = "05 Jade Forest H", faction = "H",  mapID = {"MoP","CAP",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria\n + Warboard: Jade Forest\n + Jade Forest (Zygor)\n       Until \"Lay of the Land\"\n ",},
+	{key = "XP05:Q30515A",  questID = 30515, prereq = {29562,}, label = "05 Kun-Lai A",     faction = "A",  mapID = {"MoP","CAP",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      9  Do Village Quests\n    47  Complete\n      \"Challenge Accepted\"\n ",},
+	{key = "XP05:Q30515H",  questID = 30515, prereq = {29822,}, label = "05 Kun-Lai H",     faction = "H",  mapID = {"MoP","CAP",}, frameID = "list1", hideDone = true, questInfo = "Mists of Pandaria  Level 20\n + Kun-Lai Summit (Zygor)\n      Until \"Challenge Accepted\" \n ",},
+	{key = "XP05:Q31412",   questID = 31412, prereq = {29562,}, label = "05 Kun-Lai Chest",                 mapID = {"381",},           frameID = "list1", hideDone = true, questInfo = "+ Sprites Cloth Chest\n  - Need Steadfast\n  - Tried:\n       DK BL/UH - Strong\n ", }, -- Chest Transmog missing, shows only when on Pandaria
 --                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
 
 	{key = "XP05:Q33117",   questID = 33117,                    label = "Timeless Isle Celestial",          mapID = {"TI",},            frameID = "list2", hideDone = true, questInfo = "Timeless Celestials",                                                                  aura = { spellID = 335151, eventActive = true, mustHave = true, rememberWeekly = true }, },   -- Shows During MoP Timewalking or on Timeless Isle

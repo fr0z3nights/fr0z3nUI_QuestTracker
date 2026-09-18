@@ -4,6 +4,18 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.09.17.04
+- Files: `fUI_QTItemBuy.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- AutoBuy: use the engine's actual `BuildRuleStatus` dependency so `showIf` reputation and prerequisite gates are enforced during merchant planning.
+
+## 2026.09.12.02
+- Files: `fUI_QTGuideXP00.lua` through `fUI_QTGuideXP12.lua`, `fUI_QTGuideXPEV.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Guide DB: define `local M = "mustHave"` in all guide database files for consistent shorthand support across rule packs.
+
+## 2026.09.12.01
+- Files: `fUI_QTGuideXP00.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Guide DB: add `cachePurchased = Y`, `cachePurchasedFromBag = N`, and `knownTooltip = Y` (plus `{ hasFindFish = true }` completion) to `XP12:PFindFish` so AutoBuy detects known vendor tooltips and cached purchases.
+
 ## 2026.04.10.06
 - Files: `fUI_QTGuideXP10.lua`, `fUI_QTGuideXP11.lua`, `fUI_QTGuideXP12.lua`, `fr0z3nUI_QuestTracker.toc`.
 - Guide DB: profession reminders now use profession skillLineID gates and include all primary professions + Cooking/Fishing (XP10/XP11 converted; XP12 added using XP11 placeholder `locationID`).

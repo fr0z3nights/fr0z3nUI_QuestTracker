@@ -9,6 +9,7 @@ local EXPANSION_ID = 6
 local EXPANSION_NAME = "Warlords of Draenor"
 
 local Y, N = true, false
+local M = "mustHave"
 
 local WHITE = "ffffff"
 local RED = "ff4040"
@@ -50,7 +51,7 @@ local bakedRules = {
 	{key = "XP06:Q36941A",  questID = 36941, prereq = {47189,},	label = "06 A Garrison 1", frameID = "list1", hideDone = true, faction = "A",	mapID = {84,17,},				questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Tanaan Jungle\n  - Portal Tower Entrance\n    - Talk to Battlemage\n    - Abandon Quest After Port",},
 	{key = "XP06:Q34586A",  questID = 34586, prereq = {36941,},	label = "06 A Garrison 2", frameID = "list1", hideDone = true, faction = "A",	mapID = {84,17,539,540,582,},	questInfo = "Warlords of Draenor\n - Warboard: Tanaan Jungle\n  - Portal Tower Entrance\n    - Talk to Battlemage\n    - Abandon Quest After Port\n  - Take Red Portal (Draenor)\n    - If Green phase @ Sidormi",},
 	{key = "XP06:Q34775A",  questID = 34775, prereq = {34586,},	label = "06 A Garrison 3", frameID = "list1", hideDone = true, faction = "A",	mapID = {84,17,539,540,582,},	questInfo = "Warlords of Draenor\n + Zygor: Shadowmoon Valley\n - Q2: 'Delegating on Draenor'",},
-	{key = "XP06:Q36615A",  questID = 36615,					label = "06 A Garrison 4", frameID = "list2", hideDone = true, faction = "A",	gold = 20000,					questInfo = "Level Garrison to 3", restedOnly = true, },
+	{key = "XP06:Q36615A",  questID = 36615, gold = 10000,		label = "06 A Garrison 4", frameID = "list2", hideDone = true, faction = "A",									questInfo = "Level Garrison to 3", restedOnly = true, },
 --                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
 
 	{key = "XP06:Q36940H",	questID = 36940, prereq = {47514,},	label = "06 H Garrison 1", frameID = "list1", hideDone = true, faction = "H",	mapID = {85,17,},				questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Tanaan Jungle\n  - Lower Portal Room\n    - Talk to Battlemage\n    - After Port Abandon Quest",},

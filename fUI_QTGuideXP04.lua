@@ -9,6 +9,7 @@ local EXPANSION_ID = 4
 local EXPANSION_NAME = "Cataclysm"
 
 local Y, N = true, false
+local M = "mustHave"
 
 -- Currency gates (optional):
 --   item.currencyID = { currencyID, required }

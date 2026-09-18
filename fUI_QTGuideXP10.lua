@@ -9,6 +9,7 @@ local EXPANSION_ID = 10
 local EXPANSION_NAME = "Dragonflight"
 
 local Y, N = true, false
+local M = "mustHave"
 
 
 local WHITE = "ffffff"
@@ -54,9 +55,9 @@ local bakedRules = {
 --  2112  Valdrakken (Dragon Isles Capital)
 
 --                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
-	{key = "XP10:Q67700A",  questID = 67700, prereq = {30515,}, faction = "A",  label = "10  Dragon Isles A", frameID = "list1",  hideDone = true, mapID = {84,85,2022,2112,},  questInfo = "Dragon Isles\n + The Waking Shores (Zygor)\n + Cata Portal Balcony\n + Do Initial Quests\n + Take Portal", },
-	{key = "XP10:Q67700H",  questID = 67700, prereq = {30515,}, faction = "H",  label = "10  Dragon Isles H", frameID = "list1",  hideDone = true, mapID = {84,85,2022,2112,},  questInfo = "Dragon Isles\n + The Waking Shores (Zygor)\n + Cata Portal Area   \n + Do Initial Quests\n + Take Portal", },
-	{key = "XP10:Q65646",   questID = 65646,                                    label = "10  34 Slot Bag",    frameID = "list1",  hideDone = true, rested = true,               questInfo = "Dragon Isles\n + Misty Satchel BH Waterfall\n - Waking Shores @ 58,53", },
+	{key = "XP10:Q67700A",  questID = 67700, prereq = {30515,}, faction = "A",  label = "10  Dragon Isles A", frameID = "list1",  hideDone = true, mapID = {"CAP","DRG",},  questInfo = "Dragon Isles\n + The Waking Shores (Zygor)\n + Cata Portal Balcony\n + Do Initial Quests\n + Take Portal", },
+	{key = "XP10:Q67700H",  questID = 67700, prereq = {30515,}, faction = "H",  label = "10  Dragon Isles H", frameID = "list1",  hideDone = true, mapID = {"CAP","DRG",},  questInfo = "Dragon Isles\n + The Waking Shores (Zygor)\n + Cata Portal Area   \n + Do Initial Quests\n + Take Portal", },
+	{key = "XP10:Q65646",   questID = 65646,                                    label = "10  34 Slot Bag",    frameID = "list1",  hideDone = true, mapID = {"CAP","DRG",},  questInfo = "Dragon Isles\n + Misty Satchel BH Waterfall\n - Waking Shores @ 58,53", },
 
 
 

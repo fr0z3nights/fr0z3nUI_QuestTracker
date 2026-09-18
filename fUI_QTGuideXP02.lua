@@ -8,6 +8,7 @@ local EXPANSION_ID = 2
 local EXPANSION_NAME = "The Burning Crusade"
 
 local Y, N = true, false
+local M = "mustHave"
 
 local WHITE = "ffffff"
 local RED = "ff4040"

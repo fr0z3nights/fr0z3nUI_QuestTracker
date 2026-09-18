@@ -54,3 +54,53 @@ function ns.GuideHelpers.NormalizeRules(rules, expansionID, expansionName)
   end
   return rules
 end
+
+function ns.GuideHelpers.ExpandQuestGroups(rules)
+  if type(rules) ~= "table" then return rules end
+
+  local expanded = {}
+  local groupedQuestIDs = {}
+  for _, rule in ipairs(rules) do
+    if type(rule) == "table" and type(rule.questGroup) == "table" then
+      local group = rule.questGroup
+      local questIDs = group.questIDs or {}
+      for _, questID in ipairs(questIDs) do
+        groupedQuestIDs[tonumber(questID)] = true
+      end
+
+      local status = group.status
+      status.questIDs = questIDs
+      status._fromQuestGroup = true
+      local completeAny = {}
+      for _, questID in ipairs(questIDs) do
+        completeAny[#completeAny + 1] = { questID = questID }
+      end
+      status.complete = { any = completeAny }
+      status.completeMode = "replace"
+      status.hideIfAnyQuestInLog = true
+      expanded[#expanded + 1] = status
+
+      for _, child in ipairs(group.children or {}) do
+        child.questIDs = questIDs
+        child.hideIfAnyQuestCompleted = true
+        child.showXWhenComplete = nil
+        child._fromQuestGroup = true
+        expanded[#expanded + 1] = child
+      end
+    else
+      expanded[#expanded + 1] = rule
+    end
+  end
+
+  if next(groupedQuestIDs) then
+    local filtered = {}
+    for _, rule in ipairs(expanded) do
+      if not (type(rule) == "table" and groupedQuestIDs[tonumber(rule.questID)] and rule._fromQuestGroup ~= true) then
+        filtered[#filtered + 1] = rule
+      end
+    end
+    expanded = filtered
+  end
+
+  return expanded
+end

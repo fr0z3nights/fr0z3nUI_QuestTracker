@@ -155,8 +155,9 @@ SetZone("Timewalking, Event")
 		KQuest(40173, "03 Wrath TKN")                              	--	Token		Player			
 	--	Timewalking	 04  Cata
 		KQuest(86556, "04 Cata LVL")                  				--	Weekly		Player LVL			
-		KQuest(83359, "04 Cata MAX")                    			--	Weekly		Player MAX		
-		KQuest(40173, "04 Cata TKN")                            	--	Token		Player			
+		KQuest(93611, "04 Cata MAX")                    			--	Weekly		Player MAX		
+		KQuest(40786, "04 Cata TKN A")                            	--	Token		Player			
+		KQuest(40787, "04 Cata TKN H")                            	--	Token		Player			
 	--	Timewalking	 05  Pandaria
 		KQuest(86560, "05 Mists LVL")                   			--	Weekly		Player LVL			
 		KQuest(93612, "05 Mists MAX")                     			--	Weekly		Player MAX		
@@ -195,11 +196,32 @@ SetZone("Darkmoon Island, Azeroth")
 --  12	Midnight
 
 SetZone("Silvermoon City, Quel'Thalas")
+	KQuest(98172, "Trailing Xal'atath")								--	Scheduled	Player		
+	KQuest(97616, "Corrosive Gifts: Corrosive Power")          		--	Scheduled	Player		
 	KQuest(94836, "Late Night Training: Week 1 of 3")          		--	Scheduled	Player		
+
 	KQuest(94386, "Void Assaults: Zul'Aman")	           			--	Scheduled	Player		
 	KQuest(94385, "Void Assaults: Eversong Woods")	           		--	Scheduled	Player		
+
+	KQuest(95842, "Midnight: Assaults")                    			--  Weekly		Player MAX
+	KQuest(93909, "Midnight: Delves")			            		--	Scheduled	Player		
+	KQuest(93910, "Midnight: Prey")			            			--	Scheduled	Player
+	KQuest(96727, "Midnight: Offworld")			            		--	Scheduled	Player
+	KQuest(95843, "Midnight: Ritual Sites")			            	--	Scheduled	Player
+	KQuest(93892, "Midnight: Stormarion")			            	--	Scheduled	Player
+	KQuest(93889, "Midnight: Slthri Soire")			            	--	Scheduled	Player
+	KQuest(98232, "Midnight: Atal'Utek")			            	--	Scheduled	Player
+	KQuest(93766, "Midnight: World Quests")			            	--	Scheduled	Player
+	KQuest(93769, "Midnight: Housing")			            		--	Scheduled	Player
+	KQuest(93912, "Midnight: Raid")			            			--	Scheduled	Player
+	KQuest(93767, "Midnight: Arcantina")			            	--	Scheduled	Player
+	KQuest(93890, "Midnight: Abundance")			            	--	Scheduled	Player
+	KQuest(93913, "Midnight: World Boss")			            	--	Scheduled	Player
+	KQuest(94457, "Midnight: Battleground")			            	--	Scheduled	Player
+	KQuest(93911, "Midnight: Dungeons")			            		--	Scheduled	Player
+
 	KQuest(93525, "Nulling Nullaeus")			            		--	Scheduled	Player		
-	KQuest(97616, "Corrosive Gifts: Corrosive Power")          		--	Scheduled	Player		
+	KQuest(95468, "Hope in the Darkest Corners")	          		--	Scheduled	Player		
 	-- Weekly Events
 	KQuest(93595, "Delve Week")                  		  			--  Weekly		Player MAX		
 	KQuest(83366, "World Quest Week")                    			--  Weekly		Player MAX		
