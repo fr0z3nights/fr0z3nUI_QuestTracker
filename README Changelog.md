@@ -4,6 +4,30 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.10.01.04
+- Files: `fUI_QTUsageUIR.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Rules: added a per-rule `pad` field that inserts extra space after a single list row, on top of the frame-wide Usage tab Pad.
+
+## 2026.10.01.03
+- Files: `fUI_QTGuideHelper.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Rules: added the `sortGO = { sortGroup, sortOrder }` DB shorthand (expanded during rule normalization) and converted the Timewalking rows to it.
+
+## 2026.10.01.02
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideHelper.lua`, `fUI_QTGuideXP12.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Rules: renamed the `showXWhenComplete` rule field to `XDone`.
+
+## 2026.10.01.01
+- Files: `fUI_QTQuest.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- World quests: `wqGold` gate now hides active world quests that have no money reward, by using `HaveQuestRewardData` to tell a confirmed 0 gold from reward data that simply isn't cached yet.
+
+## 2026.09.29.01
+- Files: `fUI_QTQuest.lua`, `fr0z3nUI_QuestTracker.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Performance: memoize quest state, title, and world quest lookups per frame so a full refresh stops re-querying the same quest IDs and tripping "script ran too long".
+
+## 2026.09.27.01
+- Files: `fr0z3nUI_QuestTracker.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Location gates: hide map-bound rules when the current map is unavailable, preventing zone-specific world quests from appearing in housing.
+
 ## 2026.09.17.04
 - Files: `fUI_QTItemBuy.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
 - AutoBuy: use the engine's actual `BuildRuleStatus` dependency so `showIf` reputation and prerequisite gates are enforced during merchant planning.

@@ -49,7 +49,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
   local rowH = 18
 
-  local DMF_GROUP = G.DMF_GROUP or "event:darkmoon-faire"
+  local DMF_EVENT = G.DMF_EVENT or "darkmoon-faire"
   local IsDarkmoonRule = G.IsDarkmoonRule or function(_) return false end
   local CategoryFilterLabel = G.CategoryFilterLabel or function(v) return tostring(v or "all") end
 
@@ -258,7 +258,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     if type(SetUISetting) == "function" then
       SetUISetting("rulesCategoryFilter", v)
     end
-    if v == DMF_GROUP then
+    if v == DMF_EVENT then
       -- Treat as a sub-category under the Events expansion.
       SetRulesExpansionFilter("Events")
     end
@@ -365,15 +365,15 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
     if root and root.CreateTitle then root:CreateTitle("Events") end
     if root and root.CreateRadio then
       root:CreateRadio("Darkmoon Faire", function()
-        return (GetRulesExpansionFilter() == "Events") and (GetRulesCategoryFilter() == DMF_GROUP)
+        return (GetRulesExpansionFilter() == "Events") and (GetRulesCategoryFilter() == DMF_EVENT)
       end, function()
         SetRulesExpansionFilter("Events")
-        SetRulesCategoryFilter(DMF_GROUP)
+        SetRulesCategoryFilter(DMF_EVENT)
       end)
     elseif root and root.CreateButton then
       root:CreateButton("Darkmoon Faire", function()
         SetRulesExpansionFilter("Events")
-        SetRulesCategoryFilter(DMF_GROUP)
+        SetRulesCategoryFilter(DMF_EVENT)
       end)
     end
   end) then
@@ -400,10 +400,10 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       do
         local info = UDDM_CreateInfo()
         info.text = "Events: Darkmoon Faire"
-        info.checked = (GetRulesExpansionFilter() == "Events") and (GetRulesCategoryFilter() == DMF_GROUP) and true or false
+        info.checked = (GetRulesExpansionFilter() == "Events") and (GetRulesCategoryFilter() == DMF_EVENT) and true or false
         info.func = function()
           SetRulesExpansionFilter("Events")
-          SetRulesCategoryFilter(DMF_GROUP)
+          SetRulesCategoryFilter(DMF_EVENT)
         end
         UDDM_AddButton(info)
       end
@@ -433,9 +433,9 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
     if root and root.CreateTitle then root:CreateTitle("Events") end
     if root and root.CreateRadio then
-      root:CreateRadio("Darkmoon Faire", function() return (GetRulesCategoryFilter() == DMF_GROUP) end, function() SetRulesCategoryFilter(DMF_GROUP) end)
+      root:CreateRadio("Darkmoon Faire", function() return (GetRulesCategoryFilter() == DMF_EVENT) end, function() SetRulesCategoryFilter(DMF_EVENT) end)
     elseif root and root.CreateButton then
-      root:CreateButton("Darkmoon Faire", function() SetRulesCategoryFilter(DMF_GROUP) end)
+      root:CreateButton("Darkmoon Faire", function() SetRulesCategoryFilter(DMF_EVENT) end)
     end
   end) then
     -- modern menu wired
@@ -461,8 +461,8 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
       do
         local info = UDDM_CreateInfo()
         info.text = "Events: Darkmoon Faire"
-        info.checked = (GetRulesCategoryFilter() == DMF_GROUP) and true or false
-        info.func = function() SetRulesCategoryFilter(DMF_GROUP) end
+        info.checked = (GetRulesCategoryFilter() == DMF_EVENT) and true or false
+        info.func = function() SetRulesCategoryFilter(DMF_EVENT) end
         UDDM_AddButton(info)
       end
     end)
@@ -770,7 +770,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
 
       -- Events sub-category
       if IsDarkmoonRule(rule) then
-        return DMF_GROUP
+        return DMF_EVENT
       end
 
       local c = rule.category or rule._category
@@ -868,6 +868,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
         if rr.notSpellKnown ~= nil then parts[#parts + 1] = tostring(rr.notSpellKnown) end
         if rr.mapID ~= nil then parts[#parts + 1] = tostring(rr.mapID) end
         if rr.group ~= nil then parts[#parts + 1] = tostring(rr.group) end
+        if rr.event ~= nil then parts[#parts + 1] = tostring(rr.event) end
         if type(rr.aura) == "table" then
           if rr.aura.spellID ~= nil then parts[#parts + 1] = tostring(rr.aura.spellID) end
           if rr.aura.eventKind ~= nil then parts[#parts + 1] = tostring(rr.aura.eventKind) end
@@ -891,7 +892,7 @@ function ns.FQTOptionsPanels.BuildRules(ctx)
             ok = (RuleExpansionName(r, src) == expFilter)
           end
           if ok and catFilter ~= "all" then
-            if catFilter == DMF_GROUP then
+            if catFilter == DMF_EVENT then
               ok = IsDarkmoonRule(rr) or IsDarkmoonRule(r)
             else
               ok = (RuleCategory(rr) == catFilter)

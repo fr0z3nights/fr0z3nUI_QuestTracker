@@ -222,7 +222,9 @@ function ns.Render.RenderBar(frameDef, frame, entries)
     local e = EntryForSlot(i)
     if e then
       local text = (editMode and e.title) or e.title
-      if e.extra then text = text .. "  " .. e.extra end
+      if e.extra then
+        text = e.extraBefore and (e.extra .. "  " .. text) or (text .. "  " .. e.extra)
+      end
       tempTextByIndex[i] = text
       tempIndicatorsByIndex[i] = e.indicators
       tempIndicatorsWByIndex[i] = 0
@@ -437,7 +439,10 @@ function ns.Render.RenderList(frameDef, frame, entries)
         local text = e.title
         if text == nil then return nil end
         text = tostring(text)
-        if e.extra then text = text .. "  " .. tostring(e.extra) .. " " end
+        if e.extra then
+          text = e.extraBefore and (tostring(e.extra) .. "  " .. text) or (text .. "  " .. tostring(e.extra))
+          text = text .. " "
+        end
         return " " .. text .. " "
       end
 
@@ -806,15 +811,11 @@ function ns.Render.RenderList(frameDef, frame, entries)
       local isDMFHeader = false
       do
         local r = e.rule
-        local grp = (type(r) == "table") and (r.group or r["group"]) or nil
-        if grp == "event:darkmoon-faire" then
+        local event = (type(r) == "table") and r.event or nil
+        if event == "darkmoon-faire" then
           local k = (type(r) == "table") and tostring(r.key or "") or ""
           if k == "event:darkmoon-faire" then
             isDMFHeader = true
-            if ApplyFontStyle then ApplyFontStyle(fs, { name = "lsm:Bazooka", size = 20, color = "6b21a8" }) end
-            if fs.SetJustifyH then fs:SetJustifyH("CENTER") end
-          else
-            if fs.SetTextColor then fs:SetTextColor(0.72, 0.56, 0.90, 1) end
           end
         end
       end
@@ -834,7 +835,10 @@ function ns.Render.RenderList(frameDef, frame, entries)
       else
         text = e.title
       end
-      if (not editMode) and e.extra then text = text .. "  " .. e.extra .. " " end
+      if (not editMode) and e.extra then
+        text = e.extraBefore and (e.extra .. "  " .. text) or (text .. "  " .. e.extra)
+        text = text .. " "
+      end
       if isDMFHeader then
         fs:SetText(tostring(text or ""))
       else
@@ -856,6 +860,17 @@ function ns.Render.RenderList(frameDef, frame, entries)
 
       if wrapText and listPad > 0 and entries[i + offset + 1] ~= nil then
         yCursor = yCursor + listPad
+      end
+
+      -- rule.pad: extra space after this one row, on top of the frame-wide pad.
+      if wrapText and entries[i + offset + 1] ~= nil then
+        local rulePad = (type(e.rule) == "table") and tonumber(e.rule.pad) or nil
+        if rulePad then
+          rulePad = (ClampPadPx and ClampPadPx(rulePad)) or rulePad
+          if rulePad ~= 0 then
+            yCursor = yCursor + rulePad
+          end
+        end
       end
 
       if maxY and yCursor > maxY and shown > 0 then

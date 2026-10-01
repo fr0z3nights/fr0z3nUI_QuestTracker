@@ -5,16 +5,38 @@ ns.GuideHelpers = ns.GuideHelpers or {}
 local Y, N = true, false
 local REQ_BUY_ON, REQ_BUY_MAX = 3, 4
 
+-- Inline icon texture helper for questInfo/textInfo/spellInfo strings.
+-- Usage: ns.GuideHelpers.Icon("Interface\\MoneyFrame\\UI-GoldIcon") or the GOLD_ICON shorthand below.
+function ns.GuideHelpers.Icon(path, size)
+  size = tonumber(size) or 0
+  return "|T" .. tostring(path) .. ":" .. tostring(size) .. "|t"
+end
+
+ns.GuideHelpers.GOLD_ICON = ns.GuideHelpers.Icon("Interface\\MoneyFrame\\UI-GoldIcon")
+
 function ns.GuideHelpers.NormalizeRule(rule, expansionID, expansionName)
   if type(rule) ~= "table" then return false end
 
   if rule._expansionID == nil then rule._expansionID = expansionID end
   if rule._expansionName == nil then rule._expansionName = expansionName end
+  if rule.restedOnly == nil then
+    if rule.resting ~= nil then
+      rule.restedOnly = rule.resting and true or false
+    elseif rule.rested ~= nil then
+      rule.restedOnly = rule.rested and true or false
+    end
+  end
   if rule.questXY == nil and tonumber(rule.questID) and rule.qXept == nil then
     rule.qXept = "N"
   end
   if type(rule.key) == "string" then
     rule.key = rule.key:gsub("^custom:", "db:")
+  end
+
+  -- DB shorthand: sortGO = { sortGroup, sortOrder }
+  if type(rule.sortGO) == "table" then
+    if rule.sortGroup == nil then rule.sortGroup = rule.sortGO[1] end
+    if rule.sortOrder == nil then rule.sortOrder = tonumber(rule.sortGO[2]) end
   end
 
   if type(rule.item) == "table" and rule.item.itemID then
@@ -83,7 +105,7 @@ function ns.GuideHelpers.ExpandQuestGroups(rules)
       for _, child in ipairs(group.children or {}) do
         child.questIDs = questIDs
         child.hideIfAnyQuestCompleted = true
-        child.showXWhenComplete = nil
+        child.XDone = nil
         child._fromQuestGroup = true
         expanded[#expanded + 1] = child
       end

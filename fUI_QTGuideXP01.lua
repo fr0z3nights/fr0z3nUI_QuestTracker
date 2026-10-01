@@ -60,104 +60,127 @@ local bakedRules = {
 {group = "classic:tabards:alliance-tabards", order = 1,
 label = "Stormwind Tabard", faction = "A", frameID = "list1", key = "custom:item:45574:list1:0101",
 itemInfo = "Stormwind Tabard\n - Trade District, Near FP", rep = { sellWhenExalted = Y, factionID = 72, }, 
-item = { itemID = 45574, required = { 1, Y, Y, 1 }, }, mapID = "84, ", restedOnly = Y,
+item = { itemID = 45574, required = { 1, Y, Y, 1 }, }, mapID = {84},
 complete = { any = { { item = { itemID = 45574, count = 1 } }, { rep = { factionID = 72, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:alliance-tabards", order = 2,
 label = "Tushui Tabard", faction = "A", frameID = "list1", key = "custom:item:83079:list1:0102",
 itemInfo = "Tushui Tabard\n - Dwarven Dist. Cata Portals", rep = { sellWhenExalted = true, factionID = 1353, }, 
-item = { itemID = 83079, required = { 1, Y, Y, 1 }, }, mapID = "84, ", restedOnly = true,
+item = { itemID = 83079, required = { 1, Y, Y, 1 }, }, mapID = {84},
 complete = { any = { { item = { itemID = 83079, count = 1 } }, { rep = { factionID = 1353, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:alliance-tabards", order = 3,
 label = "Darnassus Tabard", faction = "A", frameID = "list1", key = "custom:seq:item:45579:list1:0103",
 itemInfo = "Darnassus Tabard\n - Darnassus Portal (Docks)\n - If Burnt, Travel to Past\n - Buy from Tabard Vendor",
-item = { itemID = 45579, required = { 1, Y, Y, 1 }, }, rep = { sellWhenExalted = Y, factionID = 69, },
-mapID = "84, 62, 57, 89", restedOnly = N,
+item = { itemID = 45579, required = { 1, Y, Y, 1 }, }, rep = { sellWhenExalted = Y, factionID = 69, }, mapID = {84,62,57,89},
 complete = { any = { { item = { itemID = 45579, count = 1 } }, { rep = { factionID = 69, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:alliance-tabards", order = 4,
  label = "Gilneas Tabard", faction = "A", frameID = "list1", key = "custom:seq:item:64882:list1:0104",
 itemInfo = "Gilneas Tabard\n - Darnassus Portal (Docks)\n - If Burnt, Travel to Past\n - Buy from Tabard Vendor",
-item = { itemID = 64882, required = { 1, Y, Y, 1 }, }, rep = { sellWhenExalted = Y, factionID = 1134, },
-mapID = "84, 62, 57, 89", restedOnly = N,
+item = { itemID = 64882, required = { 1, Y, Y, 1 }, }, rep = { sellWhenExalted = Y, factionID = 1134, }, mapID = {84,62,57,89},
 complete = { any = { { item = { itemID = 64882, count = 1 } }, { rep = { factionID = 1134, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:alliance-tabards", order = 5,
 label = "Exodar Tabard", faction = "A", frameID = "list1", key = "custom:seq:item:45580:list1:0105",
 itemInfo = "Exodar Tabard\n - Darnassus Portal (Docks)\n - If Burning, Travel to Past\n - Use Temple Exodar Portal!\n - Buy from Tabard Vendor",
-item = { itemID = 45580, required = { 1, Y, Y, 1 }, }, rep = { sellWhenExalted = Y, factionID = 930, },
-mapID = "84, 62, 57, 89, 103", restedOnly = N,
+item = { itemID = 45580, required = { 1, Y, Y, 1 }, }, rep = { sellWhenExalted = Y, factionID = 930, }, mapID = {84,57,62,89,103},
 complete = { any = { { item = { itemID = 45580, count = 1 } }, { rep = { factionID = 930, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:alliance-tabards", order = 6,
 label = "Ironforge Tabard", faction = "A", frameID = "list1", key = "custom:item:45577:list1:0107",
 itemInfo = "Ironforge Tabard\n - Ironforge Near FP", rep = { sellWhenExalted = Y, factionID = 47, },
-item = { itemID = 45577, required = { 1, Y, Y, 1 }, }, mapID = {"CAP","BFA"}, restedOnly = Y,
+item = { itemID = 45577, required = { 1, Y, Y, 1 }, }, mapID = {84,87,1161},
 complete = { any = { { item = { itemID = 45577, count = 1 } }, { rep = { factionID = 47, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:alliance-tabards", order = 7,
 label = "Gnomeregan Tabard", faction = "A", frameID = "list1", key = "custom:item:45578:list1:0106",
 itemInfo = "Gnomeregan Tabard\n Ironforge Near FP", rep = { sellWhenExalted = Y, factionID = 54, },
-item = { itemID = 45578, required = { 1, Y, Y, 1 }, }, mapID = {"CAP","BFA"}, restedOnly = Y,
+item = { itemID = 45578, required = { 1, Y, Y, 1 }, }, mapID = {84,87,1161},
 complete = { any = { { item = { itemID = 45578, count = 1 } }, { rep = { factionID = 54, minStanding = 8 } }, }, }, },
 
 -- HORDE TABARDS     (Orgrimmar 85)
 {group = "classic:tabards:horde-tabards", order = 1,
 label = "Orgrimmar Tabard", faction = "H", frameID = "list1", key = "custom:item:45581:list1:0108",
 itemInfo = "Orgrimmar Tabard", rep = { sellWhenExalted = Y, factionID = 76, },
-item = { itemID = 45581, required = { 1, Y, Y, 1 }, }, mapID = "85, 85", restedOnly = Y,
+item = { itemID = 45581, required = { 1, Y, Y, 1 }, }, mapID = {85},
 complete = { any = { { item = { itemID = 45581, count = 1 } }, { rep = { factionID = 76, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:horde-tabards", order = 2,
 label = "Darkspear Tabard", faction = "H", frameID = "list1", key = "custom:item:45582:list1:0109",
 itemInfo = "Darkspear Tabard", rep = { sellWhenExalted = Y, factionID = 530, },
-item = { itemID = 45582, required = { 1, Y, Y, 1 }, }, mapID = "85, 85", restedOnly = Y,
+item = { itemID = 45582, required = { 1, Y, Y, 1 }, }, mapID = {85},
 complete = { any = { { item = { itemID = 45582, count = 1 } }, { rep = { factionID = 530, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:horde-tabards", order = 3,
 label = "Bilgewater Tabard", faction = "H", frameID = "list1", key = "custom:item:64884:list1:0110",
 itemInfo = "Bilgewater Tabard", rep = { sellWhenExalted = Y, factionID = 1133, },
-item = { itemID = 64884, required = { 1, Y, Y, 1 }, }, mapID = "85, 85, ", restedOnly = true,
+item = { itemID = 64884, required = { 1, Y, Y, 1 }, }, mapID = {85},
 complete = { any = { { item = { itemID = 64884, count = 1 } }, { rep = { factionID = 1133, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:horde-tabards", order = 4,
 label = "Huojin Tabard", faction = "H", frameID = "list1", key = "custom:item:83080:list1:0112",
 itemInfo = "Huojin Tabard", rep = { sellWhenExalted = Y, factionID = 1352, },
-item = { itemID = 83080, required = { 1, Y, Y, 1 }, }, mapID = "85, 85,", restedOnly = true,
+item = { itemID = 83080, required = { 1, Y, Y, 1 }, }, mapID = {85},
 complete = { any = { { item = { itemID = 83080, count = 1 } }, { rep = { factionID = 1352, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:horde-tabards", order = 5,
 label = "Undercity Tabard", faction = "H", frameID = "list1", key = "custom:item:45583:list1:0111",
-itemInfo = "Undercity Tabard", rep = { sellWhenExalted = Y, factionID = 68, },
-item = { itemID = 45583, required = { 1, Y, Y, 1 }, }, mapID = "85, 85", restedOnly = Y,
+itemInfo = "Undercity Tabard", rep = { sellWhenExalted = Y, factionID = 68, }, prereq = {45291,},
+item = { itemID = 45583, required = { 1, Y, Y, 1 }, }, mapID = {85},
 complete = { any = { { item = { itemID = 45583, count = 1 } }, { rep = { factionID = 68, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:horde-tabards", order = 6,
 label = "Silvermoon Tabard", faction = "H", frameID = "list1", key = "custom:item:45585:list1:013",
 itemInfo = "Silvermoon Tabard", rep = { sellWhenExalted = Y, factionID = 911, },
-item = { itemID = 45585, required = { 1, Y, Y, 1 }, }, mapID = "85, 94, 110,", restedOnly = Y,
+item = { itemID = 45585, required = { 1, Y, Y, 1 }, }, mapID = {85},
 complete = { any = { { item = { itemID = 45585, count = 1 } }, { rep = { factionID = 911, minStanding = 8 } }, }, }, },
 
 {group = "classic:tabards:horde-tabards", order = 7,
 label = "Thunder Bluff Tabard", faction = "H", frameID = "list1", key = "custom:item:45584:list1:0114",
 itemInfo = "Thunder Bluff Tabard", rep = { sellWhenExalted = Y, factionID = 81, },
-item = { itemID = 45584, required = { 1, Y, Y, 1 }, }, mapID = "85, ", restedOnly = Y,
+item = { itemID = 45584, required = { 1, Y, Y, 1 }, }, mapID = {85},
 complete = { any = { { item = { itemID = 45584, count = 1 } }, { rep = { factionID = 81, minStanding = 8 } }, }, }, },
 
 -- NEUTRAL ITEMS
-	{key = "XP01:I46725",	item = {itemID =  46725, required = {1,Y,Y,1},},	label = "Red Rider Air RIfle",	mapID = {84,85},    frameID = "list1",	itemInfo = "Red Rider Air RIfle",								complete = {any={{item={itemID= 46725,count=1}},},},	group = "XP01:RedRider", order = 1, },
-	{key = "XP01:I48601",	item = {itemID =  48601, required = {1,Y,Y,1},},	label = "Red Rider Air Ammo", 	mapID = {84,85},    frameID = "list1",	itemInfo = "Red Rider Air Ammo",								complete = {any={{item={itemID= 48601,count=1}},},},	group = "XP01:RedRider", order = 2, },
-	{key = "XP01:I109076",	item = {itemID = 109076, required = {5,Y,N,0},},	label = "Goblin Gliders", 		restedOnly = Y,     frameID = "list1",	itemInfo = "Goblin Gliders"},
-      
+	{key = "XP01:I46725",   item = {itemID =  46725, required = {1,Y,Y,1},},	label = "Red Rider Air RIfle",	mapID = {"CAP"},    frameID = "list1",	itemInfo = "Red Rider Air RIfle",								complete = {any={{item={itemID= 46725,count=1}},},},	group = "XP01:RedRider", order = 1, },
+	{key = "XP01:I48601",   item = {itemID =  48601, required = {1,Y,Y,1},},	label = "Red Rider Air Ammo", 	mapID = {"CAP"},    frameID = "list1",	itemInfo = "Red Rider Air Ammo",								complete = {any={{item={itemID= 48601,count=1}},},},	group = "XP01:RedRider", order = 2, },
+	{key = "XP01:I109076",  item = {itemID = 109076, required = {5,Y,N,0},},	label = "Goblin Gliders", 		restedOnly = Y,     frameID = "list1",	itemInfo = "Goblin Gliders"},
+--	charLI = "Name-Realm" (or {list}): only shows while logged in on that character
+
+	{key = "XPPB:Q-31818",	questID = 31818,	charLI = "Bullseyeshot-Caelestrasz",	label = "HPB Zunta",				frameID = "list2",	hideDone = true,	questInfo = ".\nZunta\nDurotar",																		font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31819",	questID = 31819,	charLI = "Shadowswings-Barthilas",		label = "HPB Dagra the Fierce",		frameID = "list2",	hideDone = true,	questInfo = ".\nDagra the Fierce\nNorthern Barrens",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31905",	questID = 31905,	charLI = "Shadowizards-Caelestrasz",	label = "HPB Grazzle the Great",	frameID = "list2",	hideDone = true,	questInfo = ".\nGrazzle the Great\nDustwallow",														font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31906",	questID = 31906,	charLI = "Shadowzdeath-Barthilas",		label = "HPB Kela Grimtotem",		frameID = "list2",	hideDone = true,	questInfo = ".\nKela Grimtotem\nThousand Needles",														font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31904",	questID = 31904,	charLI = "Frozenflamed-Caelestrasz",	label = "HPB Cassy Kaboom",			frameID = "list2",	hideDone = true,	questInfo = ".\nCassy Kaboom\nSouthern Barrens",														font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31871",	questID = 31871,	charLI = "Shadowsmashr-Barthilas",		label = "HPB Traitor Gluk",			frameID = "list2",	hideDone = true,	questInfo = ".\nTraitor Gluk\nFeralas",																font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31872",	questID = 31872,	charLI = "Frozenlegion-Barthilas",		label = "HPB Merda Stronghoof",		frameID = "list2",	hideDone = true,	questInfo = ".\nMerda Stronghoof\nDesolace",															font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31862",	questID = 31862,	charLI = "Shadowardenz-Caelestrasz",	label = "HPB Zonya the Patient",	frameID = "list2",	hideDone = true,	questInfo = ".\nZonya the Patient\nStonetalon Mtn",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31854",	questID = 31854,	charLI = "Shadowarlord-Barthilas",		label = "APB Analynn",				frameID = "list2",	hideDone = true,	questInfo = ".\nAnalynn\nAshenvale",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31907",	questID = 31907,	charLI = "Frozenfrosti-Caelestrasz",	label = "APB Zoltan",				frameID = "list2",	hideDone = true,	questInfo = ".\nZoltan\nFelwood",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31908",	questID = 31908,	charLI = "Shadowyclawz-Barthilas",		label = "APB Elena Flutterfly",		frameID = "list2",	hideDone = true,	questInfo = ".\nElena Flutterfly\nMoonglade",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31909",	questID = 31909,	charLI = "Bullseyekick-Caelestrasz",	label = "APB Stone Cold Trixxy",	frameID = "list2",	hideDone = true,	questInfo = ".\nStone Cold Trixxy\nWinterspring",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+
+	{key = "XPPB:Q-31780",	questID = 31780,	charLI = "Frozenlegion-Dath'Remar",		label = "APB Old MacDonald",		frameID = "list2",	hideDone = true,	questInfo = ".\nOld MacDonald\nWestfall",																font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31693",	questID = 31693,	charLI = "Shadowardenz-Frostmourne",	label = "APB Julia Stevens",		frameID = "list2",	hideDone = true,	questInfo = ".\nJulia Stevens\nElwynn Forest",															font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+--	{key = "XPPB:Q-31906",	questID = 31906,	charLI = "Shadowarlord-Dath'Remar",		label = "APB Duskwood",				frameID = "list2",	hideDone = true,	questInfo = ".\nPetBattleMaster\nDuskwood",															font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31852",	questID = 31852,	charLI = "Frozenfrosti-Frostmourne",	label = "APB Steven Lisbane",		frameID = "list2",	hideDone = true,	questInfo = ".\nSteven Lisbane\nNorth Stranglethorn",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31851",	questID = 31851,	charLI = "Shadowyclawz-Dath'Remar",		label = "APB Bill Buckler",			frameID = "list2",	hideDone = true,	questInfo = ".\nBill Buckler\nCape Stranglethorn",														font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31916",	questID = 31916,	charLI = "Bullseyekick-Frostmourne",	label = "APB Lydia Accoste",		frameID = "list2",	hideDone = true,	questInfo = ".\nLydia Accoste\nDeadwind Pass",															font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31913",	questID = 31913,	charLI = "Bullseyeshot-Dath'Remar",		label = "APB Everessa",				frameID = "list2",	hideDone = true,	questInfo = ".\nEveressa\nSwamp of Sorrows",															font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31781",	questID = 31781,	charLI = "Shadowswings-Frostmourne",	label = "APB Lindsay",				frameID = "list2",	hideDone = true,	questInfo = ".\nLindsay\nRedridge Mountains",															font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31914",	questID = 31914,	charLI = "Shadowizards-Dath'Remar",		label = "APB Durin Darkhammer",		frameID = "list2",	hideDone = true,	questInfo = ".\nDurin Darkhammer\nBurning Steppes",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31912",	questID = 31912,	charLI = "Shadowzdeath-Frostmourne",	label = "APB Kortas Darkhammer",	frameID = "list2",	hideDone = true,	questInfo = ".\nKortas Darkhammer\nSearing Gorge",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31910",	questID = 31910,	charLI = "Frozenflamed-Dath'Remar",		label = "APB David Kosse",			frameID = "list2",	hideDone = true,	questInfo = ".\nDavid Kosse\nHinterlands",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+	{key = "XPPB:Q-31911",	questID = 31911,	charLI = "Shadowsmashr-Frostmourne",	label = "APB Deiza Plaguehorn",		frameID = "list2",	hideDone = true,	questInfo = ".\nDeiza Plaguehorn\nEast Plaguelands",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
+
+  
 
 }
-
-
-
+      bakedRules = ns.GuideHelpers.ExpandQuestGroups(bakedRules)
 for i = 1, #bakedRules do
   local r = bakedRules[i]
-  if type(r) == "table" then
+  if type(r) == "table" and not r.questGroup then
     ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
     ns.rules[#ns.rules + 1] = r
   end

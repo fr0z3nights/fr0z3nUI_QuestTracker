@@ -442,6 +442,7 @@ RuleKey = function(rule)
     return "q:" .. tostring(qid)
   end
   if rule.group then return "group:" .. tostring(rule.group) .. ":" .. tostring(rule.order or 0) end
+  if rule.event then return "event:" .. tostring(rule.event) .. ":" .. tostring(rule.order or 0) end
 
   -- Additional stable keys for rules that don't have explicit `key`/`questID`/`label`.
   if type(rule.item) == "table" and rule.item.itemID ~= nil then
@@ -1038,11 +1039,28 @@ end
 local GetQuestTitle = (ns and ns.GetQuestTitle)
 local IsQuestCompleted = (ns and ns.IsQuestCompleted)
 local IsQuestInLog = (ns and ns.IsQuestInLog)
+local IsWorldQuestActive = (ns and ns.IsWorldQuestActive)
+local GetWorldQuestGoldReward = (ns and ns.GetWorldQuestGoldReward)
 local GetQuestObjectiveProgressText = (ns and ns.GetQuestObjectiveProgressText)
+local IsAchievementCompleted = (ns and ns.IsAchievementCompleted)
 
 if type(GetQuestTitle) ~= "function" then GetQuestTitle = function(_) return nil end end
 if type(IsQuestCompleted) ~= "function" then IsQuestCompleted = function(_) return false end end
 if type(IsQuestInLog) ~= "function" then IsQuestInLog = function(_) return false end end
+if type(IsWorldQuestActive) ~= "function" then IsWorldQuestActive = function(_, _) return false end end
+if type(GetWorldQuestGoldReward) ~= "function" then GetWorldQuestGoldReward = function(_) return nil end end
+if type(IsAchievementCompleted) ~= "function" then IsAchievementCompleted = function(_, _) return false end end
+
+-- qilID accepts a single questID or a table of questIDs; true if any is in the quest log.
+local function IsAnyQuestInLog(qilID)
+  if type(qilID) == "table" then
+    for _, qid in ipairs(qilID) do
+      if IsQuestInLog(qid) then return true end
+    end
+    return false
+  end
+  return IsQuestInLog(qilID)
+end
 if type(GetQuestObjectiveProgressText) ~= "function" then GetQuestObjectiveProgressText = function(_, _, _) return nil end end
 
 local function ArePrereqsMet(prereq)
@@ -2119,8 +2137,57 @@ local function GetIndicatorsWidth(baseFS, indicators, padPx)
   return leftInset + (count * ICON) + ((count - 1) * GAP)
 end
 
+local function IsWarbandBankControlAvailable()
+  local bankType = (Enum and Enum.BankType) and Enum.BankType or nil
+  local bank = _G and rawget(_G, "C_Bank")
+  if type(bank) ~= "table" or not (bankType and bankType.Account ~= nil)
+      or type(bank.FetchDepositedMoney) ~= "function" then
+    return false
+  end
+
+  local ok, value = pcall(bank.FetchDepositedMoney, bankType.Account)
+  local money = ok and tonumber(value) or nil
+  return type(money) == "number" and money > 0
+end
+
+ns.IsWarbandBankControlAvailable = IsWarbandBankControlAvailable
+
+-- charLI = "Name-Realm" (or a table of them): only show the rule while logged in on that character.
+-- Realm is required (no name-only fallback) since the same name can exist on multiple realms.
+local function PlayerMatchesCharLI(spec)
+  if spec == nil then return true end
+
+  local name = (UnitName and UnitName("player")) or nil
+  if type(name) ~= "string" or name == "" then return false end
+  local realm = (GetNormalizedRealmName and GetNormalizedRealmName()) or (GetRealmName and GetRealmName()) or nil
+  if type(realm) ~= "string" or realm == "" then return false end
+  local full = (tostring(name) .. "-" .. realm):lower()
+
+  local function MatchesOne(want)
+    want = tostring(want or ""):lower()
+    if want == "" then return false end
+    return want == full
+  end
+
+  if type(spec) == "table" then
+    for _, want in ipairs(spec) do
+      if MatchesOne(want) then return true end
+    end
+    return false
+  end
+  return MatchesOne(spec)
+end
+
 local function BuildRuleStatus(rule, ctx, opts)
   local questID = tonumber(rule and rule.questID)
+
+  local wqMapID, wqQuestID
+  if type(rule) == "table" and type(rule.wqID) == "table" then
+    -- wqID = { questID, mapID }
+    wqQuestID = tonumber(rule.wqID[1])
+    wqMapID = tonumber(rule.wqID[2])
+    if not questID then questID = wqQuestID end
+  end
 
   if type(opts) ~= "table" then opts = nil end
   -- In edit mode we typically bypass visibility gates so you can inspect/toggle everything.
@@ -2128,6 +2195,34 @@ local function BuildRuleStatus(rule, ctx, opts)
   local applyGates = (not editMode) or (opts and opts.forceNormalVisibility == true) or false
 
   if type(ctx) ~= "table" then ctx = nil end
+
+  if applyGates and type(rule) == "table" and rule.wbc == true
+      and not IsWarbandBankControlAvailable() then
+    return nil
+  end
+
+  -- Only show while logged in on the specified character(s).
+  if applyGates and type(rule) == "table" and rule.charLI ~= nil
+      and not PlayerMatchesCharLI(rule.charLI) then
+    return nil
+  end
+
+  -- World quest rows only show while the WQ is actually up on its map (12.1 removed the old per-map quest list API).
+  if applyGates and wqQuestID and not IsWorldQuestActive(wqQuestID, wqMapID) then
+    return nil
+  end
+
+  -- Fetched once and reused below both for the wqGold gate and the {wqGold} questInfo placeholder.
+  local wqGoldValue = wqQuestID and GetWorldQuestGoldReward(wqQuestID) or nil
+
+  -- Optional minimum gold reward gate for world quest rows (e.g. only show the "gold" WQ variant worth tracking).
+  -- Fail open on unresolved (nil) reward data (not cached yet / API mismatch) so the row isn't stuck hidden;
+  -- only hide when we have a confirmed amount below the threshold.
+  if applyGates and wqQuestID and type(rule) == "table" and type(rule.wqGold) == "number" then
+    if type(wqGoldValue) == "number" and wqGoldValue < rule.wqGold then
+      return nil
+    end
+  end
 
   -- Generic conditional rules (used for profession/flow helpers)
   if applyGates and type(rule) == "table" and type(rule.showIf) == "table" then
@@ -2151,8 +2246,12 @@ local function BuildRuleStatus(rule, ctx, opts)
     completed = true
   end
 
+  if type(rule) == "table" and rule.achevID ~= nil and IsAchievementCompleted(rule.achevID, rule.achevAC) then
+    completed = true
+  end
+
   local forceShowWhileQuestInLog = applyGates and type(rule) == "table"
-    and rule.qilID ~= nil and IsQuestInLog(rule.qilID) or false
+    and rule.qilID ~= nil and IsAnyQuestInLog(rule.qilID) or false
   if forceShowWhileQuestInLog then
     hideDone = false
   end
@@ -2412,13 +2511,12 @@ local function BuildRuleStatus(rule, ctx, opts)
     local wants = ParseLocationIDs(rule.mapID)
     if wants and wants[1] then
       local have = (ctx and ctx.mapID) or GetBestMapIDSafe()
-      if have then
-        local ok = false
-        for i = 1, #wants do
-          if have == wants[i] then ok = true break end
-        end
-        if not ok then return nil end
+      if not have then return nil end
+      local ok = false
+      for i = 1, #wants do
+        if have == wants[i] then ok = true break end
       end
+      if not ok then return nil end
     end
   end
 
@@ -2925,7 +3023,7 @@ local function BuildRuleStatus(rule, ctx, opts)
   if completed then
     if type(rule) == "table" and rule.extraComplete ~= nil then
       extra = tostring(rule.extraComplete)
-    elseif type(rule) == "table" and rule.showXWhenComplete == true then
+    elseif type(rule) == "table" and rule.XDone == true then
       extra = "X"
     end
   end
@@ -3067,6 +3165,9 @@ local function BuildRuleStatus(rule, ctx, opts)
     -- Progress shorthand
     s = s:gsub("%%p", "{progress}")
 
+    -- World quest gold reward shorthand
+    s = s:gsub("%%wqg", "{wqGold}")
+
     -- Shopping-list shorthand (vendor mats)
     s = s:gsub("%%sl", "{shoppingList}")
 
@@ -3156,6 +3257,12 @@ local function BuildRuleStatus(rule, ctx, opts)
     if replaced then
       title = newTitle
     end
+  end
+
+  -- {wqGold} -> the world quest's actual gold reward (e.g. "123"), blank while not yet resolved.
+  if type(title) == "string" and title:find("{wqGold}", 1, true) then
+    local goldText = (type(wqGoldValue) == "number") and tostring(math.floor(wqGoldValue + 0.5)) or ""
+    title = title:gsub("{wqGold}", goldText)
   end
 
   local function RepStandingLabelLite(standing)
@@ -3382,6 +3489,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     rawTitle = rawTitle,
     editText = editText,
     extra = extra,
+    extraBefore = type(rule) == "table" and type(rule.item) == "table" and tonumber(rule.item.indp) == 1,
     completed = completed,
     hideDone = hideDone,
     indicators = indicators,
@@ -3938,6 +4046,10 @@ end
 RefreshAll = function()
   NormalizeSV()
 
+  if ns and type(ns.InvalidateQuestStateCache) == "function" then
+    ns.InvalidateQuestStateCache()
+  end
+
   local evalCtx = BuildEvalContext()
 
   local rules = GetEffectiveRules()
@@ -4052,10 +4164,7 @@ RefreshAll = function()
       local group = rule and rule.group
       local order = tonumber(rule and rule.order) or 0
 
-      local groupStr = (group ~= nil) and tostring(group) or ""
-      local isDMF = (groupStr ~= "") and (groupStr:find("event:darkmoon-faire", 1, true) ~= nil)
-
-      if group ~= nil and (not isDMF) then
+      if group ~= nil then
         local key = frameID .. "|" .. tostring(group)
         local current = winnersByGroup[key]
         if not current or order < current.order then
@@ -4086,10 +4195,7 @@ RefreshAll = function()
       local group = rule and rule.group
       local order = tonumber(rule and rule.order) or 0
 
-      local groupStr = (group ~= nil) and tostring(group) or ""
-      local isDMF = (groupStr ~= "") and (groupStr:find("event:darkmoon-faire", 1, true) ~= nil)
-
-      if group ~= nil and (not isDMF) then
+      if group ~= nil then
         local key = frameID .. "|" .. tostring(group)
         local current = winnersByGroup[key]
         if not current or order < current.order then
@@ -4710,6 +4816,10 @@ frame:RegisterEvent("SKILL_LINES_CHANGED")
 SafeRegisterEvent(frame, "LEARNED_SPELL_IN_TAB")
 SafeRegisterEvent(frame, "NEW_RECIPE_LEARNED")
 SafeRegisterEvent(frame, "TRADE_SKILL_LIST_UPDATE")
+SafeRegisterEvent(frame, "BANKFRAME_OPENED")
+SafeRegisterEvent(frame, "BANKFRAME_CLOSED")
+SafeRegisterEvent(frame, "PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
+SafeRegisterEvent(frame, "PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
 
 frame:RegisterEvent("MERCHANT_SHOW")
 SafeRegisterEvent(frame, "MERCHANT_UPDATE")
@@ -4765,6 +4875,25 @@ local function FQT_OnEvent(_, event, ...)
   end
   if event == "MODIFIER_STATE_CHANGED" then
     OnModifierStateChanged()
+    return
+  end
+  if event == "BANKFRAME_OPENED" or event == "BANKFRAME_CLOSED" then
+    if frame._refreshTimer then
+      frame._refreshTimer:Cancel()
+    end
+    frame._refreshTimer = C_Timer.NewTimer(0.25, RefreshAll)
+    return
+  end
+  if event == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW"
+      or event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
+    local interactionType = ...
+    local playerInteractionType = (Enum and Enum.PlayerInteractionType) and Enum.PlayerInteractionType or nil
+    if playerInteractionType and interactionType == playerInteractionType.AccountBanker then
+      if frame._refreshTimer then
+        frame._refreshTimer:Cancel()
+      end
+      frame._refreshTimer = C_Timer.NewTimer(0.25, RefreshAll)
+    end
     return
   end
   if event == "UNIT_AURA" then

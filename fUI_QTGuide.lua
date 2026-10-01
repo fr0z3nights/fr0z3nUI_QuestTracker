@@ -7,17 +7,17 @@ local _, ns = ...
 ns.Guide = ns.Guide or {}
 local G = ns.Guide
 
-G.DMF_GROUP = "event:darkmoon-faire"
+G.DMF_EVENT = "darkmoon-faire"
 
 function G.IsDarkmoonRule(rule)
 	if type(rule) ~= "table" then return false end
-	return tostring(rule.group or "") == G.DMF_GROUP or tostring(rule.key or "") == G.DMF_GROUP
+	return tostring(rule.event or "") == G.DMF_EVENT or tostring(rule.key or "") == "event:" .. G.DMF_EVENT
 end
 
 function G.CategoryFilterLabel(v)
 	v = tostring(v or "all")
 	if v == "all" then return "Any Category" end
-	if v == G.DMF_GROUP then return "Darkmoon Faire" end
+	if v == G.DMF_EVENT then return "Darkmoon Faire" end
 	return v
 end
 
@@ -37,6 +37,7 @@ function G.RuleKey(rule)
 	end
 	if rule.label then return "label:" .. tostring(rule.label) end
 	if rule.group then return "group:" .. tostring(rule.group) .. ":" .. tostring(rule.order or 0) end
+	if rule.event then return "event:" .. tostring(rule.event) .. ":" .. tostring(rule.order or 0) end
 	return nil
 end
 

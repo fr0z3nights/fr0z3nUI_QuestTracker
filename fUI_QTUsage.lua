@@ -6,7 +6,8 @@ local _, ns = ...
 -- Shared map-group expansion for DB rule packs.
 -- Keep this near the top so map aliases are easy to edit in one place.
 ns.MAP_GROUPS = ns.MAP_GROUPS or {
-	CAP = {  84,  85,}, STW = {84,}, ORG = {85,}, CTY = {  84,  85,  87,},
+	CAP = {  84,  85,  },  STW = {84,}, ORG = {85,},
+	CTY = {  84,  85,  87, 627,1161,2393,2541,},
 	CLS = {  17,  81,  84,  85,  87,},
 	CAT = {  84,  85,},
 	MoP = { 371, 376, 379, 381, 388, 390, 391, 393, 418, 422, 424, 554,}, TI = {554,},
@@ -16,7 +17,7 @@ ns.MAP_GROUPS = ns.MAP_GROUPS or {
 	SHD = {1670,},
 	DRG = {1978,2022,},
 	TWW = {  81,2339,},
-	MDN = {2393,},
+	MDN = {2393,2437,2413,2405,2444,2599,2512,}, MVS = {2405,2444,2599,}, 
 }
 
 function ns.ExpandMapIDs(value)

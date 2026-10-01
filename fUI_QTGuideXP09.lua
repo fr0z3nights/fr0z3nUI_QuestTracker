@@ -53,14 +53,15 @@ local bakedRules = {
 	{key = "XP09:Q60150A", questID = 60150, label = "09 Shadowlands A", faction = "A",  frameID = "list1", hideQID = {60150,60151,61874,}, mapID = {84,"SHD",}, questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Castle Entryway", },
 	{key = "XP09:Q60150H", questID = 60150, label = "09 Shadowlands H", faction = "H",  frameID = "list1", hideQID = {60150,60151,61874,}, mapID = {85,"SHD",}, questInfo = "Shadowlands\n + Chromie: Shadowlands\n + Enter Shadowlands\n   - Valley of Strength", },
 
-  {key = "XP12:I167555",  item = { itemID = 167555, mustHave = true, showCount = false, },		label = "BankIt 167555",		frameID = "list2",	resting = true, itemInfo = "Pocket-Sized Computation Device\n + Deposit in Bank" },
+	{key = "XP12:I167555",  item = { itemID = 167555, mustHave = true, showCount = false, },		label = "BankIt 167555",		frameID = "list2",	resting = true, itemInfo = "Pocket-Sized Computation Device\n + Deposit in Bank" },
 
 }
 
 
+bakedRules = ns.GuideHelpers.ExpandQuestGroups(bakedRules)
 for i = 1, #bakedRules do
   local r = bakedRules[i]
-  if type(r) == "table" then
+  if type(r) == "table" and not r.questGroup then
     ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
     ns.rules[#ns.rules + 1] = r
   end

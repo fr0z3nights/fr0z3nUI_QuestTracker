@@ -59,15 +59,16 @@ local bakedRules = {
 	{key = "XP10:Q67700H",  questID = 67700, prereq = {30515,}, faction = "H",  label = "10  Dragon Isles H", frameID = "list1",  hideDone = true, mapID = {"CAP","DRG",},  questInfo = "Dragon Isles\n + The Waking Shores (Zygor)\n + Cata Portal Area   \n + Do Initial Quests\n + Take Portal", },
 	{key = "XP10:Q65646",   questID = 65646,                                    label = "10  34 Slot Bag",    frameID = "list1",  hideDone = true, mapID = {"CAP","DRG",},  questInfo = "Dragon Isles\n + Misty Satchel BH Waterfall\n - Waking Shores @ 58,53", },
 
-
+	
 
 
 }
 
 
+bakedRules = ns.GuideHelpers.ExpandQuestGroups(bakedRules)
 for i = 1, #bakedRules do
   local r = bakedRules[i]
-  if type(r) == "table" then
+  if type(r) == "table" and not r.questGroup then
     ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
     ns.rules[#ns.rules + 1] = r
   end

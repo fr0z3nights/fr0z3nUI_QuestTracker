@@ -53,7 +53,7 @@ local bakedRules = {
 	{key = "XP11:I202046",	item = { itemID = 202046, required = { 1, Y, Y, 1 }, },	label = "Lucky Tortollan Charm",	restedOnly = true,	mapID = {"TWW"}, playerLevel = {">=",68,},	frameID = "list1",	itemInfo = "Lucky Tortollan Charm\n - Near Azj-Kahet Portal",	complete = {any = { {item = { itemID = 202046, count = 1} }, }, }, },
 	{key = "XP11:Q78713",   questID = 78713, prereq = { 67700, },					label = "Isle of Dorn 01",			hideDone = true,	mapID = {"CAP","TWW"},						frameID = "list1",	questInfo = "The War Within\n  - Use Teleportation Scroll", },
 	{key = "XP11:Q81966",   questID = 81966, prereq = { 78713, },					label = "Isle of Dorn 02",			hideDone = true,	mapID = {"CAP","TWW"},						frameID = "list1",	questInfo = "The War Within\n  + Intro & Isle of Dorn (Zygor)", },
-	{key = "XP11:Q81972",   questID = 81972, prereq = {65646,82819,},				label = "11  34 Slot Bag 2",		hideDone = true,	rested = true ,	playerLevel = {">=",68,},	frameID = "list1",	questInfo = "War Within\n  - Windswept Satchel\n  - Priory, Hallowfall  30,38", },
+	{key = "XP11:Q81972",   questID = 81972, prereq = {65646,82819,},				label = "11  34 Slot Bag 2",		hideDone = true,					playerLevel = {">=",68,},	frameID = "list1",	questInfo = "War Within\n  - Windswept Satchel\n  - Priory, Hallowfall  30,38", },
 --	{key = "XP11:Q82356",   questID = 82356, prereq = { 46931, 51341, 61874, },		label = "Coffer Key 82356",			hideDone = true,                                                frameID = "list1",	questInfo = " + Key - Dornogal Hall", },
 --	{key = "XP11:Q82375",   questID = 82375, prereq = { 46931, 51341, 61874, },		label = "Coffer Key 82375",			hideDone = true,                                                frameID = "list1",	questInfo = " + Key - Dornogal Hall", },
 --	{key = "XP11:Q82398",   questID = 82398, prereq = { 46931, 51341, 61874, },		label = "Coffer Key 82398",			hideDone = true,                                                frameID = "list1",	questInfo = " + Key - Mereldar Hallowfall", },
@@ -62,7 +62,7 @@ local bakedRules = {
 	{key = "XP11:Q82678",   questID = 82678,										label = "Archives: First Disc",		hideDone = true,					playerLevel = {"=",80,},	frameID = "bar1",	questInfo = "First Disc", },
 	{key = "XP11:Q82679",   questID = 82679, prereq = {82678,},						label = "Archives",					hideDone = true,					playerLevel = {"=",80,},	frameID = "bar1",	questInfo = "Archive", progress = { objectiveIndex = 1 }, },
 	{key = "XP11:Q82706",   questID = 82706,										label = "Delve 11",					hideDone = true,					playerLevel = {"=",80,},	frameID = "bar1",	questInfo = "Delve 11", progress = { objectiveIndex = 1 }, },
-	{key = "XP11:Q82819",   questID = 82819, prereq = {65646,},						label = "11  34 Slot Bag 1",		hideDone = true,	rested = true ,	playerLevel = {">=",68,},	frameID = "list1",	questInfo = "War Within\n  - Goblin Mini Fridge 3412\n  - Camp Murroch, Ringing Deeps", },
+	{key = "XP11:Q82819",   questID = 82819, prereq = {65646,},						label = "11  34 Slot Bag 1",		hideDone = true,					playerLevel = {">=",68,},	frameID = "list1",	questInfo = "War Within\n  - Goblin Mini Fridge 3412\n  - Camp Murroch, Ringing Deeps", },
 	{key = "XP11:Q84260",   questID = 84260, 										label = "Crafting Order",			hideDone = true,	mapID = {"TWW"},							frameID = "list1",	questInfo = "+ Dornogal Crafting Order Reward", },
 --	{key = "XP11:Q85573",   questID = 85573, prereq = { 45727, },					label = "Isle of Dorn 03",			hideDone = true,												frameID = "list1",	questInfo = "The War Within\n + Siren Isle (Zygor)", },
 --	{key = "XP11:Q90557",   questID = 90557, prereq = { 46931, 51341, 61874, },		label = "11 Coffer Key 90557",		hideDone = true,												frameID = "list1",	questInfo = "+ Key - Undermine", },
@@ -81,9 +81,10 @@ local bakedRules = {
 }
 
 
+bakedRules = ns.GuideHelpers.ExpandQuestGroups(bakedRules)
 for i = 1, #bakedRules do
   local r = bakedRules[i]
-  if type(r) == "table" then
+	if type(r) == "table" and not r.questGroup then
     ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
     ns.rules[#ns.rules + 1] = r
   end

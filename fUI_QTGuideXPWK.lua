@@ -1,5 +1,7 @@
 local addonName, ns = ...
 
+ns.rules = ns.rules or {}
+
 local Y, N = true, false
 local M = "mustHave"
 
@@ -50,11 +52,13 @@ local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 --   hideDone (boolean?) - default true; set false to keep showing when completed
 --   labelComplete (string?)    - optional label override when completed
 --   extraComplete (string?)    - optional extra override when completed (e.g. "X")
---   showXWhenComplete (boolean?) - convenience; if true, shows "X" when completed (unless extraComplete is set)
+--   XDone (boolean?) - convenience; if true, shows "X" when completed (unless extraComplete is set)
 --   prereq (number[]?)         - only show once these quests are completed
 --   requireInLog (boolean?)    - if true, only show while the quest is in your quest log
 --   group (string?)            - sequential group; only lowest-order active rule shows per frame
 --   order (number?)            - used within group; lower shows first
+--   sortGO (table?)            - Rules-tab display order shorthand: { sortGroup, sortOrder }
+--   pad (number?)              - extra pixels of space after this row in list frames (-10..50)
 --   levelGate ("max"|"leveling"?) - optionally show only at max level or only while leveling
 --   indicators (table[]?)      - append small red/green glyphs after the row (for "done" markers)
 --       questID (number?)      - completion source: quest completed
@@ -94,175 +98,80 @@ local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 --
 -- Examples below are placeholders; replace with your real questIDs/items/auras.
 
-ns.rules = {
+local EXPANSION_ID = -1
+local EXPANSION_NAME = "Weekly"
+
+local bakedRules = {
 
 
 
 
 
-  {label = "Event: Pet Battle", frameID = "bar1", playerLevel = { ">=", 20 }, hideDone = false, requireInLog = false, showXWhenComplete = true, key = "event:pet-battle-bonus-event",
-  questInfo = "Pet XP", aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+	{key = "XPEV:Q-PetBtl",						requireInLog = false,	playerLevel = {">=",20},	label = "Event: Pet Battle",		frameID = "bar1",	hideDone = false,										XDone = true,		questInfo = "Pet XP",																									pad = 3, aura = { eventKind = "calendar", keywords = { "Pet Battle Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+	{key = "XPEV:Q-93595",	questID = 93595,	requireInLog = false,	playerLevel = {">=",80},	label = "Event: Delves",			frameID = "list2",	hideDone = true,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Delves",				font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "top",	pad = 3, aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+	{key = "XPEV:Q-93606",	questID = 93605,	requireInLog = false,	playerLevel = {">=",80},	label = "Event: Battleground",		frameID = "list2",	hideDone = true,	progress = { objectiveIndex = 1 },  XDone = true,		questInfo = "Battleground",			font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "top",	pad = 3, aura = { eventKind = "calendar", keywords = { "Battleground Bonus Event" }, mustHave = true, rememberWeekly = true }, },
+	{key = "XPEV:Q-93605",	questID = 93605,	requireInLog = false,	playerLevel = { "=",90},	label = "Event: World Quest",		frameID = "list2",	hideDone = true,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "World Quest",			font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "top",	pad = 3, aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true }, },
 
-  {label = "Event: Delves", frameID = "bar1", playerLevel = { ">=", 80 }, hideDone = true, requireInLog = false, showXWhenComplete = true, key = "event:delves-bonus-event",
-  questInfo = "Delves", questID = 93595, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "Delves Bonus Event" }, mustHave = true, rememberWeekly = true }, },
-
-  {label = "Event: World Quest", frameID = "bar1", playerLevel = { ">=", 90 }, hideDone = true, requireInLog = false, showXWhenComplete = true, key = "event:world-quest-bonus-event",
-  questInfo = "WQ", questID = 93605, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "World Quest Bonus Event" }, mustHave = true, rememberWeekly = true }, },
-
-  {label = "Event: Battleground", frameID = "bar1", playerLevel = { ">=", 80 }, hideDone = true, requireInLog = false, showXWhenComplete = true,
-  questInfo = "BG", questID = 93605, progress = { objectiveIndex = 1 },  aura = { eventKind = "calendar", keywords = { "Battleground Bonus Event" }, mustHave = true, rememberWeekly = true }, },
-
-
-
-  -- Timewalking weekly bar entries.
-  -- Goal: calendar strings can be generic ("Timewalking Dungeon Event"), so we:
-  --   1) show a single generic reminder when any Timewalking/Turbulent Timeways event is up
-  --   2) show the specific weekly quest row only once you've actually picked it up (requireInLog)
-  -- Keep showing after completion, and show "X" when complete.
-  -- Append a red/green marker for the token quest completion.
-
-  {label = "TW Reminder", frameID = "bar1", key = "tw:reminder", 
-  questInfo = "Timewalking", preferQuestInfoForTitle = true, hideIfRememberedTimewalkingKind = true,
-  aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true }, hideDone = false,
-  --                            CLASSIC        OUTLAND          WRATH         CATACLYSM        PANDARIA        DRAENOR          LEGION          BATTLE       SHADOWLANDS     DRGONFLIGHT
-  --                         LVL  01  MAX    LVL  02  MAX    LVL  03  MAX    LVL  04  MAX    LVL  05  MAX    LVL  06  MAX    LVL  07  MAX    LVL  08  MAX    LVL  09  MAX    LVL  10  MAX
-  hideIfAnyQuestInLog =     {85947, 93607,   85948, 93608,   85949, 93610,   86556, 93611,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497},
-  hideQID =                 {85947, 93607,   85948, 93608,   85949, 93610,   86556, 93611,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497}, },
-
---  01  Classic              UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
-
-  {label = "TW Classic LVL", frameID = "bar1", list = "last", key = "XP01:TW:LVL", sortGroup = "XP01:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 85947, questInfo = "Classic", requireInLog = true, twKind = "classic", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Classic MAX", frameID = "bar1", list = "last", key = "XP01:TW:MAX", sortGroup = "XP01:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93607, questInfo = "Classic", requireInLog = true, twKind = "classic", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Classic TKN", frameID = "bar1", list = "last", key = "XP01:TW:TKN", sortGroup = "XP01:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 83285 }, preferQuestInfoForTitle = true, twKind = "classic", hideDone = false,
-  indicators = { { questID = 83285, shape = "square", overlay = { itemIDs = { 225348 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  02  Outland             UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
-
-  {label = "TW Outland LVL", frameID = "bar1", list = "last", key = "XP02:TW:LVL", sortGroup = "XP02:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 85948, questInfo = "Outland", requireInLog = true, twKind = "outland", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Outland MAX", frameID = "bar1", list = "last", key = "XP02:TW:MAX", sortGroup = "XP02:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93608, questInfo = "Outland", requireInLog = true, twKind = "outland", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Outland TKN", frameID = "bar1", list = "last", key = "XP02:TW:TKN", sortGroup = "XP02:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 40168 }, preferQuestInfoForTitle = true, twKind = "outland", hideDone = false,
-  indicators = { { questID = 40168, shape = "square", overlay = { itemIDs = { 129747 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  03  Wrath               UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
-
-  {label = "TW Wrath LVL", frameID = "bar1", list = "last", key = "XP03:TW:LVL", sortGroup = "XP03:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 85949, questInfo = "Wrath", requireInLog = true, twKind = "wrath", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Wrath MAX", frameID = "bar1", list = "last", key = "XP03:TW:MAX", sortGroup = "XP03:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93610, questInfo = "Wrath", requireInLog = true, twKind = "wrath", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Wrath TKN", frameID = "bar1", list = "last", key = "XP03:TW:TKN", sortGroup = "XP03:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 40173 }, preferQuestInfoForTitle = true, twKind = "wrath", hideDone = false,
-  indicators = { { questID = 40173, shape = "square", overlay = { itemIDs = { 129928 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  04  Cataclysm           UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
-
-  {label = "TW Cataclysm LVL", frameID = "bar1", list = "last", key = "XP04:TW:LVL", sortGroup = "XP04:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 86556, questInfo = "Cataclysm", requireInLog = true, twKind = "cata", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Cataclysm MAX", frameID = "bar1", list = "last", key = "XP04:TW:MAX", sortGroup = "XP04:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93611, questInfo = "Cataclysm", requireInLog = true, twKind = "cata", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Cataclysm TKN", frameID = "bar1", list = "last", key = "XP04:TW:TKN", sortGroup = "XP04:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 40787, 40786 }, preferQuestInfoForTitle = true, twKind = "cata", hideDone = false,
-  indicators = { { questIDs = { 40787, 40786 }, shape = "square", overlay = { itemIDs = { 133377,133378 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  05  Pandaria           UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
-
-  {label = "TW Pandaria LVL", frameID = "bar1", list = "last", key = "XP05:TW:LVL", sortGroup = "XP05:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 86560, questInfo = "Pandaria", requireInLog = true, twKind = "pandaria", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Pandaria MAX", frameID = "bar1", list = "last", key = "XP05:TW:MAX", sortGroup = "XP05:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93612, questInfo = "Pandaria", requireInLog = true, twKind = "pandaria", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Pandaria TKN", frameID = "bar1", list = "last", key = "XP05:TW:TKN", sortGroup = "XP05:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 45563 }, preferQuestInfoForTitle = true, twKind = "pandaria", hideDone = false,
-  indicators = { { questID = 45563, shape = "square", overlay = { itemIDs = { 143776 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  06  Draenor            UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
-
-  {label = "TW Draenor LVL", frameID = "bar1", list = "last", key = "XP06:TW:LVL", sortGroup = "XP06:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 86563, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Draenor MAX", frameID = "bar1", list = "last", key = "XP06:TW:MAX", sortGroup = "XP06:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93613, questInfo = "Draenor", requireInLog = true, twKind = "draenor", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Draenor TKN", frameID = "bar1", list = "last", key = "XP06:TW:TKN", sortGroup = "XP06:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 55498, 55499 }, preferQuestInfoForTitle = true, twKind = "draenor", hideDone = false,
-  indicators = { { questIDs = { 55498, 55499 }, shape = "square", overlay = { itemIDs = { 167921, 167922 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  07  Legion            UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
-
-  {label = "TW Legion LVL", frameID = "bar1", list = "last", key = "XP07:TW:LVL", sortGroup = "XP07:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 86564, questInfo = "Legion", requireInLog = true, twKind = "legion", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Legion MAX", frameID = "bar1", list = "last", key = "XP07:TW:MAX", sortGroup = "XP07:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93614, questInfo = "Legion", requireInLog = true, twKind = "legion", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Legion TKN", frameID = "bar1", list = "last", key = "XP07:TW:TKN", sortGroup = "XP07:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 64710 }, preferQuestInfoForTitle = true, twKind = "legion", hideDone = false,
-  indicators = { { questID = 64710, shape = "square", overlay = { itemIDs = { 187611 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  08  Battle             UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
-
-  {label = "TW Battle LVL", frameID = "bar1", list = "last", key = "XP08:TW:LVL", sortGroup = "XP08:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 88808, questInfo = "Battle", requireInLog = true, twKind = "bfa", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Battle MAX", frameID = "bar1", list = "last", key = "XP08:TW:MAX", sortGroup = "XP08:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93627, questInfo = "Battle", requireInLog = true, twKind = "bfa", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Battle TKN", frameID = "bar1", list = "last", key = "XP08:TW:TKN", sortGroup = "XP08:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 89222, 89223 }, preferQuestInfoForTitle = true, twKind = "bfa", hideDone = false,
-  indicators = { { questIDs = { 89222, 89223 }, shape = "square", overlay = { itemIDs = { 238790, 238791 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  09  Shadowlands        UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING LVL/MAX QUESTID
-
-  {label = "TW Shadowlands LVL", frameID = "bar1", list = "last", key = "XP09:TW:LVL", sortGroup = "XP09:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 92647, questInfo = "Shadowlands", requireInLog = true, twKind = "shadowlands", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Shadowlands MAX", frameID = "bar1", list = "last", key = "XP09:TW:MAX", sortGroup = "XP09:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93628, questInfo = "Shadowlands", requireInLog = true, twKind = "shadowlands", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Shadowlands TKN", frameID = "bar1", list = "last", key = "XP09:TW:TKN", sortGroup = "XP09:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 92650 }, preferQuestInfoForTitle = true, twKind = "shadowlands", hideDone = false,
-  indicators = { { questID = 92650, shape = "square", overlay = { itemIDs = { 253517 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  10  Dragonflight        UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING LVL/MAX QUESTID
-
-  {label = "TW Dragonflight LVL", frameID = "bar1", list = "last", key = "XP10:TW:LVL", sortGroup = "XP10:TW", sortOrder = 1, levelGate = "LVL", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93495, questInfo = "Dragonflight", requireInLog = true, twKind = "dragonflight", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Dragonflight MAX", frameID = "bar1", list = "last", key = "XP10:TW:MAX", sortGroup = "XP10:TW", sortOrder = 2, levelGate = "MAX", progress = { objectiveIndex = 1 }, showXWhenComplete = true,
-  questID = 93497, questInfo = "Dragonflight", requireInLog = true, twKind = "dragonflight", hideDone = false, showIfRememberedTimewalkingKind = true, },
-
-  {label = "TW Dragonflight TKN", frameID = "bar1", list = "last", key = "XP10:TW:TKN", sortGroup = "XP10:TW", sortOrder = 3, requireRememberedTimewalkingKind = true,
-  questInfo = "\194\160", fallbackQuestInLog = { 93852 }, preferQuestInfoForTitle = true, twKind = "dragonflight", hideDone = false,
-  indicators = { { questID = 93852, shape = "square", overlay = { itemIDs = { 262918 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
-
---  Update when Dragonflight Timewalking comes out
---  - Update Timewalking in QuestTracker for Dragonflight Timewalking
---  - Update Timewalking in DateTime for Dragonflight Timewalking events
---  - Aura:       1305981
---  - Calendar:   Dragonflight Timewalking
---  - LFD ID:     3305
---  - Not sure what else is needed?
+--	Timewalking weekly bar entries. -- Goal: calendar strings can be generic ("Timewalking Dungeon Event"), so we: --   1) show a single generic reminder when any Timewalking/Turbulent Timeways event is up   --   2) show the specific weekly quest row only once you've actually picked it up (requireInLog)   -- Keep showing after completion, and show "X" when complete.   -- Append a red/green marker for the token quest completion.
+	{key = "tw:reminder",																			label = "TW Reminder", 				frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "Timewalking",			hideIfRememberedTimewalkingKind = true, aura = { eventKind = "timewalking", mustHave = true, rememberWeekly = true }, 
+	hideIfAnyQuestInLog =     {85947, 93607,   85948, 93608,   85949, 93610,   86556, 93611,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497},
+	hideQID =                 {85947, 93607,   85948, 93608,   85949, 93610,   86556, 93611,   86560, 93612,   86563, 93613,   86564, 93614,   88808, 93627,   92647, 93628,   93495, 93497}, },
+--	                              CLASSIC        OUTLAND          WRATH         CATACLYSM        PANDARIA        DRAENOR          LEGION          BATTLE       SHADOWLANDS     DRGONFLIGHT
+--  	                       LVL  01  MAX    LVL  02  MAX    LVL  03  MAX    LVL  04  MAX    LVL  05  MAX    LVL  06  MAX    LVL  07  MAX    LVL  08  MAX    LVL  09  MAX    LVL  10  MAX
+--																UPDATE REMINDER ABOVE & XRULESDB & GOTALKEV & IN GAME WoW2 FQT ORDER WHEN UPDATING QUESTID
+--	01  Classic
+	{key = "XPTW:01-LVL",	questID = 85947,	requireInLog = true,	sortGO = {"XP01:TW",1},		label = "TW Classic LVL",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Classic",				list = "last", levelGate = "LVL",	twKind = "classic", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:01-MAX",	questID = 93607,	requireInLog = true,	sortGO = {"XP01:TW",2},		label = "TW Classic MAX", 			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Classic",				list = "last", levelGate = "MAX",	twKind = "classic", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:01-TKN",	fallbackQuestInLog = { 83285 }, 			sortGO = {"XP01:TW",3},		label = "TW Classic TKN",			frameID = "bar1",	hideDone = false, 	preferQuestInfoForTitle = true, 						questInfo = "\194\160",				list = "last",						twKind = "classic", requireRememberedTimewalkingKind = true,	indicators = { { questID = 83285, shape = "square", overlay = { itemIDs = { 225348 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--	02  Outland
+	{key = "XPTW:02-LVL",	questID = 85948,	requireInLog = true,	sortGO = {"XP02:TW",1},		label = "TW Outland LVL", 			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Outland",				list = "last", levelGate = "LVL",	twKind = "outland", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:02-MAX",	questID = 93608,	requireInLog = true,	sortGO = {"XP02:TW",2},		label = "TW Outland MAX",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Outland",				list = "last", levelGate = "MAX",	twKind = "outland", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:02-TKN",	fallbackQuestInLog = { 40168 },				sortGO = {"XP02:TW",3},		label = "TW Outland TKN",			frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last", 						twKind = "outland", requireRememberedTimewalkingKind = true,	indicators = { { questID = 40168, shape = "square", overlay = { itemIDs = { 129747 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--	03  Wrath
+	{key = "XPTW:03-LVL",	questID = 85949,	requireInLog = true,	sortGO = {"XP03:TW",1},		label = "TW Wrath LVL",				frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Wrath",				list = "last", levelGate = "LVL",	twKind = "wrath", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:03-MAX",	questID = 93610,	requireInLog = true,	sortGO = {"XP03:TW",2},		label = "TW Wrath MAX",				frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Wrath",				list = "last", levelGate = "MAX",	twKind = "wrath", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:03-TKN",	fallbackQuestInLog = { 40173 },				sortGO = {"XP03:TW",3},		label = "TW Wrath TKN",				frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last",						twKind = "wrath", requireRememberedTimewalkingKind = true,	indicators = { { questID = 40173, shape = "square", overlay = { itemIDs = { 129928 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--	04  Cataclysm
+	{key = "XPTW:04-LVL",	questID = 86556,	requireInLog = true,	sortGO = {"XP04:TW",1},		label = "TW Cataclysm LVL",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Cataclysm",			list = "last", levelGate = "LVL",	twKind = "cata", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:04-MAX",	questID = 93611,	requireInLog = true,	sortGO = {"XP04:TW",2},		label = "TW Cataclysm MAX",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Cataclysm",			list = "last", levelGate = "MAX",	twKind = "cata", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:04-TKN",	fallbackQuestInLog = { 40787, 40786 },		sortGO = {"XP04:TW",3},		label = "TW Cataclysm TKN",			frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last",						twKind = "cata", requireRememberedTimewalkingKind = true,	indicators = { { questIDs = { 40787, 40786 }, shape = "square", overlay = { itemIDs = { 133377,133378 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--  05  Pandaria
+	{key = "XPTW:05-LVL",	questID = 86560,	requireInLog = true,	sortGO = {"XP05:TW",1},		label = "TW Pandaria LVL",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Pandaria",				list = "last", levelGate = "LVL",	twKind = "pandaria", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:05-MAX",	questID = 93612,	requireInLog = true,	sortGO = {"XP05:TW",2},		label = "TW Pandaria MAX",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Pandaria",				list = "last", levelGate = "MAX",	twKind = "pandaria", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:05-TKN",	fallbackQuestInLog = { 45563 },				sortGO = {"XP05:TW",3},		label = "TW Pandaria TKN",			frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last",						twKind = "pandaria", requireRememberedTimewalkingKind = true,	indicators = { { questID = 45563, shape = "square", overlay = { itemIDs = { 143776 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--	06  Draenor
+	{key = "XPTW:06-LVL",	questID = 86563,	requireInLog = true,	sortGO = {"XP06:TW",1},		label = "TW Draenor LVL",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Draenor",				list = "last", levelGate = "LVL",	twKind = "draenor", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:06-MAX",	questID = 93613,	requireInLog = true,	sortGO = {"XP06:TW",2},		label = "TW Draenor MAX",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Draenor",				list = "last", levelGate = "MAX",	twKind = "draenor", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:06-TKN",	fallbackQuestInLog = { 55498, 55499 },		sortGO = {"XP06:TW",3},		label = "TW Draenor TKN",			frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last",						twKind = "draenor", requireRememberedTimewalkingKind = true,	indicators = { { questIDs = { 55498, 55499 }, shape = "square", overlay = { itemIDs = { 167921, 167922 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--	07  Legion
+	{key = "XPTW:07-LVL",	questID = 86564,	requireInLog = true,	sortGO = {"XP07:TW",1},		label = "TW Legion LVL",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Legion",				list = "last", levelGate = "LVL",	twKind = "legion", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:07-MAX",	questID = 93614,	requireInLog = true,	sortGO = {"XP07:TW",2},		label = "TW Legion MAX",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Legion",				list = "last", levelGate = "MAX",	twKind = "legion", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:07-TKN",	fallbackQuestInLog = { 64710 },				sortGO = {"XP07:TW",3},		label = "TW Legion TKN",			frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last",						twKind = "legion", requireRememberedTimewalkingKind = true,	indicators = { { questID = 64710, shape = "square", overlay = { itemIDs = { 187611 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--	08  Battle
+	{key = "XPTW:08-LVL",	questID = 88808,	requireInLog = true,	sortGO = {"XP08:TW",1},		label = "TW Battle LVL",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Battle",				list = "last", levelGate = "LVL",	twKind = "bfa", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:08-MAX",	questID = 93627,	requireInLog = true,	sortGO = {"XP08:TW",2},		label = "TW Battle MAX",			frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Battle",				list = "last", levelGate = "MAX",	twKind = "bfa", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:08-TKN",	fallbackQuestInLog = { 89222, 89223 },		sortGO = {"XP08:TW",3},		label = "TW Battle TKN",			frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last",						twKind = "bfa", requireRememberedTimewalkingKind = true,	indicators = { { questIDs = { 89222, 89223 }, shape = "square", overlay = { itemIDs = { 238790, 238791 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--	09  Shadowlands
+	{key = "XPTW:09-LVL",	questID = 92647,	requireInLog = true,	sortGO = {"XP09:TW",1},		label = "TW Shadowlands LVL",		frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Shadowlands",			list = "last", levelGate = "LVL",	twKind = "shadowlands", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:09-MAX",	questID = 93628,	requireInLog = true,	sortGO = {"XP09:TW",2},		label = "TW Shadowlands MAX",		frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Shadowlands",			list = "last", levelGate = "MAX",	twKind = "shadowlands", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:09-TKN",	fallbackQuestInLog = { 92650 },				sortGO = {"XP09:TW",3},		label = "TW Shadowlands TKN",		frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last",						twKind = "shadowlands", requireRememberedTimewalkingKind = true,	indicators = { { questID = 92650, shape = "square", overlay = { itemIDs = { 253517 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
+--	10  Dragonflight
+	{key = "XPTW:10-LVL",	questID = 93495,	requireInLog = true,	sortGO = {"XP10:TW",1},		label = "TW Dragonflight LVL",		frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Dragonflight",			list = "last", levelGate = "LVL",	twKind = "dragonflight", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:10-MAX",	questID = 93497,	requireInLog = true,	sortGO = {"XP10:TW",2},		label = "TW Dragonflight MAX",		frameID = "bar1",	hideDone = false,	progress = { objectiveIndex = 1 },	XDone = true,		questInfo = "Dragonflight",			list = "last", levelGate = "MAX",	twKind = "dragonflight", showIfRememberedTimewalkingKind = true, },
+	{key = "XPTW:10-TKN",	fallbackQuestInLog = { 93852 },				sortGO = {"XP10:TW",3},		label = "TW Dragonflight TKN",		frameID = "bar1",	hideDone = false,	preferQuestInfoForTitle = true,							questInfo = "\194\160",				list = "last",						twKind = "dragonflight", requireRememberedTimewalkingKind = true,	indicators = { { questID = 93852, shape = "square", overlay = { itemIDs = { 262918 }, text = "1", color = { 1.0, 1.0, 0.1 } }, }, }, },
 
 
-  {label = "Void Strike", frameID = "list2", playerLevel = { "=", 90 }, hideDone = true, requireInLog = false, showXWhenComplete = true,
-  questInfo = "Void Strike\n - Rutual Site and Void Incursion (Zygor)", questID = 96080, },
+--	USERS NOTES ONLY
+	--	Update when Khaz Algar Timewalking comes out
+	--	- Update Timewalking in QuestTracker for War Within Timewalking
+	--	- Update Timewalking in DateTime for War Within Timewalking events
+	--	- Aura:       
+	--	- Calendar:   War Within Timewalking
+	--	- LFD ID:     3305
+	--	- Not sure what else is needed?
 
---  {label = "Void Strike", frameID = "list2", playerLevel = { "=", 90 }, hideDone = true, requireInLog = true, showXWhenComplete = true,
---  questInfo = "Void Strike\n - Rutual Site and Void Incursion (Zygor)", questID = 96080, },
+
+
 
 
 
@@ -271,16 +180,11 @@ ns.rules = {
 }
 -- mapIDs: fUI_QTUsage.lua
 
-
-do
-  local EXPANSION_ID = -1
-  local EXPANSION_NAME = "Weekly"
-  if type(ns.rules) == "table" then
-    for i = 1, #ns.rules do
-      local r = ns.rules[i]
-          if type(r) == "table" then
-            ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
-          end
-    end
+bakedRules = ns.GuideHelpers.ExpandQuestGroups(bakedRules)
+for i = 1, #bakedRules do
+  local r = bakedRules[i]
+  if type(r) == "table" and not r.questGroup then
+    ns.GuideHelpers.NormalizeRule(r, EXPANSION_ID, EXPANSION_NAME)
+    ns.rules[#ns.rules + 1] = r
   end
 end
