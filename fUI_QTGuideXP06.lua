@@ -41,27 +41,34 @@ local GREY = "bfbfbf"
 --   $ga -> {currency} (gate/have amount)
 --   $cc -> {currency:char}
 --   $wb -> {currency:wb}
+--   $wgcs -> {garrisonCache} ("Cache N" estimate; line is dropped until a cache loot is recorded)
 
 
 -- item.required tuple keys:
 --   item.required = { count, hideWhenAcquired, autoBuyEnabled, autoBuyMax }
 local REQ_COUNT, REQ_HIDE, REQ_BUY_ON, REQ_BUY_MAX = 1, 2, 3, 4
 local bakedRules = {
-
-	{key = "XP06:Q36941A",  questID = 36941, prereq = {47189,},	label = "06 A Garrison 1", frameID = "list1", hideDone = true, faction = "A",	mapID = {84,17,},				questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Tanaan Jungle\n  - Portal Tower Entrance\n    - Talk to Battlemage\n    - Abandon Quest After Port",},
-	{key = "XP06:Q34586A",  questID = 34586, prereq = {36941,},	label = "06 A Garrison 2", frameID = "list1", hideDone = true, faction = "A",	mapID = {84,17,539,540,582,},	questInfo = "Warlords of Draenor\n - Warboard: Tanaan Jungle\n  - Portal Tower Entrance\n    - Talk to Battlemage\n    - Abandon Quest After Port\n  - Take Red Portal (Draenor)\n    - If Green phase @ Sidormi",},
-	{key = "XP06:Q34775A",  questID = 34775, prereq = {34586,},	label = "06 A Garrison 3", frameID = "list1", hideDone = true, faction = "A",	mapID = {84,17,539,540,582,},	questInfo = "Warlords of Draenor\n + Zygor: Shadowmoon Valley\n - Q2: 'Delegating on Draenor'",},
-	{key = "XP06:Q36615A",  questID = 36615, gold = 7500,		label = "06 A Garrison 4", frameID = "list2", hideDone = true, faction = "A",	currencyID = {824,2000,Y},		questInfo = "Garrison Lvl 3 $hv",	font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center", },
-	{key = "XP06:Q36615A",  questID = 36615, prereq = {36615,},	label = "06 A Garrison 4", frameID = "list2", hideDone = true, faction = "A",									questInfo = "Garrison Menagerie",	restedOnly = true, font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center", },
+--#regions																																										zygor = { "Guide\\Title", zygorTT, zygorX, zygorStep }
+	{key="XP06:Q-34582A",	questID = 34582, 					label = "06 Garrison A0", frameID = "list2", hideDone = true,	faction = "A",									font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",		questInfo = "Garrison Locked", },
+	{key="XP06:Q-36941A",	questID = 36941, prereq = {47189,},	label = "06 Garrison A1", frameID = "list1", hideDone = true,	faction = "A",	mapID = {84,17,},				zygor = { "EVENTS\\Warlords of Draenor\\Iron Horde Invasion",1,1,1 }, 		questInfo = "Warlords of Draenor\n + Warboard: Tanaan Jungle\n - Portal Tower Entry NPC\n > Iron Horde Invasion <",},
+	{key="XP06:Q-34586A",	questID = 34586, prereq = {36941,},	label = "06 Garrison A2", frameID = "list1", hideDone = true,	faction = "A",	mapID = {84,17,539,540,582,},																				questInfo = "Warlords of Draenor\n + Warboard: Tanaan Jungle\n - Portal Tower Entry NPC\n - Red Portal, Do Quests",},
+	{key="XP06:Q-34775A",	questID = 34775, prereq = {34586,},	label = "06 Garrison A3", frameID = "list1", hideDone = true,	faction = "A",	mapID = {84,17,539,540,582,},	zygor = { "LEVELING\\Draenor (10-70)\\Shadowmoon Valley (10-70)",1,1,1 }, 	questInfo = "Warlords of Draenor\n > Shadowmoon Valley <\n - Do 'Delegating on Draenor'",},
+	{key="XP06:Q-36567A",	questID = 36592, prereq = {34586,},	label = "06 Garrison A4", frameID = "list2", hideDone = true,	faction = "A",									font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",	 	questInfo = "Garrison ^2  $hv\n$wgcs",	currencyID = {824, 200,Y}, },
+	{key="XP06:Q-36615A",	questID = 36615, prereq = {36592,},	label = "06 Garrison A5", frameID = "list2", hideDone = true,	faction = "A",									font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",	 	questInfo = "Garrison ^3  $hv\n$wgcs",	currencyID = {824,2000,Y}, gold = 10000, },
+	{key="XP06:Q-38241A",	questID = 38241, prereq = {36615,},	label = "06 Garrison A6", frameID = "list2", hideDone = true,	faction = "A",									font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",		questInfo = "Garrison Pet Stone", },
+	{key="XP06:Q-GCACHEA",					 prereq = {36615,},	label = "06 Garrison A7", frameID = "list2", hideDone = false,	faction = "A",	resting = true,					font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",		textInfo  = "Garrison $wgcs", },
 --                                                                                                                                       -- mapIDs: fUI_QTUsage.lua						currencyID = { 3310, 1000, Y },							textInfo  = "",
 
-	{key = "XP06:Q36940H",	questID = 36940, prereq = {47514,},	label = "06 H Garrison 1", frameID = "list1", hideDone = true, faction = "H",	mapID = {85,17,},				questInfo = "Warlords of Draenor\n + Iron Horde Invasion (Zygor)\n  - Warboard: Tanaan Jungle\n  - Lower Portal Room\n    - Talk to Battlemage\n    - After Port Abandon Quest",},
-	{key = "XP06:Q34586H",	questID = 34586, prereq = {36940,},	label = "06 H Garrison 2", frameID = "list1", hideDone = true, faction = "H",	mapID = {85,17,525,590,},		questInfo = "Warlords of Draenor\n - Warboard: Tanaan Jungle\n - Lower Portal Room\n - Talk to Battlemage\n - After Port Abandon Quest\n - Take Red Portal (Draenor)",},
-	{key = "XP06:Q34960H",	questID = 34960, prereq = {34586,},	label = "06 H Garrison 3", frameID = "list1", hideDone = true, faction = "H",	mapID = {85,17,525,590,},		questInfo = "Warlords of Draenor\n + Frostfire Ridge (Zygor)\n - Q2: 'The Land Provides'",},
-	{key = "XP06:Q36567H",	questID = 36567, prereq = {34960,},	label = "06 H Garrison 4", frameID = "list1", hideDone = true, faction = "H",	mapID = {85,17,525,590,},		questInfo = "Warlords of Draenor\n - 200 Garrison Resources\n - Upgrade Garrison to Level 2",},
-	{key = "XP06:Q36614H",	questID = 36614, gold = 7500,		label = "06 H Garrison 5", frameID = "list2", hideDone = true, faction = "H",	currencyID = {824,2000,Y},		questInfo = "Garrison Lvl 3 $hv",	font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center", },
-	{key = "XP06:Q36614H",	questID = 36614, prereq = {36614,},	label = "06 H Garrison 5", frameID = "list2", hideDone = true, faction = "H",									questInfo = "Garrison Menagerie",	restedOnly = true, font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center", },
-	{key = "XP06:Q33505",	questID = 33505, prereq = {34586,},	label = "06 Wiggling Egg", frameID = "list1", hideDone = true,					mapID = 525,					questInfo = "Frostfire Ridge\n + Wiggling Egg", },
+	{key="XP06:Q-33815H",	questID = 33815, 					label = "06 Garrison H0", frameID = "list2", hideDone = true,	faction = "H",									font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",		questInfo = "Garrison Locked", },
+	{key="XP06:Q-36940H",	questID = 36940, prereq = {47514,},	label = "06 Garrison H1", frameID = "list1", hideDone = true,	faction = "H",	mapID = {85,17,},				zygor = { "EVENTS\\Warlords of Draenor\\Iron Horde Invasion",1,1,1 }, 		questInfo = "Warlords of Draenor\n - Warboard: Tanaan Jungle\n - Lower Portal Room NPC\n > Iron Horde Invasion <",},
+	{key="XP06:Q-34586H",	questID = 34586, prereq = {36940,},	label = "06 Garrison H2", frameID = "list1", hideDone = true,	faction = "H",	mapID = {85,17,525,590,},																					questInfo = "Warlords of Draenor\n - Warboard: Tanaan Jungle\n - Lower Portal Room NPC\n - Red Portal, Do Quests",},
+	{key="XP06:Q-34960H",	questID = 34960, prereq = {34586,},	label = "06 Garrison H3", frameID = "list1", hideDone = true,	faction = "H",	mapID = {85,17,525,590,},		zygor = { "LEVELING\\Draenor (10-70)\\Frostfire Ridge (10-70)",1,1,1 }, 	questInfo = "Warlords of Draenor\n > Frostfire Ridge <\n - Do 'The Land Provides'",},
+	{key="XP06:Q-36567H",	questID = 36567, prereq = {34586,},	label = "06 Garrison H4", frameID = "list2", hideDone = true,	faction = "H",									font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",		questInfo = "Garrison ^2  $hv\n$wgcs",	currencyID = {824, 200,Y}, },
+	{key="XP06:Q-36614H",	questID = 36614, prereq = {36567,},	label = "06 Garrison H5", frameID = "list2", hideDone = true,	faction = "H",									font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center", 		questInfo = "Garrison ^3  $hv\n$wgcs",	currencyID = {824,2000,Y}, gold = 10000, },
+	{key="XP06:Q-38242H",	questID = 38242, prereq = {36614,},	label = "06 Garrison H6", frameID = "list2", hideDone = true,	faction = "H",									font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",		questInfo = "Garrison Pet Level", },
+	{key="XP06:Q-GCACHEH",					 prereq = {36614,},	label = "06 Garrison H7", frameID = "list2", hideDone = false,	faction = "H",	resting = true,					font = "lsm:Bazooka", size = 14, color = "b88fe6", align = "center",		textInfo  = "Garrison $wgcs", },
+
+	{key="XP06:Q-33505",	questID = 33505, prereq = {34586,},	label = "06 Wiggling Egg", frameID = "list1", hideDone = true,					mapID = 525,					questInfo = "Frostfire Ridge\n + Wiggling Egg", },
 
 
 

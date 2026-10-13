@@ -114,6 +114,16 @@ function Q.IsWorldQuestActive(questID, mapID)
 	return false
 end
 
+function Q.IsMapEventActive(areaPoiID, mapID)
+	for _, id in ipairs(C_AreaPoiInfo.GetEventsForMap(mapID)) do
+		if id == areaPoiID then
+			local info = C_AreaPoiInfo.GetAreaPOIInfo(mapID, id)
+			return info and info.isCurrentEvent == true or false
+		end
+	end
+	return false
+end
+
 -- Reward money data is only cached client-side once the quest has been previewed (map click or IsActive poll);
 -- RequestPreloadRewardData warms that cache. Different client versions expose the money getter under different names.
 function Q.GetWorldQuestGoldReward(questID)
@@ -277,3 +287,54 @@ if _G then
 	_G.IsQuestCompleted = Q.IsQuestCompleted
 	_G.IsQuestInLog = Q.IsQuestInLog
 end
+
+-- Garrison cache estimate. There is no API for the cache amount, so remember when this character
+-- last looted it (garrison resources loot toast while in the garrison) and accrue 1 per 10 minutes.
+do
+	local GARRISON_RESOURCES = 824
+	local CACHE_SECONDS_PER_RESOURCE = 600
+	local CACHE_CAP = 500
+
+	local function GetCharCache()
+		local c = rawget(_G, "fr0z3nUI_QuestTracker_Char")
+		if type(c) ~= "table" then return nil end
+		if type(c.cache) ~= "table" then c.cache = {} end
+		return c.cache
+	end
+
+	local function IsPlayerInGarrison()
+		if not (C_Garrison and type(C_Garrison.IsPlayerInGarrison) == "function") then return false end
+		local garrisonType = (Enum and Enum.GarrisonType and Enum.GarrisonType.Type_6_0_Garrison)
+			or rawget(_G, "LE_GARRISON_TYPE_6_0")
+		if garrisonType == nil then return false end
+		local ok, inGarrison = pcall(C_Garrison.IsPlayerInGarrison, garrisonType)
+		return ok and inGarrison == true
+	end
+
+	-- nil until a cache loot has been seen on this character.
+	function Q.GetGarrisonCacheEstimate()
+		local c = GetCharCache()
+		local lootedAt = c and tonumber(c.garrisonCacheLootedAt)
+		if not lootedAt then return nil end
+		local elapsed = time() - lootedAt
+		if elapsed < 0 then elapsed = 0 end
+		return math.min(CACHE_CAP, math.floor(elapsed / CACHE_SECONDS_PER_RESOURCE))
+	end
+
+	local f = CreateFrame("Frame")
+	f:RegisterEvent("SHOW_LOOT_TOAST")
+	f:SetScript("OnEvent", function(_, _, typeIdentifier, itemLink)
+		if typeIdentifier ~= "currency" or type(itemLink) ~= "string" then return end
+		if tonumber(itemLink:match("currency:(%d+)")) ~= GARRISON_RESOURCES then return end
+		if not IsPlayerInGarrison() then return end
+		local c = GetCharCache()
+		if not c then return end
+		c.garrisonCacheLootedAt = time()
+		print("|cff00ccff[FQT]|r Cache Looted, Count Reset")
+		if type(ns.RefreshAll) == "function" then
+			pcall(ns.RefreshAll)
+		end
+	end)
+end
+
+ns.GetGarrisonCacheEstimate = Q.GetGarrisonCacheEstimate

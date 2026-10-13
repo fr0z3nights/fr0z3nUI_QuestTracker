@@ -48,10 +48,6 @@ questID = 24432, prereq = { 46931, 51341, 61874, }, hideDone = true, faction = "
 questInfo = "Cataclysm\n+ Vashj'ir (Zygor)\n+ Complete Quest\n      \"Sea Legs\"",},
 
 --	charLI = "Name-Realm" (or {list}): only shows while logged in on that character
-	{key = "XPPB:Q-31972",	questID = 31972,	charLI = "Shadowarlord-Frostmourne",	label = "APB Brok",					frameID = "list2",	hideDone = true,	questInfo = ".\nBrok\nMount Hyjal",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
-	{key = "XPPB:Q-31973",	questID = 31973,	charLI = "Shadowzdeath-Caelestrasz",	label = "APB Bordin Steadyfist",	frameID = "list2",	hideDone = true,	questInfo = ".\nBordin Steadyfist\nDeepholm",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
-	{key = "XPPB:Q-31974",	questID = 31974,	charLI = "Frozenfrosti-Dath'Remar",		label = "APB Goz Banefury",			frameID = "list2",	hideDone = true,	questInfo = ".\nGoz Banefury\nTwilight Highlands",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
-	{key = "XPPB:Q-31971",	questID = 31971,	charLI = "Frozenflamed-Barthilas",		label = "APB Obalis",				frameID = "list2",	hideDone = true,	questInfo = ".\nObalis\nUldum",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
 
 
 

@@ -4,6 +4,135 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.10.10.04
+- Files: `fUI_QTGuide.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: defer quest-driven tab closure during combat lockdown until PLAYER_REGEN_ENABLED; retain matching-title closure for active/inactive tabs and existing pending-action replacement behavior.
+
+## 2026.10.10.03
+- Files: `fUI_QTQuest.lua`, `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP12.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Harandar Abundance: gate on current Herbalism Grotto event POI 8527 on map 2413 instead of inactive world quest 91302; track weekly quest 89507 for log checks, progress, and completion.
+- Rules: add `eventPOI = { areaPoiID, mapID }` and refresh on `AREA_POIS_UPDATED`.
+
+## 2026.10.10.02
+- Files: `fUI_QTGuide.lua`, `fUI_QTGuideXP05.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: move quest-step actions to the step slot as `{ startingStep, { questID, step }, ... }`; keep zygorX numeric and independent of skips. Update the combined Kun-Lai Alliance row.
+
+## 2026.10.10.01
+- Files: `fUI_QTGuide.lua`, `fUI_QTGuideXP05.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: allow quest-step action lists in zygorX, with closure on the rule's questID; honor completed actions when loading and update active or inactive open tabs on turn-in.
+- Kun-Lai Alliance: combine the two rows under quest 30515, starting at step 8, skipping to 46 after quest 30506, and closing after quest 30515.
+
+## 2026.10.09.07
+- Files: `fUI_QTGuide.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: resolve unique normalized full-path matches after exact lookup fails; report corrections and ambiguity while preserving step and tab-close settings.
+
+## 2026.10.09.06
+- Files: `fUI_QTGuide.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: support standalone `zygorX = 1` for automatic world-quest links, tracking the resolved zone guide and `wqID[1]` for tab closure on turn-in.
+
+## 2026.10.09.05
+- Files: `fUI_QTGuide.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: close the matching guide tab on quest turn-in whether active or inactive; leave an unrelated active guide alone.
+
+## 2026.10.09.04
+- Files: `fUI_QTGuide.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: correct `zygorX = 1` to remove the matching active guide tab on quest turn-in instead of hiding the viewer.
+
+## 2026.10.09.03
+- Files: `fUI_QTGuide.lua`, `fUI_QTGuideXP05.lua`, `fUI_QTGuideXP06.lua`, `fUI_QTGuideXP12.lua`, `fUI_QTGuideXPEV.lua`, `fUI_QTGuideXPWK.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: extend tuples to `{ guide, tooltip, close, step }`, preserving existing steps and defaulting close to off.
+- Zygor: opt in with close = 1 to hide the clicked guide on its quest's turn-in, only if that guide is still active; enabled for Tarr the Terrible.
+
+## 2026.10.09.02
+- Files: `fUI_QTGuideXP05.lua`, `fUI_QTGuideXP12.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: migrate all guide-link rules to `zygor = { guide, tooltip, step }`, preserving existing steps and keeping hover tooltips disabled.
+
+## 2026.10.09.01
+- Files: `fUI_QTGuide.lua`, `fUI_QTGuideXPEV.lua`, `fUI_QTGuideXP01.lua`, `fr0z3nUI_QuestTracker.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: support packed `zygor = { guide, tooltip, step }` details while retaining legacy fields; tooltip display is opt-in with `zygorTT = 1`.
+- Battle pet trainers: consolidate faction-specific Outland guide links into one rule per quest, selecting the step for the player's faction.
+
+## 2026.10.08.06
+- Files: `fr0z3nUI_QuestTracker.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- World quest rewards: right-align `%wqg` and `{wqGold}` values in a minimum four-character field.
+
+## 2026.10.08.05
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP12.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- World quests: support alternate `questInfoUwqGold` text when a completed `hideQID` is overridden by the `uwqGold` threshold.
+- Zul'Aman: show the fixed 1784-gold text before tracking completion and the actual reward text when the 500-gold exception applies.
+
+## 2026.10.08.04
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP12.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- World quests: use `uwqGold` as the confirmed minimum reward required to override a completed `hideQID`.
+- Zul'Aman: quest 92123 uses `uwqGold = 500`; removed the separate override flag.
+
+## 2026.10.08.03
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP12.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- World quests: support scalar `hideQID` and opt-in account completion checks.
+- Zul'Aman: keep quest 92123 visible after tracking quest 92128 only when its gold reward is at least 500.
+
+## 2026.10.08.02
+- Files: `fUI_QTGuide.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: show a hidden viewer before loading clicked explicit or world-quest links; leave an already-shown viewer alone.
+
+## 2026.10.08.01
+- Files: `fUI_QTGuide.lua`, `fr0z3nUI_QuestTracker.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: automatically link `wqID` rows to their quest-specific zone-guide steps through Zygor's world-quest loader; preserve explicit guide overrides.
+
+## 2026.10.07.07
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Timeless Isle: require quest 93612 or 45563 in the log for the jump reminder; hide after quest 33231, while owning either teleport item in bags, or on map 554.
+- Rules: add shared `hideMapID` location exclusions.
+
+## 2026.10.07.06
+- Files: `fUI_QTGuide.lua`, `fr0z3nUI_QuestTracker.lua`, `fUI_QTUsageUIR.lua`, `fUI_QTGuideXP05.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Zygor: add shared `zygor`/`zygorStep` links for clickable list/bar rows and link both Kun-Lai entries.
+- Zygor: suppress general guide-eligibility warnings by default, with account-wide `/fqtzygor bypass on|off`; leave Zygor source and saved approvals unchanged.
+
+## 2026.10.07.05
+- Files: `fUI_QTGuideXP12.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Abundance: prefer questInfo for the currency-only token reminder instead of its label.
+
+## 2026.10.07.04
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP12.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Currency text: add shared `$caN` shorthand for `{currency:above:N}` and use `$ca6` in the Abundance reminder.
+
+## 2026.10.07.03
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP12.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Currency text: add `{currency:above:N}` and show the number of tokens above 6 in the Abundance reminder.
+
+## 2026.10.07.02
+- Files: `fUI_QTGuideXP12.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Abundance: hide the token reminder when quest 89507 is picked up or completed.
+
+## 2026.10.07.01
+- Files: `fUI_QTGuideXP12.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Abundance: show the missing-quest reminder at 6 or fewer currency 3465, the token reminder above 6 regardless of quest pickup, and quest progress while in the log.
+
+## 2026.10.05.02
+- Files: `fr0z3nUI_QuestTracker.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Lists: accept `list = "btm"` as an alias for `"bottom"`.
+
+## 2026.10.05.01
+- Files: `fr0z3nUI_QuestTracker.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Lists: recognize `list = "bottom"` after unmarked entries regardless of file or saved frame order; retain `"last"` compatibility.
+
+## 2026.10.02.04
+- Files: `fUI_QTQuest.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Garrison cache: print `[FQT] Cache Looted, Count Reset` when a cache loot is recorded.
+
+## 2026.10.02.03
+- Files: `fUI_QTQuest.lua`, `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP06.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Rules: added the `$wgcs` / `{garrisonCache}` placeholder, showing an estimated "Cache N" from this character's last recorded garrison cache loot (1 per 10 min, capped at 500).
+
+## 2026.10.02.02
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Rules: when several rules share one `itemCD` itemID, only the first matching rule prints the countdown; the rest drop the line.
+
+## 2026.10.02.01
+- Files: `fUI_QTItem.lua`, `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Rules: added the `itemCD` field and the `%icd` / `{itemCD}` placeholder, showing an item's remaining cooldown in info text.
+
 ## 2026.10.01.04
 - Files: `fUI_QTUsageUIR.lua`, `fUI_QTGuideXPWK.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
 - Rules: added a per-rule `pad` field that inserts extra space after a single list row, on top of the frame-wide Usage tab Pad.

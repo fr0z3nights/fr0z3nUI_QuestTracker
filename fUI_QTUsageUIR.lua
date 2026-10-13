@@ -324,8 +324,9 @@ function ns.Render.RenderBar(frameDef, frame, entries)
           btn:SetPoint("TOPLEFT", fs, "TOPLEFT", -2, 2)
           btn:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 2 + indW, -2)
           btn._entry = EntryForSlot(i)
-          btn:EnableMouse(editMode and true or false)
-          if editMode then btn:Show() else btn:Hide() end
+          local clickable = editMode or (ns.Guide and ns.Guide.HasZygorLink(btn._entry and btn._entry.rule)) or false
+          btn:EnableMouse(clickable)
+          if clickable then btn:Show() else btn:Hide() end
         end
 
         local rm = EnsureRemoveButton and EnsureRemoveButton(frame, i) or nil
@@ -686,8 +687,9 @@ function ns.Render.RenderList(frameDef, frame, entries)
       btn:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 2, -2)
       btn._entry = e
       btn._entryAbsIndex = i + offset
-      btn:EnableMouse(editMode and true or false)
-      if editMode then btn:Show() else btn:Hide() end
+      local clickable = editMode or (ns.Guide and ns.Guide.HasZygorLink(e and e.rule)) or false
+      btn:EnableMouse(clickable)
+      if clickable then btn:Show() else btn:Hide() end
     end
 
     local rm = EnsureRemoveButton and EnsureRemoveButton(frame, i) or nil

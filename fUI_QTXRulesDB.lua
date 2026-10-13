@@ -162,6 +162,8 @@ SetZone("Timewalking, Event")
 		KQuest(86560, "05 Mists LVL")                   			--	Weekly		Player LVL			
 		KQuest(93612, "05 Mists MAX")                     			--	Weekly		Player MAX		
 		KQuest(45563, "05 Mists TKN")                             	--	Token		Player			
+		LQuest(33231, "Timelesss Isle Port A", 554)					--  Chromie Timeless Isle Transport
+		LQuest(33232, "Timelesss Isle Port H", 554)					--  Chromie Timeless Isle Transport
 	--	Timewalking	 06  Draenor
 		KQuest(86563, "06 Draenor LVL")                     		--	Weekly		Player LVL			
 		KQuest(93613, "06 Draenor MAX")                       		--	Weekly		Player MAX		
@@ -203,6 +205,8 @@ SetZone("Silvermoon City, Quel'Thalas")
 	KQuest(94386, "Void Assaults: Zul'Aman")	           			--	Scheduled	Player		
 	KQuest(94385, "Void Assaults: Eversong Woods")	           		--	Scheduled	Player		
 
+	LQuest(91932, "Abundant Awakening - Eversong",2395)				--  Weekly		Player						/dump C_Map.GetBestMapForUnit("player")
+
 	KQuest(95842, "Midnight: Assaults")                    			--  Weekly		Player MAX
 	KQuest(93909, "Midnight: Delves")			            		--	Scheduled	Player		
 	KQuest(93910, "Midnight: Prey")			            			--	Scheduled	Player
@@ -231,42 +235,42 @@ SetZone("Silvermoon City, Quel'Thalas")
 
 --  11	War Within
 
-SetZone("Starting, Khaz Algar")
-	KQuest(81930, "The War Within")				            		--	Alliance	Player		
-	KQuest(78713, "The War Within")				            		--	Horde		Player		
-SetZone("Meta Quests, Khaz Algar")
-	KQuest(91093, "More Than Just a Phase")		            		--	Weekly		Player		
-	KQuest(87422, "Worldsoul: Undermine World Quests")	            --	Weekly		Player		
-	KQuest(86369, "A Sparkling Fortune")							--	Weekly?		Player		
-	KQuest(82452, "Worldsoul: World Quests")						--	Weekly		Player		
-	KQuest(82679, "Archives: Seeking History")						--	Weekly		Player		
-	KQuest(82678, "Archives: The First Disc")						--	Weekly		Player		
-	KQuest(80672, "Hand of the Vizier")								--	Weekly		Player		
-	KQuest(80670, "Eyes of the Weaver")								--	Weekly		Player		
-SetZone("Dungeon, Khaz Algar")
-	KQuest(83469, "City of Threads")			            		--				Player		
-	KQuest(83465, "Ara-Kara, City of Echoes")	            		--				Player		
-	KQuest(83457, "The Stonevault")			            			--				Player		
-SetZone("Delves, Khaz Algar")
-	KQuest(91026, "Gathering an Upgrade")		    				--				Player		
-	KQuest(87419, "Worldsoul: Delves")			    				--				Player		
-	KQuest(85666, "Delver's Call: Spiral Weave")		    		--				Player		
-	KQuest(85244, "Defeating the Underpin")		    				--				Player		
-	KQuest(83771, "Delver's Call: Tak-Rethan Abyss")	    		--				Player		
-	KQuest(83500, "Zekvir, Hand of the Harbinger")	    			--				Player		
-	KQuest(82746, "Delves: Breaking Through to Loot Stuff")			--	Weekly		Player		
-	KQuest(82706, "Delves: Worldwide Research")						--	Weekly		Player		
-	KQuest(91009, "Durable Information Storage Container")			--	Weekly		Player		
-SetZone("Isle of Dorn, Khaz Algar")
-	KQuest(84365, "Something on the Horizon")		    			--  			Player		
-SetZone("Hallowfall, Khaz Algar")
-	KQuest(83551, "Hallowfall")				    					--				Player		
-	KQuest(85005, "A Radiant Call")									--				Player		
-	KQuest(91173, "The Flame Burns Eternal")						--				Player		
-SetZone("PvP, Khaz Algar")
-	KQuest(80184, "Preserving in Battle")							--	Weekly		Player		
-	KQuest(80186, "Preserving in War")								--	Weekly		Player		
-	KQuest(83345, "A Call to Battle")								--	Weekly		Player		
+--SetZone("Starting, Khaz Algar")
+--	KQuest(81930, "The War Within")				            		--	Alliance	Player		
+--	KQuest(78713, "The War Within")				            		--	Horde		Player		
+--SetZone("Meta Quests, Khaz Algar")
+--	KQuest(91093, "More Than Just a Phase")		            		--	Weekly		Player		
+--	KQuest(87422, "Worldsoul: Undermine World Quests")	            --	Weekly		Player		
+--	KQuest(86369, "A Sparkling Fortune")							--	Weekly?		Player		
+--	KQuest(82452, "Worldsoul: World Quests")						--	Weekly		Player		
+--	KQuest(82679, "Archives: Seeking History")						--	Weekly		Player		
+--	KQuest(82678, "Archives: The First Disc")						--	Weekly		Player		
+--	KQuest(80672, "Hand of the Vizier")								--	Weekly		Player		
+--	KQuest(80670, "Eyes of the Weaver")								--	Weekly		Player		
+--SetZone("Dungeon, Khaz Algar")
+--	KQuest(83469, "City of Threads")			            		--				Player		
+--	KQuest(83465, "Ara-Kara, City of Echoes")	            		--				Player		
+--	KQuest(83457, "The Stonevault")			            			--				Player		
+--SetZone("Delves, Khaz Algar")
+--	KQuest(91026, "Gathering an Upgrade")		    				--				Player		
+--	KQuest(87419, "Worldsoul: Delves")			    				--				Player		
+--	KQuest(85666, "Delver's Call: Spiral Weave")		    		--				Player		
+--	KQuest(85244, "Defeating the Underpin")		    				--				Player		
+--	KQuest(83771, "Delver's Call: Tak-Rethan Abyss")	    		--				Player		
+--	KQuest(83500, "Zekvir, Hand of the Harbinger")	    			--				Player		
+--	KQuest(82746, "Delves: Breaking Through to Loot Stuff")			--	Weekly		Player		
+--	KQuest(82706, "Delves: Worldwide Research")						--	Weekly		Player		
+--	KQuest(91009, "Durable Information Storage Container")			--	Weekly		Player		
+--SetZone("Isle of Dorn, Khaz Algar")
+--	KQuest(84365, "Something on the Horizon")		    			--  			Player		
+--SetZone("Hallowfall, Khaz Algar")
+--	KQuest(83551, "Hallowfall")				    					--				Player		
+--	KQuest(85005, "A Radiant Call")									--				Player		
+--	KQuest(91173, "The Flame Burns Eternal")						--				Player		
+--SetZone("PvP, Khaz Algar")
+--	KQuest(80184, "Preserving in Battle")							--	Weekly		Player		
+--	KQuest(80186, "Preserving in War")								--	Weekly		Player		
+--	KQuest(83345, "A Call to Battle")								--	Weekly		Player		
 --	KQuest(89039, "Turbo-Boost: Powerhouse Challenges")				--	Weekly		Player		
 
 --  10	Dragonflight
@@ -274,7 +278,7 @@ SetZone("PvP, Khaz Algar")
 SetZone("Weekly, Dragon Isles")
 	KQuest(78444, "A Worthy Ally: Dream Wardens")	                --				Player		
 	KQuest(75665, "A Worthy Ally: Loamm Niffen")	                --				Player		
-	KQuest(65435, "The Dragon Isles Awaits")	                    --	Horde		Player		
+--	KQuest(65435, "The Dragon Isles Awaits")	                    --	Horde		Player		
 SetZone("RAID, Dragon Isles")
 	KQuest(65762, "Sepulcher (M)")
 	KQuest(65763, "Sepulcher (H)")
@@ -327,6 +331,7 @@ SetZone("RAID, Broken Isles")
 --  06	Draenor
 
 SetZone("Frostfire Ridge, Draenor")
+	LQuest(36469, "Pet Versus Pests", 590)							--  Monthly		Player						/dump C_Map.GetBestMapForUnit("player")
 	LQuest(38568, "We Need a Shipwright", 590)						--  Monthly		Player	H					/dump C_Map.GetBestMapForUnit("player")
 SetZone("Pet Battles, Draenor")
 	KQuest(37208, "Taralune, Talador")								--	Talador				Daily		Warband
@@ -348,6 +353,7 @@ SetZone("RAID, Draenor")
 SetZone("Startup, Draenor")
 	LQuest(34398, "Warlords of Draenor: The Dark Portal", 17)		--  Starting		Player		
 SetZone("Shadowmoon Valley, Draenor")
+	LQuest(36423, "Pet Versus Pests", 582)							--  Monthly		Player						/dump C_Map.GetBestMapForUnit("player")
 	LQuest(37433, "Proving Grounds", 582)							--  Monthly		Player						/dump C_Map.GetBestMapForUnit("player")
 	LQuest(38257, "We Need a Shipwright", 582)						--  Monthly		Player	A					/dump C_Map.GetBestMapForUnit("player")
 	LQuest(38567, "Garrison Campaign: War Council", 582)			--  Monthly		Player	A					/dump C_Map.GetBestMapForUnit("player")

@@ -49,11 +49,6 @@ local bakedRules = {
 
 --                                                                                                                                       -- mapIDs: fUI_QTUsage.lua
 --	charLI = "Name-Realm" (or {list}): only shows while logged in on that character
-	{key = "XPPB:Q-31922",	questID = 31922,	charLI = "Bullseyeshot-Barthilas",		label = "APB Nicki Tinytech",		frameID = "list2",	hideDone = true,	questInfo = ".\nNicki Tinytech\nHellfire, Outland",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
-	{key = "XPPB:Q-31924",	questID = 31924,	charLI = "Frozenlegion-Frostmourne",	label = "APB Narrok",				frameID = "list2",	hideDone = true,	questInfo = ".\nNarrok\nNagrand, Outland",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
-	{key = "XPPB:Q-31926",	questID = 31926,	charLI = "Shadowswings-Caelestrasz",	label = "APB Bloodknight Antari",	frameID = "list2",	hideDone = true,	questInfo = ".\nBloodknight Antari\nShadowmoon, Outland",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
-	{key = "XPPB:Q-31925",	questID = 31925,	charLI = "Shadowardenz-Dath'Remar",		label = "APB Morulu The Elder",		frameID = "list2",	hideDone = true,	questInfo = ".\nMorulu The Elder\nShattrath, Outland",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
-	{key = "XPPB:Q-31923",	questID = 31923,	charLI = "Shadowizards-Barthilas",		label = "APB Ras'an",				frameID = "list2",	hideDone = true,	questInfo = ".\nRas'an\nZangarmarsh, Outland",													font = "lsm:Bazooka", size = 15, color = "ffe633", align = "center", list = "bottom", },
 
 
 

@@ -2178,6 +2178,10 @@ local function PlayerMatchesCharLI(spec)
   return MatchesOne(spec)
 end
 
+-- itemID -> the rule that owns that cooldown's countdown this refresh, so two rules sharing one
+-- itemCD don't both print the timer. Keyed by rule because edit mode evaluates each rule twice.
+local itemCDOwner = {}
+
 local function BuildRuleStatus(rule, ctx, opts)
   local questID = tonumber(rule and rule.questID)
 
@@ -2207,13 +2211,19 @@ local function BuildRuleStatus(rule, ctx, opts)
     return nil
   end
 
-  -- World quest rows only show while the WQ is actually up on its map (12.1 removed the old per-map quest list API).
+  if applyGates and type(rule.eventPOI) == "table"
+      and not ns.Quest.IsMapEventActive(rule.eventPOI[1], rule.eventPOI[2]) then
+    return nil
+  end
+
+  -- World quest rows only show while the WQ is actually up (12.1 removed the old per-map quest list API).
   if applyGates and wqQuestID and not IsWorldQuestActive(wqQuestID, wqMapID) then
     return nil
   end
 
   -- Fetched once and reused below both for the wqGold gate and the {wqGold} questInfo placeholder.
   local wqGoldValue = wqQuestID and GetWorldQuestGoldReward(wqQuestID) or nil
+  local uwqGoldExceptionActive = false
 
   -- Optional minimum gold reward gate for world quest rows (e.g. only show the "gold" WQ variant worth tracking).
   -- Fail open on unresolved (nil) reward data (not cached yet / API mismatch) so the row isn't stuck hidden;
@@ -2404,11 +2414,22 @@ local function BuildRuleStatus(rule, ctx, opts)
   end
 
   -- Hide if any quest is completed (useful when quests drop from log on completion)
-  if applyGates and not forceShowWhileQuestInLog and type(rule) == "table" and type(rule.hideQID) == "table" then
-    for _, q in ipairs(rule.hideQID) do
+  if applyGates and not forceShowWhileQuestInLog and type(rule) == "table" and rule.hideQID ~= nil then
+    local hideQuestIDs = type(rule.hideQID) == "table" and rule.hideQID or {rule.hideQID}
+    for _, q in ipairs(hideQuestIDs) do
       local qid = tonumber(q)
-      if qid and qid > 0 and IsQuestCompleted(qid) then
-        return nil
+      if qid and qid > 0 then
+        local done = IsQuestCompleted(qid)
+        if rule.hideQIDAccount == true and C_QuestLog and type(C_QuestLog.IsQuestFlaggedCompletedOnAccount) == "function" then
+          local ok, accountDone = pcall(C_QuestLog.IsQuestFlaggedCompletedOnAccount, qid)
+          done = done or (ok and accountDone == true)
+        end
+        if done then
+          local uwqGold = wqQuestID and tonumber(rule.uwqGold)
+          local hasGoldException = uwqGold and type(wqGoldValue) == "number" and wqGoldValue >= uwqGold
+          if not hasGoldException then return nil end
+          uwqGoldExceptionActive = true
+        end
       end
     end
   end
@@ -2418,6 +2439,11 @@ local function BuildRuleStatus(rule, ctx, opts)
     if HasRememberedWeeklyTimewalkingKind() then
       return nil
     end
+  end
+
+  local questInfoText = type(rule) == "table" and rule.questInfo or nil
+  if uwqGoldExceptionActive and type(rule.questInfoUwqGold) == "string" then
+    questInfoText = rule.questInfoUwqGold
   end
 
   -- Class gate (optional)
@@ -2517,6 +2543,14 @@ local function BuildRuleStatus(rule, ctx, opts)
         if have == wants[i] then ok = true break end
       end
       if not ok then return nil end
+    end
+  end
+
+  if applyGates and type(rule) == "table" and rule.hideMapID ~= nil then
+    local excluded = ParseLocationIDs(rule.hideMapID)
+    local have = (ctx and ctx.mapID) or GetBestMapIDSafe()
+    for _, mapID in ipairs(excluded or {}) do
+      if have == mapID then return nil end
     end
   end
 
@@ -2989,7 +3023,7 @@ local function BuildRuleStatus(rule, ctx, opts)
   -- Optional quest shopping list (typically vendor mats).
   -- Embed using %sl / {shoppingList} in questInfo.
   if not completed and type(rule) == "table" and type(rule.shopping) == "table" and rule.shopping[1] ~= nil then
-    local qi = (type(rule.questInfo) == "string") and rule.questInfo or nil
+    local qi = (type(questInfoText) == "string") and questInfoText or nil
     local wantsShoppingList = qi and (
       qi:find("%sl", 1, true)
       or qi:find("{shoppingList}", 1, true)
@@ -3086,7 +3120,7 @@ local function BuildRuleStatus(rule, ctx, opts)
 
     rawTitle = questTitle
 
-    local qi = (type(rule) == "table") and (rule.questInfo or nil) or nil
+    local qi = questInfoText
     local fullInfo = NormalizeQuestInfoToMultiline(qi)
     if fullInfo and fullInfo ~= "" then
       title = PreserveLeadingWhitespaceForDisplay(fullInfo)
@@ -3139,7 +3173,7 @@ local function BuildRuleStatus(rule, ctx, opts)
     local textName = (type(rule) == "table" and rule.label ~= nil and tostring(rule.label) ~= "") and tostring(rule.label) or "Task"
     rawTitle = textName
     if type(rule) == "table" and (rule.preferQuestInfoForTitle == true or (type(rule.aura) == "table" and rule.aura.eventKind == "calendar")) then
-      local qiLine = FirstNonEmptyLine(rule.questInfo)
+      local qiLine = FirstNonEmptyLine(questInfoText)
       if qiLine then
         -- Intentionally allow NBSP/blank-like questInfo to suppress label text (used by TW token rows).
         title = tostring(qiLine)
@@ -3168,10 +3202,18 @@ local function BuildRuleStatus(rule, ctx, opts)
     -- World quest gold reward shorthand
     s = s:gsub("%%wqg", "{wqGold}")
 
+    -- Item cooldown shorthand (rule.itemCD)
+    s = s:gsub("%%icd", "{itemCD}")
+    s = s:gsub("%$icd", "{itemCD}")
+
+    -- Garrison cache estimate shorthand
+    s = s:gsub("%$wgcs", "{garrisonCache}")
+
     -- Shopping-list shorthand (vendor mats)
     s = s:gsub("%%sl", "{shoppingList}")
 
     -- Currency shorthands
+    s = s:gsub("%$ca(%d+)", "{currency:above:%1}")
     s = s:gsub("%$rq", "{currency:req}")
     s = s:gsub("%$nm", "{currency:name}")
     -- Amount used for gating (warband total when transferable; otherwise character amount)
@@ -3233,6 +3275,9 @@ local function BuildRuleStatus(rule, ctx, opts)
     for i = 1, #lines do
       local line = lines[i]
       local wantsColor = gateOk and line:find("{currency", 1, true)
+      line = line:gsub("{currency:above:(%d+)}", function(baseline)
+        return tostring(math.max(0, (tonumber(g.gateQty) or 0) - tonumber(baseline)))
+      end)
       line = line:gsub("{currency}", repHave)
       line = line:gsub("{currency:have}", repHave)
       line = line:gsub("{currency:char}", repChar)
@@ -3261,8 +3306,40 @@ local function BuildRuleStatus(rule, ctx, opts)
 
   -- {wqGold} -> the world quest's actual gold reward (e.g. "123"), blank while not yet resolved.
   if type(title) == "string" and title:find("{wqGold}", 1, true) then
-    local goldText = (type(wqGoldValue) == "number") and tostring(math.floor(wqGoldValue + 0.5)) or ""
+    local goldText = (type(wqGoldValue) == "number") and string.format("%4d", math.floor(wqGoldValue + 0.5)) or ""
     title = title:gsub("{wqGold}", goldText)
+  end
+
+  -- {itemCD} -> remaining cooldown on rule.itemCD's item; drops its own line when ready.
+  if type(title) == "string" and title:find("{itemCD}", 1, true) then
+    local cdText = ""
+    local itemID = (type(rule) == "table") and tonumber(rule.itemCD) or nil
+    if itemID and ns and type(ns.GetItemCooldownText) == "function" then
+      cdText = ns.GetItemCooldownText(itemID) or ""
+    end
+    if cdText ~= "" and itemID then
+      local owner = itemCDOwner[itemID]
+      if owner == nil then
+        itemCDOwner[itemID] = rule
+      elseif owner ~= rule then
+        cdText = ""
+      end
+    end
+    if cdText == "" then
+      title = title:gsub("\n?{itemCD}", "")
+    else
+      title = title:gsub("{itemCD}", cdText)
+    end
+  end
+
+  -- {garrisonCache} -> "Cache N"; drops its own line until a cache loot has been recorded.
+  if type(title) == "string" and title:find("{garrisonCache}", 1, true) then
+    local amount = (ns and type(ns.GetGarrisonCacheEstimate) == "function") and ns.GetGarrisonCacheEstimate() or nil
+    if amount == nil then
+      title = title:gsub("\n?{garrisonCache}", "")
+    else
+      title = title:gsub("{garrisonCache}", "Cache " .. tostring(amount))
+    end
   end
 
   local function RepStandingLabelLite(standing)
@@ -3822,10 +3899,24 @@ local function EnsureRowButton(frame, idx)
   -- Drag/drop reordering is intentionally disabled (it was unreliable).
   -- Use the per-row up/down buttons next to X instead.
   b:SetScript("OnEnter", function(self)
-    if not editMode then return end
     local e = self and self._entry
     local r = e and e.rule
     if not r then return end
+
+    if not editMode then
+      if ns.Guide and ns.Guide.HasZygorLink(r)
+        and select(2, ns.Guide.GetZygorDetails(r)) == 1 and GameTooltip then
+        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+        GameTooltip:SetText("Load Zygor Guide")
+        local guideText = ns.Guide.GetZygorDetails(r)
+        if type(guideText) ~= "string" or guideText == "" then
+          guideText = "World Quest " .. tostring(r.wqID[1])
+        end
+        GameTooltip:AddLine(guideText, 1, 1, 1, true)
+        GameTooltip:Show()
+      end
+      return
+    end
 
     local lbl = (r.label ~= nil) and tostring(r.label) or ""
     if lbl == "" then
@@ -3850,9 +3941,15 @@ local function EnsureRowButton(frame, idx)
     if GameTooltip and GameTooltip.Hide then GameTooltip:Hide() end
   end)
   b:SetScript("OnClick", function(self, button)
-    if not editMode then return end
     local e = self._entry
     if not (e and e.rule) then return end
+
+    if not editMode then
+      if button == "LeftButton" and ns.Guide and ns.Guide.HasZygorLink(e.rule) then
+        ns.Guide.LoadZygorGuide(e.rule)
+      end
+      return
+    end
 
     -- Bar contents inspector: never toggle rule disable on simple click.
     -- (Clicking a row would otherwise effectively "remove" it from the bar.)
@@ -4045,6 +4142,12 @@ end
 
 RefreshAll = function()
   NormalizeSV()
+
+  if type(wipe) == "function" then
+    wipe(itemCDOwner)
+  else
+    for k in pairs(itemCDOwner) do itemCDOwner[k] = nil end
+  end
 
   if ns and type(ns.InvalidateQuestStateCache) == "function" then
     ns.InvalidateQuestStateCache()
@@ -4249,8 +4352,10 @@ RefreshAll = function()
             local aTop = ra and tostring(ra.list or ""):lower() == "top"
             local bTop = rb and tostring(rb.list or ""):lower() == "top"
             if aTop ~= bTop then return aTop end
-            local aLast = ra and tostring(ra.list or ""):lower() == "last"
-            local bLast = rb and tostring(rb.list or ""):lower() == "last"
+            local aPosition = ra and tostring(ra.list or ""):lower()
+            local bPosition = rb and tostring(rb.list or ""):lower()
+            local aLast = aPosition == "bottom" or aPosition == "btm" or aPosition == "last"
+            local bLast = bPosition == "bottom" or bPosition == "btm" or bPosition == "last"
             if aLast ~= bLast then return not aLast end
             local pa = ka and orderIndex[tostring(ka)] or nil
             local pb = kb and orderIndex[tostring(kb)] or nil
@@ -4276,8 +4381,10 @@ RefreshAll = function()
             local aTop = ra and tostring(ra.list or ""):lower() == "top"
             local bTop = rb and tostring(rb.list or ""):lower() == "top"
             if aTop ~= bTop then return aTop end
-            local aLast = ra and tostring(ra.list or ""):lower() == "last"
-            local bLast = rb and tostring(rb.list or ""):lower() == "last"
+            local aPosition = ra and tostring(ra.list or ""):lower()
+            local bPosition = rb and tostring(rb.list or ""):lower()
+            local aLast = aPosition == "bottom" or aPosition == "btm" or aPosition == "last"
+            local bLast = bPosition == "bottom" or bPosition == "btm" or bPosition == "last"
             if aLast ~= bLast then return not aLast end
             return (orig[a] or 0) < (orig[b] or 0)
           end)
@@ -4809,6 +4916,7 @@ frame:RegisterEvent("QUEST_TURNED_IN")
 frame:RegisterEvent("BAG_UPDATE_DELAYED")
 frame:RegisterEvent("UNIT_AURA")
 frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
+frame:RegisterEvent("AREA_POIS_UPDATED")
 
 -- Refresh quickly when spells/professions update (e.g. learning a new profession skill line).
 frame:RegisterEvent("SPELLS_CHANGED")
