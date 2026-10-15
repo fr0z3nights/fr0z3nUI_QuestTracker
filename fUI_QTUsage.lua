@@ -18,8 +18,10 @@ ns.MAP_GROUPS = ns.MAP_GROUPS or {
 	SHD = {1670,},
 	DRG = {1978,2022,},
 	TWW = {  81,2339,},
-	MDN = {2393,2437,2413,2405,2444,2599,2512,}, MVS = {2405,2444,2599,}, 
+	MDN = {2393,2437,2413,2405,2444,2599,2512,2643,}, MVS = {2405,2444,2599,}, MCI = {2512,2643,}
 }
+
+
 
 function ns.ExpandMapIDs(value)
 	if type(value) ~= "table" then return value end

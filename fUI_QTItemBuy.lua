@@ -99,6 +99,7 @@ local function AutoBuyItemsAtMerchant(frame)
 
   frame._autoBuyBaselineHave = (type(frame._autoBuyBaselineHave) == "table") and frame._autoBuyBaselineHave or {}
   frame._autoBuySessionBought = (type(frame._autoBuySessionBought) == "table") and frame._autoBuySessionBought or {}
+  frame._autoBuySpendRemaining = (type(frame._autoBuySpendRemaining) == "table") and frame._autoBuySpendRemaining or {}
   frame._autoBuyPlanned = (type(frame._autoBuyPlanned) == "table") and frame._autoBuyPlanned or {}
 
   local function IsMerchantSessionOpen()
@@ -303,6 +304,9 @@ local function AutoBuyItemsAtMerchant(frame)
     dst.max = pickMax(dst.max, src.max)
     dst.min = pickMax(dst.min, src.min)
     dst.target = pickMax(dst.target, src.target)
+    if type(src.spendItem) == "table" then
+      dst.spendItem = src.spendItem
+    end
 
     local yieldItemID = tonumber(src.yieldItemID)
     local yieldCount = tonumber(src.yieldCount)
@@ -383,6 +387,7 @@ local function AutoBuyItemsAtMerchant(frame)
               cachePurchased = (rule.item.cachePurchased == true) and true or false,
               cachePurchasedFromBag = (rule.item.cachePurchasedFromBag == false) and false or true,
               knownTooltip = (rule.item.knownTooltip == true) and true or false,
+              spendItem = buy.spendItem,
             }
             if spec.knownTooltip then
               spec.cachePurchased = true
@@ -694,12 +699,35 @@ local function AutoBuyItemsAtMerchant(frame)
     return haveTotal
   end
 
+  local function ComputeSpendNeed(spec)
+    local cost = spec.spendItem
+    if type(cost) ~= "table" then return nil end
+    local itemID = tonumber(cost.itemID)
+    local count = tonumber(cost.count)
+    if not itemID or itemID <= 0 or itemID ~= math.floor(itemID)
+      or not count or count <= 0 or count ~= math.floor(count) then
+      if type(Print) == "function" then Print("AutoBuy: invalid spendItem; itemID and count must be positive integers.") end
+      return 0
+    end
+    local raw = GetRawHaveCount(itemID)
+    local remaining = frame._autoBuySpendRemaining[itemID]
+    if remaining == nil then
+      remaining = raw
+      frame._autoBuySpendRemaining[itemID] = remaining
+    end
+    return math.floor(math.min(raw, remaining) / count)
+  end
+
   local function ComputeNeed(spec, have)
     if type(spec) ~= "table" then return 0 end
     local maxQty = tonumber(spec.max) or 0
     local minQty = tonumber(spec.min) or 0
     local targetQty = tonumber(spec.target) or 0
     if maxQty <= 0 then return 0 end
+    local spendNeed = ComputeSpendNeed(spec)
+    if spendNeed ~= nil then
+      return math.min(maxQty, spendNeed)
+    end
     if have < 0 then have = 0 end
 
     local desired = (targetQty > 0) and targetQty or ((minQty > 0) and minQty or maxQty)
@@ -709,13 +737,15 @@ local function AutoBuyItemsAtMerchant(frame)
     return need
   end
 
-  local function BuyFromMerchant(merchantIndex, info, itemID, need)
+  local function BuyFromMerchant(merchantIndex, info, itemID, need, spec)
     itemID = tonumber(itemID)
     if not itemID or itemID <= 0 then return end
     if need <= 0 then return end
     if not (merchantIndex and info) then return end
 
     local buyCount = math.floor(tonumber(need) or 0)
+    local spendNeed = ComputeSpendNeed(spec)
+    if spendNeed ~= nil then buyCount = math.min(buyCount, spendNeed) end
     if buyCount <= 0 then return end
 
     local numAvailable = tonumber(info["numAvailable"])
@@ -732,16 +762,30 @@ local function AutoBuyItemsAtMerchant(frame)
     if buyCount > 200 then buyCount = 200 end
 
     if buyCount > 0 then
+      local maxPerPurchase = type(spec.spendItem) == "table" and 1 or 100
+      if type(GetMerchantItemMaxStack) == "function" then
+        maxPerPurchase = math.min(100, math.floor(tonumber(GetMerchantItemMaxStack(merchantIndex)) or 0))
+        if maxPerPurchase < 1 then
+          if type(Print) == "function" then
+            Print("AutoBuy: merchant returned an invalid purchase limit for itemID:" .. tostring(itemID))
+          end
+          return
+        end
+      end
       if frame._autoBuyBaselineHave and frame._autoBuyBaselineHave[itemID] == nil then
         frame._autoBuyBaselineHave[itemID] = GetRawHaveCount(itemID)
       end
       local remaining = buyCount
       while remaining > 0 do
-        local chunk = math.min(remaining, 100)
+        local chunk = math.min(remaining, maxPerPurchase)
         BuyMerchantItem(merchantIndex, chunk)
         remaining = remaining - chunk
       end
       frame._autoBuySessionBought[itemID] = (tonumber(frame._autoBuySessionBought[itemID]) or 0) + buyCount
+      if type(spec.spendItem) == "table" then
+        local costID = tonumber(spec.spendItem.itemID)
+        frame._autoBuySpendRemaining[costID] = frame._autoBuySpendRemaining[costID] - buyCount * spec.spendItem.count
+      end
       frame._autoBuyPlanned[itemID] = (tonumber(frame._autoBuyPlanned[itemID]) or 0) + buyCount
       frame._autoBuyReportAttempts = 0
       ScheduleAutoBuyReport(0.35, "post-purchase")
@@ -801,7 +845,7 @@ local function AutoBuyItemsAtMerchant(frame)
 
           if need > 0 then
             Debug(string.format("cheapestOf: chose itemID=%d price=%s need=%d", chosenItemID, tostring(chosenPrice), need))
-            BuyFromMerchant(chosenIndex, chosenInfo, chosenItemID, need)
+            BuyFromMerchant(chosenIndex, chosenInfo, chosenItemID, need, g)
             if type(ns.SchedulePostBuyCacheCheck) == "function" then
               ns.SchedulePostBuyCacheCheck(chosenItemID, chosenIndex, g)
             end
@@ -840,7 +884,7 @@ local function AutoBuyItemsAtMerchant(frame)
         end
 
         if need > 0 then
-          BuyFromMerchant(merchantIndex, info, itemID, need)
+          BuyFromMerchant(merchantIndex, info, itemID, need, spec)
           if type(ns.SchedulePostBuyCacheCheck) == "function" then
             ns.SchedulePostBuyCacheCheck(itemID, merchantIndex, spec)
           end
@@ -864,6 +908,7 @@ local function OnMerchantShow(frame)
   frame._autoBuyAttempts = 0
   frame._autoBuyBaselineHave = {}
   frame._autoBuySessionBought = {}
+  frame._autoBuySpendRemaining = {}
   frame._autoBuyPlanned = {}
   frame._autoBuyLastReportKey = nil
   frame._autoBuyReportAttempts = 0
@@ -884,6 +929,7 @@ local function OnMerchantClosed(frame)
   frame._autoBuyAttempts = nil
   frame._autoBuyBaselineHave = nil
   frame._autoBuySessionBought = nil
+  frame._autoBuySpendRemaining = nil
   frame._autoBuyPlanned = nil
   frame._autoBuyLastReportKey = nil
   frame._autoBuyReportAttempts = nil

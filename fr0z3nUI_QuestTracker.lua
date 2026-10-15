@@ -1277,7 +1277,7 @@ local function GetItemNameSafe(itemID)
     if ok and name then return tostring(name) end
   end
 
-  local GetItemInfoFn = _G and rawget(_G, "GetItemInfo")
+  local GetItemInfoFn = (C_Item and C_Item.GetItemInfo) or (_G and rawget(_G, "GetItemInfo"))
   if GetItemInfoFn then
     local ok, name = pcall(GetItemInfoFn, itemID)
     if ok and name then return tostring(name) end
@@ -2943,22 +2943,27 @@ local function BuildRuleStatus(rule, ctx, opts)
 
     if rule.item.showCount ~= false then
       do
+        local displayItemID = tonumber(rule.item.showCountItemID)
+        local displayCount = count
+        if displayItemID and displayItemID > 0 and displayItemID ~= itemID then
+          displayCount = GetItemCountSafe(displayItemID, (rule.item.includeBank == true) or (rule.item.inBank == true))
+        end
         local showAmount = rule.item.showCount == "amount"
         if type(rule.item.required) == "table" and rule.item.required[1] == false then
           showAmount = true
         end
         if showAmount then
-          extra = tostring(count)
+          extra = tostring(displayCount)
         else
           local req = tonumber((select(1, GetItemRequiredGate(rule.item))))
           if req and req > 0 then
-          extra = string.format("%d/%d", count, req)
+          extra = string.format("%d/%d", displayCount, req)
           else
             local showBelow = tonumber(rule.item.showWhenBelow)
             if showBelow and showBelow > 0 then
-              extra = string.format("%d/%d", count, showBelow)
+              extra = string.format("%d/%d", displayCount, showBelow)
             else
-              extra = tostring(count)
+              extra = tostring(displayCount)
             end
           end
         end
@@ -4143,6 +4148,12 @@ end
 RefreshAll = function()
   NormalizeSV()
 
+  if ns._clockCountdownTimer then
+    ns._clockCountdownTimer:Cancel()
+    ns._clockCountdownTimer = nil
+  end
+  local hasClockCountdown = false
+
   if type(wipe) == "function" then
     wipe(itemCDOwner)
   else
@@ -4500,6 +4511,7 @@ RefreshAll = function()
       else
         RenderList(def, f, entries)
       end
+      if f:IsVisible() and f._hasClockCountdown then hasClockCountdown = true end
 
       UpdateAnchorLabel(f, def)
 
@@ -4510,7 +4522,13 @@ RefreshAll = function()
   end
 
   if type(ns) == "table" and type(ns.Render) == "table" and type(ns.Render.RefreshBarContentsFrame) == "function" then
-    ns.Render.RefreshBarContentsFrame()
+    if ns.Render.RefreshBarContentsFrame() then hasClockCountdown = true end
+  end
+  if hasClockCountdown then
+    ns._clockCountdownTimer = C_Timer.NewTimer(1, function()
+      ns._clockCountdownTimer = nil
+      RefreshAll()
+    end)
   end
 end
 

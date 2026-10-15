@@ -2,6 +2,55 @@ local addonName, ns = ...
 
 ns.GuideHelpers = ns.GuideHelpers or {}
 
+local realmHourOffset
+
+function ns.GuideHelpers.ApplyClockCountdowns(text, owners, owner)
+  if type(text) ~= "string" then return text, false end
+  if not text:find("%cdhr", 1, true) and not text:find("%cdtp", 1, true) then
+    return text, false
+  end
+
+  local serverTime = GetServerTime()
+  if realmHourOffset == nil then
+    local _, minute = GetGameTime()
+    -- Time zones use quarter-hour offsets; rounding ignores clock rollover skew.
+    realmHourOffset = math.floor((minute * 60 - serverTime % 3600) / 900 + 0.5) * 900
+  end
+  local secondsIntoHour = (serverTime + realmHourOffset) % 3600
+  local replacements = {}
+  for token, target in pairs({ cdhr = 0, cdtp = 600 }) do
+    if text:find("%" .. token, 1, true) then
+      if owners[token] == nil then owners[token] = owner end
+      local remaining = (target - secondsIntoHour) % 3600
+      if remaining == 0 then remaining = 3600 end
+      replacements[token] = owners[token] == owner
+        and string.format("%dm %02ds", math.floor(remaining / 60), remaining % 60) or ""
+    end
+  end
+
+  local lines = {}
+  local prefix = ""
+  for rawLine in (text .. "\n"):gmatch("(.-)\n") do
+    local line = rawLine
+    local hadToken = line:find("%cdhr", 1, true) or line:find("%cdtp", 1, true)
+    line = line:gsub("%%cdhr", replacements.cdhr or "")
+    line = line:gsub("%%cdtp", replacements.cdtp or "")
+    local visible = line:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("\194\160", " ")
+    if hadToken and not visible:find("%S") then
+      local colors = line:gsub("[ \t\194\160]", "")
+      if #lines > 0 then
+        lines[#lines] = lines[#lines] .. colors
+      else
+        prefix = prefix .. colors
+      end
+    else
+      lines[#lines + 1] = prefix .. line
+      prefix = ""
+    end
+  end
+  return table.concat(lines, "\n") .. prefix, true
+end
+
 local Y, N = true, false
 local REQ_BUY_ON, REQ_BUY_MAX = 3, 4
 

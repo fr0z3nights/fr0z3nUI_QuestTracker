@@ -13,6 +13,7 @@ Tracks quest completion with bar/list frames and rule packs (per expansion). Inc
 - `/fqt off` — disable frames
 - `/fqt reset` — reset frame positions to defaults
 - `/fqt rgb` — open the RGB helper/picker
+- `/fqt zgp` - print the active Zygor guide's full path as a quoted, escaped Lua string ready to use in `zygor = { ... }`; reports when Zygor or an active guide is unavailable.
 - `/fqtzygor bypass on` - suppress Zygor guide-eligibility warnings account-wide (default on)
 - `/fqtzygor bypass off` - restore Zygor's normal eligibility checks
 
@@ -27,6 +28,43 @@ Tracks quest completion with bar/list frames and rule packs (per expansion). Inc
 
 ## Notes
 - Rule packs are loaded via the `.toc` and can be disabled by commenting out lines.
+
+### Hourly countdowns
+Use `%cdhr` in displayed info text to count down to the next top of the realm-clock
+hour, or `%cdtp` to count down to the next ten past the hour:
+
+```lua
+questInfo = "Aqir Invasion\n %cdtp",
+```
+
+Timers display minutes and seconds (for example `12m 09s`) and refresh every
+second while their frame is visible. Both parts use the same server timestamp,
+aligned to the realm hour, so minute and second rollovers stay synchronized.
+At the target time they roll over to the
+next hour. Each token appears only on the first displayed entry containing it
+in each frame, following display order and scroll position. Subsequent entries
+omit that countdown, removing its line if it contains no other text.
+
+### Item-token auto-buy
+For exchanges, set `item.buy.spendItem = { itemID = 269862, count = 2 }`.
+With auto-buy enabled in `item.required`, this buys one target item per two
+bag-held tokens, regardless of how many target items are already owned.
+`autoBuyMax` still limits each purchase pass, and normal stock/gold limits apply.
+The Great Vault rule buys item 263934 using this exchange.
+Purchases are split to respect the merchant's per-request stack limit, including
+one-at-a-time requests for non-stackable items.
+
+To display the tokens owned rather than the purchase item, set
+`item.showCount = "amount"` and `item.showCountItemID = 269862`. This displays
+just the quantity (for example `8`), without a required-count denominator.
+The override affects display only; visibility gates and buying still use their
+configured items. It follows `item.includeBank` / `item.inBank` (bags by default).
+
+Token budgets are shared across exchange rules within a merchant session and
+reserved immediately after purchase calls so delayed bag updates cannot spend
+the same tokens twice. Close and reopen the merchant to refresh the budget
+after acquiring more tokens or an unsuccessful purchase. Bank-held tokens do
+not count. The configured cost must match the merchant's actual per-item cost.
 
 ### World Quest Completion Exceptions
 `hideQID` accepts a quest ID or a list of IDs. Set `hideQIDAccount = true` to also
@@ -72,7 +110,9 @@ zygor = { "LEVELING\\Pandaria (10-70)\\Kun-Lai Summit (20-70)", 0, 0, 1 },
 Left-click the entry outside edit mode to load the guide into Zygor's viewer.
 The tooltip flag (`zygorTT`) is `1` to show or `0` to hide (default).
 The close flag (`zygorX`) is `1` to close the guide tab when this rule's `questID`
-is turned in, or `0` to keep it open (default). This only applies after clicking
+is turned in or becomes flagged completed on a quest-log update, or `0` to keep it
+open (default). POI disappearance or the row hiding does not cancel this check.
+This only applies after clicking
 the rule during the current session, whether its guide tab is active or inactive;
 the viewer itself is not hidden. Clicking another rule replaces the pending action.
 If turn-in occurs during combat lockdown, tab closure waits until combat ends.

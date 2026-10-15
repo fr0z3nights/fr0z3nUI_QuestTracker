@@ -4,6 +4,34 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.10.16.01
+- Zygor auto-close: also check the pending quest's completion flag on quest-log updates, covering event quests that finish without a turn-in event. The check is independent of POI/row visibility and still defers closure until combat ends.
+
+## 2026.10.15.07
+- Auto-buy: respect the merchant's per-request stack limit when splitting purchases. Token exchanges for non-stackable items now send separate purchases instead of one invalid multi-item request.
+
+## 2026.10.15.06
+- Add `item.showCountItemID` to select a display-only count source. Great Vault now shows the owned 269862 token quantity without a denominator, while still buying 263934 at two tokens per item.
+
+## 2026.10.15.05
+- Hourly countdowns: derive minutes and seconds from one server timestamp to prevent minute jumps when the realm-clock minute and server-clock seconds roll over out of sync. Preserve realm-hour alignment using a one-time time-zone offset.
+
+## 2026.10.15.04
+- Files: `fUI_QTGuideHelper.lua`, `fUI_QTUsageUIR.lua`, `fr0z3nUI_QuestTracker.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Add `%cdhr` (next top of the realm-clock hour) and `%cdtp` (next ten past the hour) countdowns, refreshed every second while displayed. Each token appears only on its first displayed entry per frame; duplicate timer-only lines are removed, including after sorting and scrolling.
+
+## 2026.10.15.03
+- Files: `fUI_QTCoreCmd.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Add `/fqt zgp` to print the active Zygor guide path as a quoted, escaped Lua string; report missing Zygor or no active guide without changing Zygor files.
+
+## 2026.10.15.02
+- Files: `fUI_QTItemBuy.lua`, `fUI_QTGuideXP12.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Great Vault: exchange two item 269862 tokens for each item 263934, buying all affordable units rather than maintaining one owned item. Add `item.buy.spendItem` with shared merchant-session token reservations to prevent duplicate purchases during delayed bag updates.
+
+## 2026.10.15.01
+- Files: `fr0z3nUI_QuestTracker.lua`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Item API compatibility: prefer `C_Item.GetItemInfo` in the item-name fallback when `GetItemNameByID` has no cached result; retain legacy fallback and existing protected-call handling.
+
 ## 2026.10.10.04
 - Files: `fUI_QTGuide.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
 - Zygor: defer quest-driven tab closure during combat lockdown until PLAYER_REGEN_ENABLED; retain matching-title closure for active/inactive tabs and existing pending-action replacement behavior.

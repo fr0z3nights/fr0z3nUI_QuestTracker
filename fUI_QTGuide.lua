@@ -191,6 +191,7 @@ do
 	listener:RegisterEvent("ADDON_LOADED")
 	listener:RegisterEvent("PLAYER_LOGIN")
 	listener:RegisterEvent("QUEST_TURNED_IN")
+	listener:RegisterEvent("QUEST_LOG_UPDATE")
 	listener:RegisterEvent("PLAYER_REGEN_ENABLED")
 	local elapsedTotal = 0
 	local function TryInstall()
@@ -232,6 +233,13 @@ do
 		end
 	end
 	listener:SetScript("OnEvent", function(_, event, questID)
+		if event == "QUEST_LOG_UPDATE" then
+			local pending = G._zygorCloseQuest
+			if not (pending and pending.questID and C_QuestLog.IsQuestFlaggedCompleted(pending.questID)) then
+				return
+			end
+			event, questID = "QUEST_TURNED_IN", pending.questID
+		end
 		if event == "PLAYER_REGEN_ENABLED" then
 			local pending = G._zygorCloseQuest
 			if pending and pending.closeReady and not InCombatLockdown() then

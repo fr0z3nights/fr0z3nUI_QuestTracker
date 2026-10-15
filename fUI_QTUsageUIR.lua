@@ -157,6 +157,8 @@ end
 
 function ns.Render.RenderBar(frameDef, frame, entries)
   local editMode = IsEditMode()
+  local clockOwners = {}
+  frame._hasClockCountdown = false
 
   local maxItems = tonumber(frameDef.maxItems) or 6
   local uiPad = ClampPadPx and ClampPadPx((type(frameDef) == "table") and frameDef.pad or nil) or nil
@@ -222,6 +224,9 @@ function ns.Render.RenderBar(frameDef, frame, entries)
     local e = EntryForSlot(i)
     if e then
       local text = (editMode and e.title) or e.title
+      local hasClock
+      text, hasClock = ns.GuideHelpers.ApplyClockCountdowns(text, clockOwners, e)
+      if hasClock then frame._hasClockCountdown = true end
       if e.extra then
         text = e.extraBefore and (e.extra .. "  " .. text) or (text .. "  " .. e.extra)
       end
@@ -363,6 +368,8 @@ end
 
 function ns.Render.RenderList(frameDef, frame, entries)
   local editMode = IsEditMode()
+  local clockOwners = {}
+  frame._hasClockCountdown = false
 
   local maxItems = tonumber(frameDef.maxItems) or 20
   local rowH = tonumber(frameDef.rowHeight) or 16
@@ -435,9 +442,10 @@ function ns.Render.RenderList(frameDef, frame, entries)
     maxOffset = math.max(0, count - visibleRows)
 
     if (not editMode) and wrapText0 and maxY0 and count > 0 and frame and frame.CreateFontString then
-      local function GetEntryText(e)
+      local function GetEntryText(e, owners)
         if not e then return nil end
         local text = e.title
+        text = ns.GuideHelpers.ApplyClockCountdowns(text, owners, e)
         if text == nil then return nil end
         text = tostring(text)
         if e.extra then
@@ -460,30 +468,30 @@ function ns.Render.RenderList(frameDef, frame, entries)
       if measure.SetWidth then measure:SetWidth(textW0) end
 
       local gapWrap = 2
-      local total = 0
       local fitCount = 0
       for i = count, 1, -1 do
-        local e = entries[i]
-        if e and e.rule and GetRuleFontDef and ApplyFontStyle then
-          ApplyFontStyle(measure, GetRuleFontDef(e.rule))
-        else
-          if ApplyFontStyle then ApplyFontStyle(measure, frameDef and frameDef.font) end
+        local total = 0
+        local measureOwners = {}
+        -- Measure the candidate page in display order, including duplicate timer removal.
+        for j = i, count do
+          local e = entries[j]
+          if e and e.rule and GetRuleFontDef and ApplyFontStyle then
+            ApplyFontStyle(measure, GetRuleFontDef(e.rule))
+          else
+            if ApplyFontStyle then ApplyFontStyle(measure, frameDef and frameDef.font) end
+          end
+          local t = GetEntryText(e, measureOwners)
+          measure:SetText(t or "")
+          local h = (measure:GetStringHeight() or 0)
+          if h < rowH then h = rowH end
+          total = total + h + gapWrap
+          if j > i and listPad > 0 then total = total + listPad end
         end
-        local t = GetEntryText(e)
-        measure:SetText(t or "")
-        local h = (measure:GetStringHeight() or 0)
-        if h < rowH then h = rowH end
 
-        local add = h + gapWrap
-        if fitCount > 0 and listPad > 0 then
-          add = add + listPad
-        end
-
-        if fitCount > 0 and (total + add) > maxY0 then
+        if fitCount > 0 and total > maxY0 then
           break
         end
 
-        total = total + add
         fitCount = fitCount + 1
         if fitCount >= visibleRows then
           break
@@ -837,6 +845,9 @@ function ns.Render.RenderList(frameDef, frame, entries)
       else
         text = e.title
       end
+      local hasClock
+      text, hasClock = ns.GuideHelpers.ApplyClockCountdowns(text, clockOwners, e)
+      if hasClock then frame._hasClockCountdown = true end
       if (not editMode) and e.extra then
         text = e.extraBefore and (e.extra .. "  " .. text) or (text .. "  " .. e.extra)
         text = text .. " "
@@ -1001,6 +1012,7 @@ function ns.Render.RefreshBarContentsFrame()
   end
 
   ns.Render.RenderList(tmp, host, entries)
+  return host:IsVisible() and host._hasClockCountdown
 end
 
 local function EnsureBarContentsFrame()

@@ -787,6 +787,22 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
       return
     end
 
+    if cmd == "zgp" then
+      local zygor = rawget(_G, "ZGV")
+      if not zygor then
+        Say("Zygor is not loaded.")
+        return
+      end
+      local guide = zygor.CurrentGuide
+      local title = guide and guide.title
+      if type(title) ~= "string" or title == "" then
+        Say("Zygor has no active guide.")
+        return
+      end
+      Say("Zygor guide path: " .. string.format("%q", title))
+      return
+    end
+
     if cmd == "on" then
       SetFramesEnabled(true)
       RefreshAll()
@@ -1092,6 +1108,6 @@ if not SlashCmdList["FR0Z3NUIFQT"] then
       end
     end
 
-    Say("CoreCmd: /fqt (options), /fqt status, /fqt qc12345, /fqt prof ..., /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug ..., /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
+    Say("CoreCmd: /fqt (options), /fqt status, /fqt zgp, /fqt qc12345, /fqt prof ..., /fqt on, /fqt off, /fqt reset, /fqt rgb, /fqt aaq, /fqt aaqs, /fqt debug ..., /fqt twdebug, /fqt twclear, /fqt evdebug, /fqt framedebug [frameID], /fqt ruledebug <ruleKey>, /fqt evclear")
   end)
 end

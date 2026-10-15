@@ -205,7 +205,8 @@ SetZone("Silvermoon City, Quel'Thalas")
 	KQuest(94386, "Void Assaults: Zul'Aman")	           			--	Scheduled	Player		
 	KQuest(94385, "Void Assaults: Eversong Woods")	           		--	Scheduled	Player		
 
-	LQuest(91932, "Abundant Awakening - Eversong",2395)				--  Weekly		Player						/dump C_Map.GetBestMapForUnit("player")
+	LQuest(91932, "Abundant Awakening - Eversong",2395)				--  Can only be done in Zul'Aman
+	KQuest(94361, "The Abundant Life")								--  Quest		Player						/dump C_Map.GetBestMapForUnit("player")
 
 	KQuest(95842, "Midnight: Assaults")                    			--  Weekly		Player MAX
 	KQuest(93909, "Midnight: Delves")			            		--	Scheduled	Player		
