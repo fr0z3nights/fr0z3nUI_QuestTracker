@@ -66,11 +66,31 @@ the same tokens twice. Close and reopen the merchant to refresh the budget
 after acquiring more tokens or an unsuccessful purchase. Bank-held tokens do
 not count. The configured cost must match the merchant's actual per-item cost.
 
-### World Quest Completion Exceptions
-`hideQID` accepts a quest ID or a list of IDs. Set `hideQIDAccount = true` to also
+### List Entry Padding
+Set `pad = 0` on a list entry to remove the gap after that entry, including the
+normal 2-pixel gap and frame-wide list spacing. Omit `pad` to use normal spacing.
+Nonzero `pad` values remain additional spacing on top of the normal gap.
+This does not change padding inside the entry's text or the frame's outer margins.
+
+### Quest Completion Visibility
+`hideQID` accepts a quest ID or a flat list of IDs, hiding when **any** listed
+quest is completed. Nested lists require **every group** to have at least one
+completed quest:
+
+```lua
+hideQID = {{98658,98646},{98645,98657}},
+```
+
+This hides only when `(98658 OR 98646) AND (98645 OR 98657)` is completed.
+An empty group never matches. When mixing groups and bare IDs, each bare ID is
+an additional required completion. Existing flat lists keep their any-match
+behaviour. In contrast, `prereq = {q1,q2}` requires both quests to be completed.
+
+Set `hideQIDAccount = true` to also
 check account-wide completion when the client exposes that API (otherwise only
 the character's completion check is available).
 
+### World Quest Completion Exceptions
 For a world-quest row, `uwqGold` sets a minimum reward that applies only after a
 `hideQID` is completed. Before that completion, it does not gate visibility:
 

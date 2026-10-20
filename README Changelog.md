@@ -4,6 +4,15 @@ Format: `YYYY.MM.DD.NN` (TOC `## Version`) — short summary. Newest at the top.
 
 Discipline: bump TOC `## Version` on every behavior/UI change (sanity check stays meaningful).
 
+## 2026.10.18.02
+- Files: `fUI_QTUsageUIR.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- List entries: explicit `pad = 0` removes the normal gap and frame-wide list spacing after that entry. Omitted and nonzero padding retain existing behaviour; frame margins are unchanged.
+
+## 2026.10.18.01
+- Files: `fr0z3nUI_QuestTracker.lua`, `fUI_QTGuideXP12.lua`, `README.md`, `README Changelog.md`, `fr0z3nUI_QuestTracker.toc`.
+- Add grouped `hideQID = {{q1,q2},{q3,q4}}`: require at least one completed quest in every group before hiding. Preserve flat-list any-match behaviour, account completion support, and world-quest gold exceptions.
+- Keep Fungal Strider instructions visible until both seat groups are complete; give the instructions a distinct key instead of sharing the right-seat row's key.
+
 ## 2026.10.16.01
 - Zygor auto-close: also check the pending quest's completion flag on quest-log updates, covering event quests that finish without a turn-in event. The check is independent of POI/row visibility and still defers closure until combat ends.
 

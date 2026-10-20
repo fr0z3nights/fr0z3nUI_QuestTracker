@@ -869,19 +869,19 @@ function ns.Render.RenderList(frameDef, frame, entries)
         if sh and sh > h then h = sh end
       end
       yCursor = yCursor + h
-      if wrapText then yCursor = yCursor + 2 end
-
-      if wrapText and listPad > 0 and entries[i + offset + 1] ~= nil then
-        yCursor = yCursor + listPad
-      end
-
-      -- rule.pad: extra space after this one row, on top of the frame-wide pad.
-      if wrapText and entries[i + offset + 1] ~= nil then
+      if wrapText then
         local rulePad = (type(e.rule) == "table") and tonumber(e.rule.pad) or nil
-        if rulePad then
-          rulePad = (ClampPadPx and ClampPadPx(rulePad)) or rulePad
-          if rulePad ~= 0 then
-            yCursor = yCursor + rulePad
+        -- Explicit zero suppresses the normal gap; nonzero padding stays additive.
+        if rulePad ~= 0 then
+          yCursor = yCursor + 2
+          if entries[i + offset + 1] ~= nil then
+            if listPad > 0 then
+              yCursor = yCursor + listPad
+            end
+            if rulePad then
+              rulePad = (ClampPadPx and ClampPadPx(rulePad)) or rulePad
+              yCursor = yCursor + rulePad
+            end
           end
         end
       end

@@ -1073,6 +1073,53 @@ local function ArePrereqsMet(prereq)
   return true
 end
 
+local function IsHideQuestConditionMet(spec, includeAccount)
+  local function IsDone(value)
+    local qid = tonumber(value)
+    if not qid or qid <= 0 then return false end
+    if IsQuestCompleted(qid) then return true end
+    if includeAccount and C_QuestLog and type(C_QuestLog.IsQuestFlaggedCompletedOnAccount) == "function" then
+      local ok, done = pcall(C_QuestLog.IsQuestFlaggedCompletedOnAccount, qid)
+      return ok and done == true
+    end
+    return false
+  end
+
+  if type(spec) ~= "table" then return IsDone(spec) end
+
+  local grouped = false
+  for _, entry in ipairs(spec) do
+    if type(entry) == "table" then
+      grouped = true
+      break
+    end
+  end
+
+  if not grouped then
+    for _, qid in ipairs(spec) do
+      if IsDone(qid) then return true end
+    end
+    return false
+  end
+
+  -- All groups must match; one completed quest satisfies each inner group.
+  for _, group in ipairs(spec) do
+    local done = false
+    if type(group) == "table" then
+      for _, qid in ipairs(group) do
+        if IsDone(qid) then
+          done = true
+          break
+        end
+      end
+    else
+      done = IsDone(group)
+    end
+    if not done then return false end
+  end
+  return true
+end
+
 GetPlayerClass = function()
   if UnitClass then
     local _, class = UnitClass("player")
@@ -2413,24 +2460,13 @@ local function BuildRuleStatus(rule, ctx, opts)
     end
   end
 
-  -- Hide if any quest is completed (useful when quests drop from log on completion)
+  -- Flat lists match any completion; nested lists require a match in every group.
   if applyGates and not forceShowWhileQuestInLog and type(rule) == "table" and rule.hideQID ~= nil then
-    local hideQuestIDs = type(rule.hideQID) == "table" and rule.hideQID or {rule.hideQID}
-    for _, q in ipairs(hideQuestIDs) do
-      local qid = tonumber(q)
-      if qid and qid > 0 then
-        local done = IsQuestCompleted(qid)
-        if rule.hideQIDAccount == true and C_QuestLog and type(C_QuestLog.IsQuestFlaggedCompletedOnAccount) == "function" then
-          local ok, accountDone = pcall(C_QuestLog.IsQuestFlaggedCompletedOnAccount, qid)
-          done = done or (ok and accountDone == true)
-        end
-        if done then
-          local uwqGold = wqQuestID and tonumber(rule.uwqGold)
-          local hasGoldException = uwqGold and type(wqGoldValue) == "number" and wqGoldValue >= uwqGold
-          if not hasGoldException then return nil end
-          uwqGoldExceptionActive = true
-        end
-      end
+    if IsHideQuestConditionMet(rule.hideQID, rule.hideQIDAccount == true) then
+      local uwqGold = wqQuestID and tonumber(rule.uwqGold)
+      local hasGoldException = uwqGold and type(wqGoldValue) == "number" and wqGoldValue >= uwqGold
+      if not hasGoldException then return nil end
+      uwqGoldExceptionActive = true
     end
   end
 
